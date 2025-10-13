@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --black: #222222;
+  --white: #ffffff;
+  --darkgray: #373737;
+  --gray: #494949;
+  --silver: #bab9ba;
+  --lightgray: #f0eeef;
+  --green: #277e61;
+  --red: #a13a41;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground: #fff;
+    --background: #000;
+    --light: 212, 89%, 57%;
+  }
+}
+
+body {
+  color: rgb(var(--foreground));
+  background-color: rgb(var(--background));
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.swiper-pagination-bullet-active {
+  opacity: var(--swiper-pagination-bullet-opacity, 1);
+  background: #9353d3;
+}
+
+/* Featured Slider Styles - Sadece pagination */
+.featured-slider .swiper-pagination-bullet {
+  background: #374151;
+  opacity: 1;
+}
+
+.featured-slider .swiper-pagination-bullet-active {
+  background: #3b82f6;
+}
+
+.featured-slider .swiper-pagination {
+  margin-top: 20px;
+}
+
+/* TradingView Custom Styles */
+.tv-header {
+  background: #192630 !important;
+  border-bottom: 1px solid #374151 !important;
+}
+
+.tv-chart-container {
+  background: #192630 !important;
+}
+
+.tv-toolbar {
+  background: #192630 !important;
+}
