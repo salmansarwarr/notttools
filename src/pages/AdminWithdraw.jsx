@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import {
   Wallet,
   Download,
@@ -14,7 +14,7 @@ import { withdrawFees, getFeeVaultInfo } from "../hooks/frontend-functions";
 import constants from "../constants";
 
 const AdminWithdraw = () => {
-  const { wallet, connected, publicKey, sendTransaction } = useWallet();
+  const { wallet, connected, publicKey, sendTransaction } = useUnifiedWallet();
   const [feeVaultInfo, setFeeVaultInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);

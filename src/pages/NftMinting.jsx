@@ -14,13 +14,13 @@ import {
 } from "lucide-react";
 import WalletLogin from "../components/Walletlogin";
 import { useGlobalState } from "../hooks/useGlobalState";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import constants from "../constants.jsx";
 import { mintRandomNFT, getConfigInfo } from "../hooks/frontend-functions";
 
 const NftMinting = () => {
   const { globalState } = useGlobalState();
-  const wallet = useWallet();
+  const wallet = useUnifiedWallet();
   const user = globalState?.user;
   const authToken = globalState?.authToken;
   const isLoggedIn = !!user && !!authToken && wallet.connected;

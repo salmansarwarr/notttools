@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Loader2, ShieldCheck, AlertCircle, RefreshCcw, CheckCircle } from "lucide-react";
 import { DetoxService } from "../utils/detoxService";
@@ -7,7 +7,7 @@ import { DetoxService } from "../utils/detoxService";
 const detoxService = new DetoxService();
 
 export default function Detox() {
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signTransaction } = useUnifiedWallet();
   const [scanResults, setScanResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);

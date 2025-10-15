@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useGlobalState } from "../hooks/useGlobalState";
 import axios from "axios";
@@ -20,7 +20,7 @@ const Comments = ({ projectId }) => {
   const [commentError, setCommentError] = useState(null);
   const [commentSuccess, setCommentSuccess] = useState(false);
   const commentsPerPage = 10;
-  const { connected } = useWallet();
+  const { connected } = useUnifiedWallet();
   const { globalState } = useGlobalState();
   const queryClient = useQueryClient();
 

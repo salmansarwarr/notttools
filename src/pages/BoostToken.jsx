@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import {
   Connection,
   PublicKey,
@@ -19,7 +19,7 @@ import { Star, Zap, Rocket, TrendingUp, Shield, Award } from "lucide-react";
 
 const BoostToken = () => {
   const { globalState } = useGlobalState();
-  const { connected, publicKey, sendTransaction } = useWallet();
+  const { connected, publicKey, sendTransaction } = useUnifiedWallet();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(false);

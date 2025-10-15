@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { TrendingUp, TrendingDown, Zap, Wallet } from "lucide-react";
 import constants from "../constants";
 
 const BuySell = ({ project }) => {
-  const { connected } = useWallet();
+  const { connected } = useUnifiedWallet();
   const [activeTab, setActiveTab] = useState("buy");
   const [amount, setAmount] = useState("");
 

@@ -24,6 +24,9 @@ import LegalAdvice from "./pages/LegalAdvice";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminWithdraw from "./pages/AdminWithdraw";
 import Detox from "./pages/Detox";
+import CreatePool from "./pages/CreatePool";
+import TokenDetail from "./pages/Tokenetail";
+import TokensPage from "./pages/Tokens";
 
 const AppRoutes = () => {
   const { globalState } = useGlobalState();
@@ -36,6 +39,9 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingLayout />}>
         <Route index element={<Landing />} />
         <Route path="/create-coin" element={<CreateCoin />} />
+        <Route path="create-pool" element={<CreatePool/>} />
+        <Route path="/tokens" element={<TokensPage />} />
+        <Route path="/token/:mintAddress" element={<TokenDetail />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/project/:id" element={<SingleProject />} />
         <Route path="/boost" element={<BoostToken />} />

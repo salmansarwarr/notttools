@@ -49,7 +49,7 @@ import {
     TxVersion,
 } from "@raydium-io/raydium-sdk-v2";
 import { useSolanaActions } from "./useSolanaActions";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 
 // ======================================================
@@ -83,7 +83,7 @@ function explorerUrl(tx) {
 
 export const useSolanaTokenFlow = () => {
     const { connection, publicKey, sendTx, signTransaction } = useSolanaActions();
-    const wallet = useWallet();
+    const wallet = useUnifiedWallet();
 
     const umi = createUmi(RPC_URL)
         .use(mplTokenMetadata())

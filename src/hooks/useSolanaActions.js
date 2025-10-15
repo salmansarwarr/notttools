@@ -1,11 +1,11 @@
-import { useWallet } from '@solana/wallet-adapter-react';
 import {
     Connection,
     clusterApiUrl,
 } from '@solana/web3.js';
+import { useUnifiedWallet } from './useUnifiedWallet';
 
 export const useSolanaActions = () => {
-    const { publicKey, signTransaction } = useWallet();
+    const { publicKey, signTransaction } = useUnifiedWallet();
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
     if (!publicKey || !signTransaction) {

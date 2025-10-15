@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMemo } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { GlobalStateProvider, useGlobalState } from "./hooks/useGlobalState";
+import { GlobalStateProvider } from "./hooks/useGlobalState";
 import { useEffect, useState } from "react";
 import AppRoutes from "./AppRoutes";
 import { HeroUIProvider } from "@heroui/react";
@@ -9,7 +9,7 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import { clusterApiUrl } from "@solana/web3.js";
 import {
   ConnectionProvider,
@@ -21,8 +21,9 @@ import {
   TorusWalletAdapter,
   LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+import { ReownProvider } from "./providers/Reown"; 
 
-// CSS import'ları
+// CSS imports
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -46,30 +47,6 @@ function App() {
     []
   );
 
-  // MetaMask duplicate'ını engelle
-  useEffect(() => {
-    // Browser'daki MetaMask detection'ını override et
-    const originalDefineProperty = Object.defineProperty;
-
-    // MetaMask'ın kendini register etmesini engelle
-    Object.defineProperty = function (obj, prop, descriptor) {
-      if (
-        prop === "solana" &&
-        descriptor.value &&
-        descriptor.value.isMetaMask
-      ) {
-        console.log("MetaMask Solana provider engellendi");
-        return obj;
-      }
-      return originalDefineProperty.apply(this, arguments);
-    };
-
-    // Cleanup
-    return () => {
-      Object.defineProperty = originalDefineProperty;
-    };
-  }, []);
-
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme) {
@@ -90,33 +67,31 @@ function App() {
   }, [theme]);
 
   return (
-    <>
-      <GlobalStateProvider>
-        <HeroUIProvider>
-          <QueryClientProvider client={queryClient}>
-            <ConnectionProvider endpoint={endpoint}>
-              <WalletProvider
-                wallets={wallets}
-                autoConnect
-                localStorageKey="walletAdapter"
-                onError={(error) => {
-                  console.log("Wallet error:", error);
-                }}
-              >
-                <WalletModalProvider
-                  featuredWallets={wallets.length} // Sadece bizim wallet'ları göster
-                >
+    <GlobalStateProvider>
+      <HeroUIProvider>
+        <QueryClientProvider client={queryClient}>
+          <ConnectionProvider endpoint={endpoint}>
+            <WalletProvider
+              wallets={wallets}
+              autoConnect
+              localStorageKey="walletAdapter"
+              onError={(error) => {
+                console.log("Wallet error:", error);
+              }}
+            >
+              <ReownProvider>
+                <WalletModalProvider>
                   <Router>
                     <ToastContainer />
                     <AppRoutes />
                   </Router>
                 </WalletModalProvider>
-              </WalletProvider>
-            </ConnectionProvider>
-          </QueryClientProvider>
-        </HeroUIProvider>
-      </GlobalStateProvider>
-    </>
+              </ReownProvider>
+            </WalletProvider>
+          </ConnectionProvider>
+        </QueryClientProvider>
+      </HeroUIProvider>
+    </GlobalStateProvider>
   );
 }
 
