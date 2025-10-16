@@ -56,6 +56,15 @@ import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-ad
 //  Constants
 // ======================================================
 
+const STANDARD_TOKEN_CONFIG = {
+    TOTAL_SUPPLY: 1_000_000_000,
+    DECIMALS: 9,
+    INITIAL_LIQUIDITY: {
+        TOKEN_AMOUNT: 800_000_000, // 80% to pool
+        REQUIRED_SOL: 0.5, // Fixed SOL amount
+    },
+};
+
 const PLATFORM_AUTHORITY = new PublicKey("4ZqMvu1HaNPLbqvhwx1KXHFzqkhf2pB3pGPSt9HbyvQD");
 const LP_LOCK_PROGRAM_ID = new PublicKey("GJBWK2HdEyyQaxNvbjw3TXWEXZXbNz6oYhNKUtj7SvBD");
 const NOOT_MINT = new PublicKey("HuMqNCmUzNq5LHNKVbRFFBSwD7JkfC4ivPdBerNvQmwS");
@@ -245,8 +254,10 @@ export const useSolanaTokenFlow = () => {
     // --------------------------------------------------
     // 3. Mint Tokens
     // --------------------------------------------------
-    async function mintTokens(mint, mintAmount) {
-        // 1️⃣ Get the associated token account for this user
+    async function mintTokens(mint) {
+        const totalSupply = new BN(STANDARD_TOKEN_CONFIG.TOTAL_SUPPLY)
+            .mul(new BN(10).pow(new BN(STANDARD_TOKEN_CONFIG.DECIMALS)));
+        
         const ata = getAssociatedTokenAddressSync(
             mint,
             wallet.publicKey,
@@ -254,9 +265,8 @@ export const useSolanaTokenFlow = () => {
             TOKEN_2022_PROGRAM_ID
         );
     
-        // 2️⃣ Create a transaction with all the steps
         const transaction = new Transaction().add(
-            // Ensure ATA exists
+            // Create ATA
             createAssociatedTokenAccountIdempotentInstruction(
                 wallet.publicKey,
                 ata,
@@ -265,30 +275,31 @@ export const useSolanaTokenFlow = () => {
                 TOKEN_2022_PROGRAM_ID
             ),
     
-            // Mint the desired amount
+            // Mint TOTAL supply to creator
             createMintToInstruction(
                 mint,
                 ata,
-                wallet.publicKey, // mint authority
-                mintAmount,
+                wallet.publicKey,
+                totalSupply, // Mint 1 billion tokens
                 [],
                 TOKEN_2022_PROGRAM_ID
             ),
     
-            // 🔒 Revoke (remove) mint authority
+            // Revoke mint authority
             createSetAuthorityInstruction(
                 mint,
-                wallet.publicKey, // current mint authority
+                wallet.publicKey,
                 AuthorityType.MintTokens,
-                null, // new authority = none
+                null,
                 [],
                 TOKEN_2022_PROGRAM_ID
             ),
         );
     
-        // 3️⃣ Send and confirm via wallet
-        const txid = await sendTx(transaction); 
-        console.log("💰 Tokens Minted & 🔒 All Authorities Revoked:", txid);
+        const txid = await sendTx(transaction);
+        console.log("💰 Minted:", STANDARD_TOKEN_CONFIG.TOTAL_SUPPLY.toLocaleString(), "tokens");
+        console.log("🔒 Mint authority revoked");
+        
         return { ata, txid };
     }
 
@@ -356,9 +367,51 @@ export const useSolanaTokenFlow = () => {
     // --------------------------------------------------
     // 6. Create Raydium Pool with Platform Fee Logic
     // --------------------------------------------------
-    async function createRaydiumPoolWithFee(mint) {     
+    async function validatePoolCreation(wallet) {
+        const requiredSOL = STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.REQUIRED_SOL;
+        const balance = await connection.getBalance(wallet.publicKey);
+        const balanceSOL = balance / 1e9;
+        
+        // Add buffer for transaction fees
+        const requiredWithBuffer = requiredSOL + 0.1;
+        
+        if (balanceSOL < requiredWithBuffer) {
+            return {
+                valid: false,
+                message: `Insufficient balance. Required: ${requiredWithBuffer} SOL, Current: ${balanceSOL.toFixed(2)} SOL`,
+                required: requiredWithBuffer,
+                current: balanceSOL,
+            };
+        }
+        
+        return {
+            valid: true,
+            message: "Balance sufficient for pool creation",
+            required: requiredSOL,
+            current: balanceSOL,
+        };
+    }
+
+    async function createRaydiumPoolWithFee(mint) {
+        // ============================================
+        // 1. VALIDATE USER HAS ENOUGH SOL
+        // ============================================
+        // const requiredSOL = STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.REQUIRED_SOL;
+        // const userBalance = await connection.getBalance(wallet.publicKey);
+        // const requiredLamports = requiredSOL * 1e9;
+        
+        // if (userBalance < requiredLamports) {
+        //     throw new Error(
+        //         `Insufficient balance. You need ${requiredSOL} SOL to create a pool. ` +
+        //         `Current balance: ${(userBalance / 1e9).toFixed(2)} SOL`
+        //     );
+        // }
+    
+        // ============================================
+        // 2. INITIALIZE RAYDIUM
+        // ============================================
         const raydium = await Raydium.load({
-            owner: publicKey,
+            owner: wallet.publicKey,
             signAllTransactions: async (transactions) => {
                 return wallet.signAllTransactions(transactions);
             },
@@ -369,26 +422,48 @@ export const useSolanaTokenFlow = () => {
             blockhashCommitment: 'finalized',
         });
     
+        // ============================================
+        // 3. GET TOKEN INFO
+        // ============================================
         const mintA = await raydium.token.getTokenInfo(mint);
         const mintB = await raydium.token.getTokenInfo(SOL_MINT);
     
+        // ============================================
+        // 4. GET FEE CONFIGS
+        // ============================================
         const feeConfigs = await raydium.api.getCpmmConfigs();
         if (raydium.cluster === 'devnet') {
             feeConfigs.forEach((config) => {
-                config.id = getCpmmPdaAmmConfigId(DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM, config.index).publicKey.toBase58();
+                config.id = getCpmmPdaAmmConfigId(
+                    DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM, 
+                    config.index
+                ).publicKey.toBase58();
             });
         }
     
-        console.log(`Creating pool for ${mintA.symbol} - ${mintB.symbol}...`);
-        
-        // The issue might be in ownerInfo - try without useSOLBalance first
+        console.log(`Creating standardized pool for ${mintA.symbol}...`);
+    
+        // ============================================
+        // 5. FIXED POOL AMOUNTS (NOT USER-CONTROLLED)
+        // ============================================
+        const tokenAmount = new BN(
+            (STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.TOKEN_AMOUNT * 1e9).toString()
+          );
+          
+          const solAmount = new BN(
+            Math.round(STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.REQUIRED_SOL * 1e9).toString()
+          );
+    
+        // ============================================
+        // 6. CREATE POOL WITH FIXED AMOUNTS
+        // ============================================
         const { execute, extInfo, transaction } = await raydium.cpmm.createPool({
             programId: DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
             poolFeeAccount: DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC,
             mintA,
             mintB,
-            mintAAmount: new BN(50000 * 1e9),
-            mintBAmount: new BN(0.05 * 1e9),
+            mintAAmount: tokenAmount, // FIXED: 800M tokens
+            mintBAmount: solAmount,   // FIXED: 8 SOL
             startTime: new BN(Math.floor(Date.now() / 1000)),
             feeConfig: feeConfigs[0],
             ownerInfo: {
@@ -402,29 +477,41 @@ export const useSolanaTokenFlow = () => {
             },
         });
     
-        // Check if wallet holds platform NFT
+        // ============================================
+        // 7. PLATFORM FEE (IF NO NFT)
+        // ============================================
         const hasNFT = await walletHoldsNFT(wallet.publicKey, PLATFORM_NFT_MINT);
-    
         let platformFee = 0;
+    
         if (!hasNFT) {
-            const totalPoolValue = 0.05 * 1e9;
-            platformFee = Math.floor(totalPoolValue * 0.05);
+            // Platform fee is a percentage of the SOL going into the pool
+            const totalPoolValueLamports = solAmount.toNumber();
+            platformFee = Math.floor(totalPoolValueLamports * 0.05); // 5% fee
+            
             const feeInstruction = SystemProgram.transfer({
                 fromPubkey: wallet.publicKey,
                 toPubkey: new PublicKey(PLATFORM_AUTHORITY),
                 lamports: platformFee,
             });
+            
             transaction.add(feeInstruction);
-            console.log(`💸 Platform fee applied: ${platformFee / 1e9} SOL`);
+            console.log(`💸 Platform fee: ${platformFee / 1e9} SOL`);
         } else {
-            console.log("🎟️ User holds platform NFT — skipping platform fee.");
+            console.log("🎟️ NFT holder - no platform fee");
         }
     
-        const poolTx = await execute({ sendAndConfirm: true,  });
-        console.log('✅ Pool created - txId:', poolTx.txId, 'lpMint:', extInfo.address.lpMint);
+        // ============================================
+        // 8. EXECUTE TRANSACTION
+        // ============================================
+        const poolTx = await execute({ sendAndConfirm: true });
     
-        return { txId: poolTx.txId, lpMint: extInfo.address.lpMint, platformFee };
-    }
+        return { 
+            txId: poolTx.txId, 
+            lpMint: extInfo.address.lpMint, 
+            poolAddress: extInfo.address.ammId?.toString(),
+            platformFee 
+        };
+    }    
 
     // --------------------------------------------------
     // 7. Burn NOOT Tokens (Jupiter Swap + Burn)
@@ -609,5 +696,6 @@ export const useSolanaTokenFlow = () => {
         burnNootTokens,
         initializeLPLock,
         walletHoldsNFT,
+        validatePoolCreation
     };
 };

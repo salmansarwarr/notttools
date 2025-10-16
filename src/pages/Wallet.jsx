@@ -171,15 +171,15 @@ const Wallet = () => {
             <div className="relative">
               {/* Phone Frame */}
               <div className="flex w-full">
-                <img src="/assets/wallet.png" alt="" />
+                <img src="/assets/wallet2.png" alt="" />
               </div>
 
               {/* Floating Elements */}
-              <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center border border-blue-500/30">
+              <div className="absolute -top-4 right-4 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center border border-blue-500/30">
                 <Shield className="text-blue-400" size={24} />
               </div>
 
-              <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full flex items-center justify-center border border-green-500/30">
+              <div className="absolute -bottom-4 left-5 w-16 h-16 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full flex items-center justify-center border border-green-500/30">
                 <Zap className="text-green-400" size={20} />
               </div>
             </div>
