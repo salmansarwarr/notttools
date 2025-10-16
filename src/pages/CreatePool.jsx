@@ -128,33 +128,6 @@ const SmartCreateCoin = () => {
         loadCommissionSettings();
     }, [globalState.authToken]);
 
-    // Check user's staked NFTs
-    useEffect(() => {
-        const checkStakedNFTs = async () => {
-            if (!wallet.connected || !wallet.publicKey) {
-                setHasStakedNFT(false);
-                setIsCheckingStake(false);
-                return;
-            }
-
-            try {
-                setIsCheckingStake(true);
-                setStakeError(null);
-                const stakes = await getUserStakes(wallet);
-                const hasStaked = stakes && stakes.stakes && stakes.stakes.length > 0;
-                setHasStakedNFT(hasStaked);
-            } catch (error) {
-                console.error("❌ Error checking staked NFTs:", error);
-                setStakeError("Failed to check staked NFTs. Please try again.");
-                setHasStakedNFT(false);
-            } finally {
-                setIsCheckingStake(false);
-            }
-        };
-
-        checkStakedNFTs();
-    }, [wallet.connected, wallet.publicKey]);
-
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
@@ -834,79 +807,6 @@ const SmartCreateCoin = () => {
                             </div>
                         ) : null}
 
-                        {/* Stake Requirement Info */}
-                        {isCheckingStake ? (
-                            <div className="mb-6 p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-                                    <p className="text-blue-300">Checking your staked NFTs...</p>
-                                </div>
-                            </div>
-                        ) : stakeError ? (
-                            <div className="mb-6 p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
-                                <p className="text-red-300">{stakeError}</p>
-                            </div>
-                        ) : !wallet.connected ? (
-                            <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                    <svg className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                                    </svg>
-                                    <div>
-                                        <h3 className="text-yellow-300 font-semibold mb-2">
-                                            🔗 Wallet Required
-                                        </h3>
-                                        <p className="text-yellow-200 text-sm">
-                                            Please connect your wallet to check your eligibility for token creation.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : !hasStakedNFT ? (
-                            <div className="mb-6 p-4 bg-orange-900/30 border border-orange-600/50 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                    <svg className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                                    </svg>
-                                    <div>
-                                        <h3 className="text-orange-300 font-semibold mb-2">
-                                            💰 Token Creation Fee
-                                        </h3>
-                                        <p className="text-orange-200 text-sm mb-3">
-                                            No staked NFTs detected. Token creation fee: <strong>{commissionSettings?.token_creation_fee} SOL</strong>
-                                        </p>
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <a
-                                                href="/nft-staking"
-                                                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                                                </svg>
-                                                Stake NFT for Free Creation
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="mb-6 p-4 bg-green-900/30 border border-green-600/50 rounded-lg">
-                                <div className="flex items-start gap-3">
-                                    <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                    </svg>
-                                    <div>
-                                        <h3 className="text-green-300 font-semibold mb-1">
-                                            ✅ Eligible for Free Token Creation
-                                        </h3>
-                                        <p className="text-green-200 text-sm">
-                                            You have staked NFTs! Create your token without any fees.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
 
                         <form onSubmit={handleSubmit} className="space-y-8">
                             {/* Basic Info */}
@@ -1496,23 +1396,13 @@ const SmartCreateCoin = () => {
                                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                                             Loading...
                                         </>
-                                    ) : hasStakedNFT ? (
+                                    ) : (
                                         <>
                                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                                             </svg>
-                                            Create Token & Pool (FREE)
+                                            Create Token & Pool
                                         </>
-                                    ) : commissionSettings ? (
-                                        <>
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                                            </svg>
-                                            Create Token & Pool ({commissionSettings.token_creation_fee} SOL)
-                                        </>
-                                    ) : (
-                                        "Loading..."
                                     )}
                                 </button>
 
