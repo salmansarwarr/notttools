@@ -1,701 +1,1140 @@
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
+import { useSolanaActions } from "./useSolanaActions";
+import { AnchorProvider, Program, BN } from "@coral-xyz/anchor";
 import {
-    Connection,
+    PublicKey,
     SystemProgram,
     Transaction,
-    PublicKey,
-    Keypair,
     SYSVAR_RENT_PUBKEY,
-    clusterApiUrl,
-    VersionedTransaction,
+    Keypair,
+    Connection,
 } from "@solana/web3.js";
 import {
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    createAssociatedTokenAccountIdempotentInstruction,
-    createInitializeMintInstruction,
-    mintTo,
     TOKEN_2022_PROGRAM_ID,
-    getMintLen,
-    ExtensionType,
-    createInitializeTransferFeeConfigInstruction,
     getAssociatedTokenAddress,
-    withdrawWithheldTokensFromMint,
-    createTransferCheckedWithTransferHookInstruction,
-    TOKEN_PROGRAM_ID,
-    getMint,
-    getOrCreateAssociatedTokenAccount,
-    createAssociatedTokenAccountIdempotent,
-    createBurnInstruction,
-    getAssociatedTokenAddressSync,
+    createAssociatedTokenAccountIdempotentInstruction,
     createMintToInstruction,
     createSetAuthorityInstruction,
     AuthorityType,
+    getMintLen,
+    ExtensionType,
+    createInitializeTransferFeeConfigInstruction,
+    createInitializeMintInstruction,
+    getMint,
+    TOKEN_PROGRAM_ID,
+    createTransferCheckedInstruction,
 } from "@solana/spl-token";
+import bondingCurveIDL from './bonding_curve.json';
+import lpLockIDL from './lp_escrow.json';
 import {
-    createV1,
-    mplTokenMetadata,
-    TokenStandard,
-} from "@metaplex-foundation/mpl-token-metadata";
-import { createSignerFromKeypair, keypairIdentity } from "@metaplex-foundation/umi";
-import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { base58 } from "@metaplex-foundation/umi/serializers";
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { BN } from "bn.js";
-import lpLockIDL from './lp_escrow.json' with { type: 'json' };
-import {
-    DEVNET_PROGRAM_ID,
-    getCpmmPdaAmmConfigId,
     Raydium,
     TxVersion,
+    DEVNET_PROGRAM_ID,
+    getCpmmPdaAmmConfigId
 } from "@raydium-io/raydium-sdk-v2";
-import { useSolanaActions } from "./useSolanaActions";
-import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { mplTokenMetadata, createV1, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
+import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { createSignerFromKeypair } from "@metaplex-foundation/umi";
+import { base58 } from "@metaplex-foundation/umi/serializers";
+import bs58 from 'bs58'
 
-// ======================================================
-//  Constants
-// ======================================================
+// Constants
+const BONDING_CURVE_PROGRAM_ID = new PublicKey("C1yuYbMvQ69dtx4EfZafFKdi34H3YdYWEX9QzXfNDFxb");
+const LP_LOCK_PROGRAM_ID = new PublicKey("GJBWK2HdEyyQaxNvbjw3TXWEXZXbNz6oYhNKUtj7SvBD");
+const PLATFORM_AUTHORITY = new PublicKey("35Bk7MrW3c17QWioRuABBEMFwNk4NitXRFBvkzYAupfF");
+const SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
+const RPC_URL = "https://api.devnet.solana.com";
 
-const STANDARD_TOKEN_CONFIG = {
+// ⚡ MIGRATION BOT KEYPAIR - Store this securely in production (use env vars)
+const MIGRATION_BOT_PRIVATE_KEY = import.meta.env.VITE_MIGRATION_BOT_PRIVATE_KEY ||
+    "YOUR_BASE58_PRIVATE_KEY_HERE"; // Replace with actual private key
+
+const BONDING_CURVE_CONFIG = {
     TOTAL_SUPPLY: 1_000_000_000,
     DECIMALS: 9,
-    INITIAL_LIQUIDITY: {
-        TOKEN_AMOUNT: 800_000_000, // 80% to pool
-        REQUIRED_SOL: 0.5, // Fixed SOL amount
-    },
+    VIRTUAL_SOL_RESERVES: 30, // 30 SOL virtual liquidity
+    VIRTUAL_TOKEN_RESERVES: 1_073_000_000, // ~1.073B tokens (creates initial price)
+    MIGRATION_THRESHOLD: 1, // 🔥 Changed to 1 SOL for testing
+    INITIAL_REAL_TOKENS: 800_000_000, // 800M tokens available for trading (80%)
 };
 
-const PLATFORM_AUTHORITY = new PublicKey("4ZqMvu1HaNPLbqvhwx1KXHFzqkhf2pB3pGPSt9HbyvQD");
-const LP_LOCK_PROGRAM_ID = new PublicKey("GJBWK2HdEyyQaxNvbjw3TXWEXZXbNz6oYhNKUtj7SvBD");
-const NOOT_MINT = new PublicKey("HuMqNCmUzNq5LHNKVbRFFBSwD7JkfC4ivPdBerNvQmwS");
-const PLATFORM_NFT_MINT = new PublicKey("34iZhfLmwrtaYDhcZVxaiTctf253azhZLNc8eeMYETij");
-const SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
+// Transaction deduplication helper
+const pendingTransactions = new Set();
 
-const decimals = 9;
-const feeBasisPoints = 75;
-const maxFeeNumber = 9 * Math.pow(10, decimals);
-const maxFee = BigInt(maxFeeNumber);
-const mintAmountNumber = 1_000_000 * Math.pow(10, decimals);
-const mintAmount = BigInt(mintAmountNumber);
-const tokensToSend = 1000;
-const extensions = [ExtensionType.TransferFeeConfig];
-const SLIPPAGE_BPS = 50;
-const RPC_URL = clusterApiUrl("devnet");
+function withDeduplication(key, fn) {
+    return async (...args) => {
+        if (pendingTransactions.has(key)) {
+            throw new Error("Transaction already in progress");
+        }
+
+        pendingTransactions.add(key);
+        try {
+            const result = await fn(...args);
+            return result;
+        } finally {
+            // Remove after a delay to prevent immediate resubmission
+            setTimeout(() => pendingTransactions.delete(key), 5000);
+        }
+    };
+}
 
 function explorerUrl(tx) {
     return `https://explorer.solana.com/tx/${tx}?cluster=devnet`;
 }
 
-// ======================================================
-//  Main Flow Hook
-// ======================================================
-
-export const useSolanaTokenFlow = () => {
+export const useBondingCurveFlow = () => {
     const { connection, publicKey, sendTx, signTransaction } = useSolanaActions();
     const wallet = useUnifiedWallet();
 
     const umi = createUmi(RPC_URL)
         .use(mplTokenMetadata())
         .use(mplToolbox())
-        .use(walletAdapterIdentity(wallet))
-    // --------------------------------------------------
-    // Helper: Check if wallet holds platform NFT
-    // --------------------------------------------------
-    async function walletHoldsNFT(walletPublicKey, nftMintAddress) {
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
-            programId: TOKEN_PROGRAM_ID,
+        .use(walletAdapterIdentity(wallet));
+
+    // ============================================
+    // MIGRATION BOT HELPER
+    // ============================================
+    function getMigrationBotWallet() {
+        try {
+            return Keypair.fromSecretKey(bs58.decode(MIGRATION_BOT_PRIVATE_KEY));
+        } catch (error) {
+            console.error("Failed to load migration bot keypair:", error);
+            throw new Error("Migration bot configuration invalid");
+        }
+    }
+
+    // Helper function to send transaction with proper confirmation
+    async function sendAndConfirmTransactionWithRetry(connection, transaction, signers, options = {}) {
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = signers[0].publicKey;
+        transaction.sign(...signers);
+
+        const signature = await connection.sendRawTransaction(transaction.serialize(), {
+            skipPreflight: false,
+            maxRetries: 3,
+            preflightCommitment: 'confirmed',
+            ...options
         });
 
-        for (const { account } of tokenAccounts.value) {
-            const tokenInfo = account.data.parsed.info;
-            if (tokenInfo.tokenAmount.amount === "1" && tokenInfo.tokenAmount.decimals === 0) {
-                const mintAddress = new PublicKey(tokenInfo.mint);
-                if (mintAddress.toBase58() === nftMintAddress.toBase58()) {
+        await connection.confirmTransaction({
+            signature,
+            blockhash,
+            lastValidBlockHeight
+        }, options.commitment || 'confirmed');
+
+        return signature;
+    }
+
+    // ============================================
+    // CHECK AND AUTO-MIGRATE
+    // ============================================
+    async function checkAndAutoMigrate(mint) {
+        const checkKey = `check-migrate-${mint.toString()}`;
+
+        return withDeduplication(checkKey, async () => {
+            try {
+                const botWallet = getMigrationBotWallet();
+                const botConnection = new Connection(RPC_URL, 'confirmed');
+                const provider = new AnchorProvider(botConnection, {
+                    publicKey: botWallet.publicKey,
+                    signTransaction: async (tx) => {
+                        tx.sign(botWallet);
+                        return tx;
+                    },
+                    signAllTransactions: async (txs) => {
+                        txs.forEach(tx => tx.sign(botWallet));
+                        return txs;
+                    }
+                }, {
+                    commitment: 'confirmed',
+                    preflightCommitment: 'confirmed'
+                });
+                const program = new Program(bondingCurveIDL, provider);
+
+                const [bondingCurve] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("bonding_curve"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
+
+                const curveData = await program.account.bondingCurve.fetch(bondingCurve);
+
+                console.log("📊 Checking migration eligibility...");
+                console.log(`   Real SOL Reserves: ${curveData.realSolReserves.toNumber() / 1e9} SOL`);
+                console.log(`   Migration Threshold: ${curveData.migrationThreshold.toNumber() / 1e9} SOL`);
+                console.log(`   Is Migrated: ${curveData.isMigrated}`);
+
+                // Check if migration threshold reached and not already migrated
+                if (curveData.realSolReserves.gte(curveData.migrationThreshold) && !curveData.isMigrated) {
+                    console.log("🚀 MIGRATION THRESHOLD REACHED! Starting automatic migration...");
+                    await autoMigrateToRaydium(mint, botWallet, botConnection);
                     return true;
+                } else {
+                    console.log("⏳ Migration threshold not yet reached");
+                    return false;
                 }
+            } catch (error) {
+                console.error("Error checking migration status:", error);
+                return false;
             }
-        }
-        return false;
+        })();
     }
 
-    // --------------------------------------------------
-    // 1. Create Mint with Transfer Fee Extension
-    // --------------------------------------------------
-    async function createMintAccount(mintKeypair) {
-        const mint = mintKeypair.publicKey;
-        const mintLen = getMintLen(extensions);
-        const lamports = await connection.getMinimumBalanceForRentExemption(mintLen);
+    // ============================================
+    // AUTO-MIGRATE TO RAYDIUM (BOT CONTROLLED)
+    // ============================================
+    async function autoMigrateToRaydium(mint, botWallet, botConnection) {
+        const migrateKey = `migrate-${mint.toString()}`;
 
-        const tx = new Transaction().add(
-            SystemProgram.createAccount({
-                fromPubkey: publicKey,
-                newAccountPubkey: mint,
-                space: mintLen,
-                lamports,
-                programId: TOKEN_2022_PROGRAM_ID,
-            }),
-            createInitializeTransferFeeConfigInstruction(
-                mint,
-                publicKey, // transfer fee authority
-                publicKey, // withdraw authority
-                feeBasisPoints,
-                maxFee,
-                TOKEN_2022_PROGRAM_ID
-            ),
-            createInitializeMintInstruction(
-                mint,
-                decimals,
-                publicKey, // mint authority
-                null,
-                TOKEN_2022_PROGRAM_ID
-            )
-        );
+        return withDeduplication(migrateKey, async () => {
+            try {
+                const provider = new AnchorProvider(botConnection, {
+                    publicKey: botWallet.publicKey,
+                    signTransaction: async (tx) => {
+                        tx.sign(botWallet);
+                        return tx;
+                    },
+                    signAllTransactions: async (txs) => {
+                        txs.forEach(tx => tx.sign(botWallet));
+                        return txs;
+                    }
+                }, {
+                    commitment: 'confirmed',
+                    preflightCommitment: 'confirmed'
+                });
+                const program = new Program(bondingCurveIDL, provider);
 
-        const txid = await sendTx(tx, [mintKeypair]);
-        console.log("🪙 Mint Created:", explorerUrl(txid));
-        return { mint, txid };
-    }
+                const [bondingCurve] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("bonding_curve"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
 
-    // --------------------------------------------------
-    // 2. Add Metadata
-    // --------------------------------------------------
-    async function uploadToPinata(formData) {
-        const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
-        const PINATA_SECRET_KEY = import.meta.env.VITE_PINATA_SECRET_KEY;
-    
-        try {
-            // 1. Upload coin image to Pinata
-            const imageFormData = new FormData();
-            imageFormData.append('file', formData.coinMedia);
-            
-            const imageResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-                method: 'POST',
-                headers: {
-                    'pinata_api_key': PINATA_API_KEY,
-                    'pinata_secret_api_key': PINATA_SECRET_KEY,
-                },
-                body: imageFormData,
-            });
-            
-            const imageData = await imageResponse.json();
-            const imageUri = `https://gateway.pinata.cloud/ipfs/${imageData.IpfsHash}`;
-    
-            // 2. Create metadata JSON
-            const metadata = {
-                name: formData.coinName,
-                symbol: formData.ticker,
-                description: formData.description,
-                image: imageUri,
-                external_url: formData.website || "",
-                attributes: [],
-                properties: {
-                    files: [
-                        {
-                            uri: imageUri,
-                            type: formData.coinMedia.type,
-                        }
-                    ],
-                    category: "image",
-                    creators: []
-                },
-                social: {
-                    twitter: formData.twitter || "",
-                    telegram: formData.telegram || "",
+                const [solVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("sol_vault"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
+
+                // Step 1: Migrate to Raydium (charges 5% fee)
+                console.log("Step 1: Calling migrate_to_raydium...");
+                const migrateIx = await program.methods
+                    .migrateToRaydium()
+                    .accounts({
+                        bondingCurve,
+                        authority: botWallet.publicKey,
+                        platformAuthority: PLATFORM_AUTHORITY,
+                        bondingCurveSolVault: solVault,
+                    })
+                    .instruction();
+
+                const migrateTx = new Transaction().add(migrateIx);
+                const sig = await sendAndConfirmTransactionWithRetry(
+                    botConnection,
+                    migrateTx,
+                    [botWallet],
+                    { commitment: "finalized" }
+                );
+
+                console.log("✅ Migration prepared:", explorerUrl(sig));
+
+                // Refresh curve data
+                const updatedCurveData = await program.account.bondingCurve.fetch(bondingCurve);
+
+                // Step 2: Withdraw tokens and SOL for pool creation
+                console.log("Step 2: Withdrawing tokens and SOL for pool...");
+                const [tokenVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("token_vault"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
+
+                const poolCreatorTokenAccount = await getAssociatedTokenAddress(
+                    mint,
+                    botWallet.publicKey,
+                    false,
+                    TOKEN_2022_PROGRAM_ID
+                );
+
+                const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
+                    botWallet.publicKey,
+                    poolCreatorTokenAccount,
+                    botWallet.publicKey,
+                    mint,
+                    TOKEN_2022_PROGRAM_ID
+                );
+
+                const withdrawIx = await program.methods
+                    .withdrawForPool()
+                    .accounts({
+                        bondingCurve,
+                        bondingCurveTokenVault: tokenVault,
+                        bondingCurveSolVault: solVault,
+                        tokenMint: mint,
+                        destination: botWallet.publicKey,
+                        destinationTokenAccount: poolCreatorTokenAccount,
+                        authority: botWallet.publicKey,
+                        tokenProgram: TOKEN_2022_PROGRAM_ID,
+                        systemProgram: SystemProgram.programId,
+                    })
+                    .instruction();
+
+                const withdrawTx = new Transaction().add(createAtaIx, withdrawIx);
+                const sig1 = await sendAndConfirmTransactionWithRetry(
+                    botConnection,
+                    withdrawTx,
+                    [botWallet],
+                    { commitment: "finalized" }
+                );
+
+                console.log("💰 Tokens & SOL withdrawn:", explorerUrl(sig1));
+
+                // Step 3: Create Raydium Pool
+                console.log("Step 3: Creating Raydium pool...");
+                const raydium = await Raydium.load({
+                    owner: botWallet.publicKey,
+                    signAllTransactions: async (transactions) => {
+                        return Promise.all(transactions.map(tx => {
+                            tx.sign(botWallet);
+                            return tx;
+                        }));
+                    },
+                    connection: botConnection,
+                    cluster: 'devnet',
+                    disableFeatureCheck: true,
+                    disableLoadToken: false,
+                    blockhashCommitment: 'finalized',
+                });
+
+                const mintA = await raydium.token.getTokenInfo(mint);
+                const mintB = await raydium.token.getTokenInfo(SOL_MINT);
+
+                const feeConfigs = await raydium.api.getCpmmConfigs();
+                if (raydium.cluster === 'devnet') {
+                    feeConfigs.forEach((config) => {
+                        config.id = getCpmmPdaAmmConfigId(
+                            DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
+                            config.index
+                        ).publicKey.toBase58();
+                    });
                 }
-            };
-    
-            // 3. Upload metadata JSON to Pinata
-            const metadataResponse = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'pinata_api_key': PINATA_API_KEY,
-                    'pinata_secret_api_key': PINATA_SECRET_KEY,
-                },
-                body: JSON.stringify(metadata),
-            });
-    
-            const metadataData = await metadataResponse.json();
-            const metadataUri = `https://gateway.pinata.cloud/ipfs/${metadataData.IpfsHash}`;
-    
-            return {
-                name: formData.coinName,
-                symbol: formData.ticker,
-                uri: metadataUri,
-            };
-        } catch (error) {
-            console.error('Error uploading to Pinata:', error);
-            throw error;
-        }
+
+                const { execute, extInfo } = await raydium.cpmm.createPool({
+                    programId: DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
+                    poolFeeAccount: DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC,
+                    mintA,
+                    mintB,
+                    mintAAmount: updatedCurveData.migrationTokens,
+                    mintBAmount: updatedCurveData.migrationSol,
+                    startTime: new BN(Math.floor(Date.now() / 1000)),
+                    feeConfig: feeConfigs[0],
+                    ownerInfo: {
+                        useSOLBalance: true,
+                    },
+                    associatedOnly: false,
+                    txVersion: TxVersion.LEGACY,
+                    computeBudgetConfig: {
+                        units: 600000,
+                        microLamports: 200000
+                    },
+                });
+
+                const poolTx = await execute({ sendAndConfirm: true });
+
+                console.log("🏊 Raydium Pool Created:", explorerUrl(poolTx.txId));
+                console.log(`   LP Mint: ${extInfo.address.lpMint}`);
+                console.log(`   Pool Address: ${extInfo.address.ammId?.toString()}`);
+
+                // Step 4: Lock 60% of LP tokens
+                console.log("Step 4: Locking LP tokens...");
+                const lpMint = new PublicKey(extInfo.address.lpMint);
+                await autoLockLPTokens(lpMint, botWallet, botConnection);
+
+                console.log("🎉 MIGRATION COMPLETE!");
+
+                return {
+                    migrateTxid: sig,
+                    withdrawTxid: sig1,
+                    poolTxid: poolTx.txId,
+                    lpMint: extInfo.address.lpMint,
+                    poolAddress: extInfo.address.ammId?.toString(),
+                };
+            } catch (error) {
+                console.error("❌ Auto-migration failed:", error);
+                throw error;
+            }
+        })();
     }
 
+    // ============================================
+    // AUTO-LOCK LP TOKENS (BOT CONTROLLED)
+    // ============================================
+    async function autoLockLPTokens(lpMint, botWallet, botConnection) {
+        const lockKey = `lock-${lpMint.toString()}`;
+
+        return withDeduplication(lockKey, async () => {
+            try {
+                console.log("Waiting for LP tokens to arrive...");
+
+                // Wait for pool creation to fully settle
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                const provider = new AnchorProvider(botConnection, {
+                    publicKey: botWallet.publicKey,
+                    signTransaction: async (tx) => {
+                        tx.sign(botWallet);
+                        return tx;
+                    },
+                    signAllTransactions: async (txs) => {
+                        txs.forEach(tx => tx.sign(botWallet));
+                        return txs;
+                    }
+                }, {
+                    commitment: 'confirmed'
+                });
+                const lpLockProgram = new Program(lpLockIDL, provider);
+
+                const [lockInfo] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("lock"), lpMint.toBuffer()],
+                    LP_LOCK_PROGRAM_ID
+                );
+
+                const [lockVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("lock_vault"), lpMint.toBuffer()],
+                    LP_LOCK_PROGRAM_ID
+                );
+
+                // Get mint info to determine token program
+                const mintInfo = await getMint(botConnection, lpMint, 'confirmed');
+                const tokenProgramId = mintInfo.tlvData.length > 0 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
+
+                console.log(`LP Mint: ${lpMint.toString()}`);
+                console.log(`Token Program: ${tokenProgramId.toString()}`);
+
+                const fromTokenAccount = await getAssociatedTokenAddress(
+                    lpMint,
+                    botWallet.publicKey,
+                    false,
+                    tokenProgramId
+                );
+
+                console.log(`Bot's LP Token Account: ${fromTokenAccount.toString()}`);
+
+                // Verify the account exists and has a balance
+                let retries = 5;
+                let lpBalance;
+
+                while (retries > 0) {
+                    try {
+                        lpBalance = await botConnection.getTokenAccountBalance(fromTokenAccount, 'confirmed');
+
+                        if (lpBalance && lpBalance.value.amount !== '0') {
+                            console.log(`LP Balance found: ${lpBalance.value.amount}`);
+                            break;
+                        }
+
+                        console.log(`Retry ${6 - retries}: No balance yet, waiting...`);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        retries--;
+                    } catch (error) {
+                        console.log(`Retry ${6 - retries}: Account not found, waiting...`);
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        retries--;
+                    }
+                }
+
+                if (!lpBalance || lpBalance.value.amount === '0') {
+                    throw new Error("LP tokens not found in bot wallet after multiple retries");
+                }
+
+                // Lock 60% of LP tokens
+                const lockAmount = new BN(lpBalance.value.amount)
+                    .mul(new BN(60))
+                    .div(new BN(100));
+
+                console.log(`Locking ${lockAmount.toString()} LP tokens (60% of ${lpBalance.value.amount})`);
+
+                // Create ATA instruction (idempotent, safe to call even if exists)
+                const userAtaIx = createAssociatedTokenAccountIdempotentInstruction(
+                    botWallet.publicKey,
+                    fromTokenAccount,
+                    botWallet.publicKey,
+                    lpMint,
+                    tokenProgramId
+                );
+
+                const ixInitialize = await lpLockProgram.methods
+                    .initializeLock(
+                        lpMint,
+                        lockAmount,
+                        new BN(300), // 300+ holders
+                        new BN(25000), // $25,000 volume
+                        PLATFORM_AUTHORITY // oracle authority
+                    )
+                    .accounts({
+                        lockInfo,
+                        authority: botWallet.publicKey,
+                        fromTokenAccount,
+                        tokenMint: lpMint,
+                        lockTokenAccount: lockVault,
+                        tokenProgram: tokenProgramId,
+                        systemProgram: SystemProgram.programId,
+                        rent: SYSVAR_RENT_PUBKEY,
+                    })
+                    .instruction();
+
+                const tx = new Transaction().add(userAtaIx, ixInitialize);
+                const txid = await sendAndConfirmTransactionWithRetry(
+                    botConnection,
+                    tx,
+                    [botWallet],
+                    { commitment: "finalized" }
+                );
+
+                console.log("🔒 LP Tokens Locked (60%):", explorerUrl(txid));
+                console.log(`   Amount: ${lockAmount.toString()} LP tokens`);
+                console.log(`   Lock Info PDA: ${lockInfo.toString()}`);
+                console.log(`   Lock Vault: ${lockVault.toString()}`);
+
+                return { txid, lockInfo, lockVault };
+            } catch (error) {
+                console.error("Error locking LP tokens:", error);
+
+                // Log more details for debugging
+                if (error.message?.includes('TokenAccountNotFoundError')) {
+                    console.error("LP token account was not created. This might be a timing issue or the pool creation failed.");
+                }
+
+                throw error;
+            }
+        })();
+    }
+
+    // ============================================
+    // 1. CREATE TOKEN MINT
+    // ============================================
+    async function createTokenMint(formData) {
+        const mintKey = `create-mint-${Date.now()}`;
+
+        return withDeduplication(mintKey, async () => {
+            const mintKeypair = Keypair.generate();
+            const mint = mintKeypair.publicKey;
+
+            const extensions = [ExtensionType.TransferFeeConfig];
+            const mintLen = getMintLen(extensions);
+            const lamports = await connection.getMinimumBalanceForRentExemption(mintLen);
+
+            const feeBasisPoints = 75;
+            const maxFee = BigInt(9 * Math.pow(10, BONDING_CURVE_CONFIG.DECIMALS));
+
+            const tx = new Transaction().add(
+                SystemProgram.createAccount({
+                    fromPubkey: publicKey,
+                    newAccountPubkey: mint,
+                    space: mintLen,
+                    lamports,
+                    programId: TOKEN_2022_PROGRAM_ID,
+                }),
+                createInitializeTransferFeeConfigInstruction(
+                    mint,
+                    publicKey,
+                    publicKey,
+                    feeBasisPoints,
+                    maxFee,
+                    TOKEN_2022_PROGRAM_ID
+                ),
+                createInitializeMintInstruction(
+                    mint,
+                    BONDING_CURVE_CONFIG.DECIMALS,
+                    publicKey,
+                    null,
+                    TOKEN_2022_PROGRAM_ID
+                )
+            );
+
+            const txid = await sendTx(tx, [mintKeypair]);
+            console.log("🪙 Token Mint Created:", explorerUrl(txid));
+
+            return { mint, mintKeypair, txid };
+        })();
+    }
+
+    // ============================================
+    // 2. ADD METADATA
+    // ============================================
     async function addMetadata(mintKeypair, formData) {
-        const tokenMetadata = await uploadToPinata(formData);
+        const metadataKey = `metadata-${mintKeypair.publicKey.toString()}`;
 
-        const umiMintSigner = createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(mintKeypair.secretKey));
+        return withDeduplication(metadataKey, async () => {
+            const tokenMetadata = await uploadToPinata(formData);
+            const umiMintSigner = createSignerFromKeypair(
+                umi,
+                umi.eddsa.createKeypairFromSecretKey(mintKeypair.secretKey)
+            );
 
-        const metadataTx = await createV1(umi, {
-            mint: umiMintSigner,
-            authority: umi.identity,        // wallet acts as authority
-            payer: umi.identity,            // wallet pays fees
-            updateAuthority: umi.identity,  // wallet remains update authority
-            name: tokenMetadata.name,
-            symbol: tokenMetadata.symbol,
-            uri: tokenMetadata.uri,
-            sellerFeeBasisPoints: feeBasisPoints,
-            tokenStandard: TokenStandard.Fungible,
-        }).sendAndConfirm(umi);
+            const metadataTx = await createV1(umi, {
+                mint: umiMintSigner,
+                authority: umi.identity,
+                payer: umi.identity,
+                updateAuthority: umi.identity,
+                name: tokenMetadata.name,
+                symbol: tokenMetadata.symbol,
+                uri: tokenMetadata.uri,
+                sellerFeeBasisPoints: 75,
+                tokenStandard: TokenStandard.Fungible,
+            }).sendAndConfirm(umi);
 
-        const metadataSig = base58.deserialize(metadataTx.signature);
-        console.log("🧾 Metadata Added:", explorerUrl(metadataSig[0]));
-        return metadataSig[0];
+            const metadataSig = base58.deserialize(metadataTx.signature);
+            console.log("🧾 Metadata Added:", explorerUrl(metadataSig[0]));
+            return metadataSig[0];
+        })();
     }
 
-    // --------------------------------------------------
-    // 3. Mint Tokens
-    // --------------------------------------------------
-    async function mintTokens(mint) {
-        const totalSupply = new BN(STANDARD_TOKEN_CONFIG.TOTAL_SUPPLY)
-            .mul(new BN(10).pow(new BN(STANDARD_TOKEN_CONFIG.DECIMALS)));
-        
-        const ata = getAssociatedTokenAddressSync(
-            mint,
-            wallet.publicKey,
-            false,
-            TOKEN_2022_PROGRAM_ID
-        );
-    
-        const transaction = new Transaction().add(
-            // Create ATA
-            createAssociatedTokenAccountIdempotentInstruction(
-                wallet.publicKey,
-                ata,
-                wallet.publicKey,
+    // ============================================
+    // 3. MINT TOKENS TO WALLET
+    // ============================================
+    async function mintTokensToWallet(mint) {
+        const mintTokensKey = `mint-tokens-${mint.toString()}`;
+
+        return withDeduplication(mintTokensKey, async () => {
+            const totalSupply = new BN(BONDING_CURVE_CONFIG.TOTAL_SUPPLY)
+                .mul(new BN(10).pow(new BN(BONDING_CURVE_CONFIG.DECIMALS)));
+
+            const creatorTokenAccount = await getAssociatedTokenAddress(
+                mint,
+                publicKey,
+                false,
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
+                publicKey,
+                creatorTokenAccount,
+                publicKey,
                 mint,
                 TOKEN_2022_PROGRAM_ID
-            ),
-    
-            // Mint TOTAL supply to creator
-            createMintToInstruction(
+            );
+
+            const mintToInstruction = createMintToInstruction(
                 mint,
-                ata,
-                wallet.publicKey,
-                totalSupply, // Mint 1 billion tokens
+                creatorTokenAccount,
+                publicKey,
+                totalSupply.toString(),
                 [],
                 TOKEN_2022_PROGRAM_ID
-            ),
-    
-            // Revoke mint authority
-            createSetAuthorityInstruction(
+            );
+
+            const tx = new Transaction().add(createAtaIx, mintToInstruction);
+            const txid = await sendTx(tx);
+
+            console.log("🪙 Tokens Minted to Creator:", explorerUrl(txid));
+
+            return { creatorTokenAccount, txid };
+        })();
+    }
+
+    // ============================================
+    // 4. INITIALIZE BONDING CURVE & TRANSFER TOKENS
+    // ============================================
+    async function initializeBondingCurve(mint, creatorTokenAccount) {
+        const initKey = `init-curve-${mint.toString()}`;
+
+        return withDeduplication(initKey, async () => {
+            const provider = new AnchorProvider(
+                connection,
+                { publicKey, signTransaction: async tx => tx },
+                {}
+            );
+            const program = new Program(bondingCurveIDL, provider);
+
+            const [bondingCurve] = PublicKey.findProgramAddressSync(
+                [Buffer.from("bonding_curve"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const [tokenVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("token_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const [solVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("sol_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const totalSupply = new BN(BONDING_CURVE_CONFIG.TOTAL_SUPPLY)
+                .mul(new BN(10).pow(new BN(BONDING_CURVE_CONFIG.DECIMALS)));
+
+            const virtualTokenReserves = new BN(BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES)
+                .mul(new BN(1_000_000_000));
+
+            const virtualSolReserves = new BN(BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES)
+                .mul(new BN(1_000_000_000));
+
+            const migrationThreshold = new BN(BONDING_CURVE_CONFIG.MIGRATION_THRESHOLD)
+                .mul(new BN(1_000_000_000));
+
+            const initializeIx = await program.methods
+                .initializeBondingCurve(
+                    virtualTokenReserves,
+                    virtualSolReserves,
+                    migrationThreshold,
+                    totalSupply
+                )
+                .accounts({
+                    bondingCurve,
+                    tokenVault,
+                    solVault,
+                    tokenMint: mint,
+                    creator: publicKey,
+                    tokenProgram: TOKEN_2022_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                    rent: SYSVAR_RENT_PUBKEY,
+                })
+                .instruction();
+
+            const transferIx = createTransferCheckedInstruction(
+                creatorTokenAccount,
                 mint,
-                wallet.publicKey,
+                tokenVault,
+                publicKey,
+                totalSupply.toString(),
+                BONDING_CURVE_CONFIG.DECIMALS,
+                [],
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const revokeIx = createSetAuthorityInstruction(
+                mint,
+                publicKey,
                 AuthorityType.MintTokens,
                 null,
                 [],
                 TOKEN_2022_PROGRAM_ID
-            ),
-        );
-    
-        const txid = await sendTx(transaction);
-        console.log("💰 Minted:", STANDARD_TOKEN_CONFIG.TOTAL_SUPPLY.toLocaleString(), "tokens");
-        console.log("🔒 Mint authority revoked");
-        
-        return { ata, txid };
+            );
+
+            const tx = new Transaction().add(initializeIx, transferIx, revokeIx);
+            const txid = await sendTx(tx);
+
+            console.log("📈 Bonding Curve Initialized:", explorerUrl(txid));
+
+            return { bondingCurve, tokenVault, solVault, txid };
+        })();
     }
 
-    // --------------------------------------------------
-    // 4. Transfer Tokens (to Platform)
-    // --------------------------------------------------
-    async function transferTokens(mint, sourceAccount) {
-        const destinationPublicKey = PLATFORM_AUTHORITY;
-        const destinationAccount = await createAssociatedTokenAccountIdempotent(
-            connection,
-            publicKey, // payer
-            mint,
-            destinationPublicKey,
-            {},
-            TOKEN_2022_PROGRAM_ID
-        );
+    // ============================================
+    // 5. BUY TOKENS ON CURVE (WITH AUTO-MIGRATION CHECK)
+    // ============================================
+    async function buyTokens(mint, solAmount, slippageBps = 100) {
+        const buyKey = `buy-${mint.toString()}-${Date.now()}`;
 
-        const transferAmount = BigInt(tokensToSend * 10 ** decimals);
+        return withDeduplication(buyKey, async () => {
+            const provider = new AnchorProvider(
+                connection,
+                { publicKey, signTransaction: async tx => tx },
+                {}
+            );
+            const program = new Program(bondingCurveIDL, provider);
 
-        const transferInstruction = await createTransferCheckedWithTransferHookInstruction(
-            connection,
-            sourceAccount,
-            mint,
-            destinationAccount,
-            publicKey, // authority
-            transferAmount,
-            decimals,
-            [],
-            "confirmed",
-            TOKEN_2022_PROGRAM_ID
-        );
+            const [bondingCurve] = PublicKey.findProgramAddressSync(
+                [Buffer.from("bonding_curve"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
 
-        const tx = new Transaction().add(transferInstruction);
-        const txid = await sendTx(tx);
-        console.log("📤 Tokens Transferred:", explorerUrl(txid));
-        return { destinationAccount, txid };
+            const [tokenVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("token_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const [solVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("sol_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const buyerTokenAccount = await getAssociatedTokenAddress(
+                mint,
+                publicKey,
+                false,
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const solAmountBN = new BN(solAmount * 1e9);
+            const curveData = await program.account.bondingCurve.fetch(bondingCurve);
+            const tokensOut = calculateTokensOut(
+                solAmountBN,
+                curveData.virtualSolReserves.add(curveData.realSolReserves),
+                curveData.virtualTokenReserves.add(curveData.realTokenReserves)
+            );
+            const minTokensOut = tokensOut.mul(new BN(10000 - slippageBps)).div(new BN(10000));
+
+            const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
+                publicKey,
+                buyerTokenAccount,
+                publicKey,
+                mint,
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const buyIx = await program.methods
+                .buy(solAmountBN, minTokensOut)
+                .accounts({
+                    bondingCurve,
+                    buyer: publicKey,
+                    buyerTokenAccount,
+                    bondingCurveTokenVault: tokenVault,
+                    bondingCurveSolVault: solVault,
+                    tokenMint: mint,
+                    tokenProgram: TOKEN_2022_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .instruction();
+
+            const tx = new Transaction().add(createAtaIx, buyIx);
+            const txid = await sendTx(tx);
+
+            console.log("💰 Bought tokens:", explorerUrl(txid));
+
+            // // 🔥 CHECK FOR AUTO-MIGRATION AFTER BUY (with delay)
+            // setTimeout(async () => {
+            //     try {
+            //         const migrated = await checkAndAutoMigrate(mint);
+            //         if (migrated) {
+            //             console.log("🎉 Token automatically migrated to Raydium!");
+            //         }
+            //     } catch (error) {
+            //         console.error("Auto-migration check failed:", error);
+            //     }
+            // }, 5000); // Wait 5 seconds for transaction to fully confirm
+
+            return { txid, tokensOut };
+        })();
     }
 
-    // --------------------------------------------------
-    // 5. Collect Transfer Fees
-    // --------------------------------------------------
-    async function collectFees(mint) {
-        const recipientTokenAccount = await getAssociatedTokenAddress(
-            mint,
-            publicKey, // recipient
-            false,
-            TOKEN_2022_PROGRAM_ID
-        );
+    // ============================================
+    // 6. SELL TOKENS ON CURVE
+    // ============================================
+    async function sellTokens(mint, tokenAmount, slippageBps = 100) {
+        const sellKey = `sell-${mint.toString()}-${Date.now()}`;
 
-        const txid = await withdrawWithheldTokensFromMint(
-            connection,
-            publicKey, // payer
-            mint,
-            recipientTokenAccount,
-            publicKey, // authority
-            [],
-            undefined,
-            TOKEN_2022_PROGRAM_ID
-        );
+        return withDeduplication(sellKey, async () => {
+            const tokenAmountBN = new BN(Math.floor(tokenAmount * 1e9).toString());
 
-        console.log("💸 Creator Fees Withdrawn:", explorerUrl(txid));
-        return txid;
-    }
+            const provider = new AnchorProvider(
+                connection,
+                { publicKey, signTransaction: async tx => tx },
+                {}
+            );
 
-    // --------------------------------------------------
-    // 6. Create Raydium Pool with Platform Fee Logic
-    // --------------------------------------------------
-    async function validatePoolCreation(wallet) {
-        const requiredSOL = STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.REQUIRED_SOL;
-        const balance = await connection.getBalance(wallet.publicKey);
-        const balanceSOL = balance / 1e9;
-        
-        // Add buffer for transaction fees
-        const requiredWithBuffer = requiredSOL + 0.1;
-        
-        if (balanceSOL < requiredWithBuffer) {
+            const program = new Program(bondingCurveIDL, provider);
+
+            const [bondingCurve] = PublicKey.findProgramAddressSync(
+                [Buffer.from("bonding_curve"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+            const [tokenVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("token_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+            const [solVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("sol_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const sellerTokenAccount = await getAssociatedTokenAddress(
+                mint,
+                publicKey,
+                false,
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const curveData = await program.account.bondingCurve.fetch(bondingCurve);
+
+            const totalTokenReserves = curveData.virtualTokenReserves.add(curveData.realTokenReserves);
+            const totalSolReserves = curveData.virtualSolReserves.add(curveData.realSolReserves);
+
+            if (totalTokenReserves.lte(new BN(0)) || totalSolReserves.lte(new BN(0))) {
+                throw new Error("Invalid bonding curve state: zero reserves");
+            }
+
+            const solOut = calculateSolOut(tokenAmountBN, totalTokenReserves, totalSolReserves);
+
+            if (!solOut || solOut.lte(new BN(0))) {
+                throw new Error("Invalid output amount");
+            }
+
+            const minSolOut = solOut.mul(new BN(10000 - slippageBps)).div(new BN(10000));
+
+            const sellIx = await program.methods
+                .sell(tokenAmountBN, minSolOut)
+                .accounts({
+                    bondingCurve,
+                    buyer: publicKey,
+                    buyerTokenAccount: sellerTokenAccount,
+                    bondingCurveTokenVault: tokenVault,
+                    bondingCurveSolVault: solVault,
+                    tokenMint: mint,
+                    tokenProgram: TOKEN_2022_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .instruction();
+
+            const tx = new Transaction().add(sellIx);
+            const txid = await sendTx(tx);
+
+            console.log("📤 Sold tokens:", explorerUrl(txid));
             return {
-                valid: false,
-                message: `Insufficient balance. Required: ${requiredWithBuffer} SOL, Current: ${balanceSOL.toFixed(2)} SOL`,
-                required: requiredWithBuffer,
-                current: balanceSOL,
+                txid,
+                solOut: parseFloat(solOut.toString()) / 1e9,
+                minSolOut: parseFloat(minSolOut.toString()) / 1e9,
+            };
+        })();
+    }
+
+    // ============================================
+    // 9. GET BONDING CURVE INFO
+    // ============================================
+    async function getBondingCurveInfo(mint) {
+        try {
+            const infoConnection = new Connection(RPC_URL, 'confirmed');
+            const provider = new AnchorProvider(infoConnection, {}, {});
+            const program = new Program(bondingCurveIDL, provider);
+
+            const [bondingCurve] = PublicKey.findProgramAddressSync(
+                [Buffer.from("bonding_curve"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
+
+            const curveData = await program.account.bondingCurve.fetch(bondingCurve);
+
+            // Convert BN values to numbers with proper decimal handling
+            const bnToNumber = (bn, decimals = 9) => {
+                const value = parseFloat(bn.toString()) / Math.pow(10, decimals);
+                return value;
+            };
+
+            const virtualSolReserves = new BN(curveData.virtualSolReserves);
+            const realSolReserves = new BN(curveData.realSolReserves);
+            const virtualTokenReserves = new BN(curveData.virtualTokenReserves);
+            const realTokenReserves = new BN(curveData.realTokenReserves);
+            const totalSupply = new BN(curveData.totalSupply);
+            const migrationThreshold = new BN(curveData.migrationThreshold);
+
+            const SOL_DECIMALS = 9;
+            const TOKEN_DECIMALS = 9;
+
+            const totalSolReserves = virtualSolReserves.add(realSolReserves);
+            const totalTokenReserves = virtualTokenReserves.add(realTokenReserves);
+
+            const totalSolReservesNum = bnToNumber(totalSolReserves, SOL_DECIMALS);
+            const totalTokenReservesNum = bnToNumber(totalTokenReserves, TOKEN_DECIMALS);
+            const realSolReservesNum = bnToNumber(realSolReserves, SOL_DECIMALS);
+            const migrationThresholdNum = bnToNumber(migrationThreshold, SOL_DECIMALS);
+            const totalSupplyNum = bnToNumber(totalSupply, TOKEN_DECIMALS);
+
+            // Calculate price per token in SOL
+            const priceInSol = totalTokenReservesNum > 0 ? totalSolReservesNum / totalTokenReservesNum : 0;
+
+            // Convert SOL price to USD
+            const SOL_TO_USD = await fetchSolPrice();
+            const priceInUsd = priceInSol * SOL_TO_USD;
+
+            const marketCap = priceInUsd * totalSupplyNum;
+
+            const progress = migrationThresholdNum > 0
+                ? (realSolReservesNum / migrationThresholdNum) * 100
+                : 0;
+
+            const result = {
+                tokenMint: curveData.tokenMint.toString(),
+                creator: curveData.creator.toString(),
+                realSolReserves: realSolReservesNum,
+                realTokenReserves: bnToNumber(realTokenReserves, TOKEN_DECIMALS),
+                virtualSolReserves: bnToNumber(virtualSolReserves, SOL_DECIMALS),
+                virtualTokenReserves: bnToNumber(virtualTokenReserves, TOKEN_DECIMALS),
+                totalSolReserves: totalSolReservesNum,
+                totalTokenReserves: totalTokenReservesNum,
+                migrationThreshold: migrationThresholdNum,
+                isMigrated: curveData.isMigrated,
+                progress: Math.min(progress, 100),
+                marketCap,
+                totalSupply: totalSupplyNum,
+                price: priceInUsd,
+                priceInSol,
+            };
+
+            return result;
+
+        } catch (error) {
+            console.error(`Error fetching bonding curve data for mint ${mint.toString()}:`, error);
+            throw error;
+        }
+    }
+
+    // Helper function to fetch SOL price
+    async function fetchSolPrice() {
+        try {
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+            const data = await response.json();
+            return data.solana.usd;
+        } catch (error) {
+            console.error('Error fetching SOL price:', error);
+            return 186.14; // fallback price
+        }
+    }
+
+    // ============================================
+    // 10. GET PRICE QUOTE
+    // ============================================
+    async function getPriceQuote(mint, solAmount, isBuy) {
+        const curveInfo = await getBondingCurveInfo(mint);
+
+        const solAmountBN = new BN(Math.floor(solAmount * 1e9).toString());
+        const solReserves = new BN(Math.floor(curveInfo.totalSolReserves * 1e9).toString());
+        const tokenReserves = new BN(Math.floor(curveInfo.totalTokenReserves * 1e9).toString());
+
+        if (isBuy) {
+            const tokensOut = calculateTokensOut(solAmountBN, solReserves, tokenReserves);
+
+            const pricePerToken = solAmountBN
+                .mul(ONE_E9)
+                .div(tokensOut)
+                .toString();
+
+            return {
+                input: solAmount,
+                output: parseFloat(tokensOut.toString()) / 1e9,
+                pricePerToken: parseFloat(pricePerToken) / 1e9,
+                priceImpact: calculatePriceImpact(solAmountBN, solReserves, tokenReserves, true),
+            };
+        } else {
+            const tokenAmountBN = new BN(Math.floor(solAmount * 1e9).toString());
+            const solOut = calculateSolOut(tokenAmountBN, tokenReserves, solReserves);
+
+            const pricePerToken = solOut
+                .mul(ONE_E9)
+                .div(tokenAmountBN)
+                .toString();
+
+            return {
+                input: solAmount,
+                output: parseFloat(solOut.toString()) / 1e9,
+                pricePerToken: parseFloat(pricePerToken) / 1e9,
+                priceImpact: calculatePriceImpact(tokenAmountBN, tokenReserves, solReserves, false),
             };
         }
-        
-        return {
-            valid: true,
-            message: "Balance sufficient for pool creation",
-            required: requiredSOL,
-            current: balanceSOL,
-        };
     }
 
-    async function createRaydiumPoolWithFee(mint) {
-        // ============================================
-        // 1. VALIDATE USER HAS ENOUGH SOL
-        // ============================================
-        // const requiredSOL = STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.REQUIRED_SOL;
-        // const userBalance = await connection.getBalance(wallet.publicKey);
-        // const requiredLamports = requiredSOL * 1e9;
-        
-        // if (userBalance < requiredLamports) {
-        //     throw new Error(
-        //         `Insufficient balance. You need ${requiredSOL} SOL to create a pool. ` +
-        //         `Current balance: ${(userBalance / 1e9).toFixed(2)} SOL`
-        //     );
-        // }
-    
-        // ============================================
-        // 2. INITIALIZE RAYDIUM
-        // ============================================
-        const raydium = await Raydium.load({
-            owner: wallet.publicKey,
-            signAllTransactions: async (transactions) => {
-                return wallet.signAllTransactions(transactions);
-            },
-            connection: connection,
-            cluster: 'devnet',
-            disableFeatureCheck: true,
-            disableLoadToken: false,
-            blockhashCommitment: 'finalized',
-        });
-    
-        // ============================================
-        // 3. GET TOKEN INFO
-        // ============================================
-        const mintA = await raydium.token.getTokenInfo(mint);
-        const mintB = await raydium.token.getTokenInfo(SOL_MINT);
-    
-        // ============================================
-        // 4. GET FEE CONFIGS
-        // ============================================
-        const feeConfigs = await raydium.api.getCpmmConfigs();
-        if (raydium.cluster === 'devnet') {
-            feeConfigs.forEach((config) => {
-                config.id = getCpmmPdaAmmConfigId(
-                    DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM, 
-                    config.index
-                ).publicKey.toBase58();
-            });
-        }
-    
-        console.log(`Creating standardized pool for ${mintA.symbol}...`);
-    
-        // ============================================
-        // 5. FIXED POOL AMOUNTS (NOT USER-CONTROLLED)
-        // ============================================
-        const tokenAmount = new BN(
-            (STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.TOKEN_AMOUNT * 1e9).toString()
-          );
-          
-          const solAmount = new BN(
-            Math.round(STANDARD_TOKEN_CONFIG.INITIAL_LIQUIDITY.REQUIRED_SOL * 1e9).toString()
-          );
-    
-        // ============================================
-        // 6. CREATE POOL WITH FIXED AMOUNTS
-        // ============================================
-        const { execute, extInfo, transaction } = await raydium.cpmm.createPool({
-            programId: DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_PROGRAM,
-            poolFeeAccount: DEVNET_PROGRAM_ID.CREATE_CPMM_POOL_FEE_ACC,
-            mintA,
-            mintB,
-            mintAAmount: tokenAmount, // FIXED: 800M tokens
-            mintBAmount: solAmount,   // FIXED: 8 SOL
-            startTime: new BN(Math.floor(Date.now() / 1000)),
-            feeConfig: feeConfigs[0],
-            ownerInfo: {
-                useSOLBalance: true,
-            },
-            associatedOnly: false,
-            txVersion: TxVersion.LEGACY,
-            computeBudgetConfig: { 
-                units: 400000, 
-                microLamports: 100000 
-            },
-        });
-    
-        // ============================================
-        // 7. PLATFORM FEE (IF NO NFT)
-        // ============================================
-        const hasNFT = await walletHoldsNFT(wallet.publicKey, PLATFORM_NFT_MINT);
-        let platformFee = 0;
-    
-        if (!hasNFT) {
-            // Platform fee is a percentage of the SOL going into the pool
-            const totalPoolValueLamports = solAmount.toNumber();
-            platformFee = Math.floor(totalPoolValueLamports * 0.05); // 5% fee
-            
-            const feeInstruction = SystemProgram.transfer({
-                fromPubkey: wallet.publicKey,
-                toPubkey: new PublicKey(PLATFORM_AUTHORITY),
-                lamports: platformFee,
-            });
-            
-            transaction.add(feeInstruction);
-            console.log(`💸 Platform fee: ${platformFee / 1e9} SOL`);
-        } else {
-            console.log("🎟️ NFT holder - no platform fee");
-        }
-    
-        // ============================================
-        // 8. EXECUTE TRANSACTION
-        // ============================================
-        const poolTx = await execute({ sendAndConfirm: true });
-    
-        return { 
-            txId: poolTx.txId, 
-            lpMint: extInfo.address.lpMint, 
-            poolAddress: extInfo.address.ammId?.toString(),
-            platformFee 
-        };
-    }    
+    // ============================================
+    // HELPER: Upload to Pinata
+    // ============================================
+    async function uploadToPinata(formData) {
+        const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
+        const PINATA_SECRET_KEY = import.meta.env.VITE_PINATA_SECRET_KEY;
 
-    // --------------------------------------------------
-    // 7. Burn NOOT Tokens (Jupiter Swap + Burn)
-    // --------------------------------------------------
-    async function burnNootTokens(platformFee, solMint = 'So11111111111111111111111111111111111111112') {
-        console.log('📊 Getting swap quote...');
-        const quoteResponse = await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${solMint}&outputMint=${NOOT_MINT}&amount=${platformFee}&slippageBps=${SLIPPAGE_BPS}`
-        );
+        const imageFormData = new FormData();
+        imageFormData.append('file', formData.coinMedia);
 
-        if (!quoteResponse.ok) {
-            throw new Error(`Quote API error: ${quoteResponse.status}`);
-        }
-
-        const quote = await quoteResponse.json();
-
-        const balance = await connection.getBalance(publicKey);
-        const balanceInSol = balance / 1e9;
-        const amountInSol = parseFloat(platformFee) / 1e9;
-        const requiredBalance = amountInSol + 0.002;
-
-        console.log(`Current SOL balance: ${balanceInSol} SOL`);
-
-        if (balanceInSol < requiredBalance) {
-            throw new Error(`Insufficient balance. Need at least ${requiredBalance} SOL, have ${balanceInSol} SOL`);
-        }
-
-        const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+        const imageResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                quoteResponse: quote,
-                userPublicKey: publicKey.toString(),
-                wrapAndUnwrapSol: true,
-            })
+            headers: {
+                'pinata_api_key': PINATA_API_KEY,
+                'pinata_secret_api_key': PINATA_SECRET_KEY,
+            },
+            body: imageFormData,
         });
 
-        const { swapTransaction } = await swapResponse.json();
+        const imageData = await imageResponse.json();
+        const imageUri = `https://gateway.pinata.cloud/ipfs/${imageData.IpfsHash}`;
 
-        console.log('🔐 Signing and sending swap transaction...');
-        const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-        const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+        const metadata = {
+            name: formData.coinName,
+            symbol: formData.ticker,
+            description: formData.description,
+            image: imageUri,
+            external_url: formData.website || "",
+            social: {
+                twitter: formData.twitter || "",
+                telegram: formData.telegram || "",
+            }
+        };
 
-        // Sign the transaction using the wallet adapter
-        const signedTransaction = await signTransaction(transaction);
-        const swapTxid = await connection.sendRawTransaction(signedTransaction.serialize(), {
-            skipPreflight: false,
-            maxRetries: 2
+        const metadataResponse = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'pinata_api_key': PINATA_API_KEY,
+                'pinata_secret_api_key': PINATA_SECRET_KEY,
+            },
+            body: JSON.stringify(metadata),
         });
 
-        await connection.confirmTransaction(swapTxid, 'confirmed');
-        console.log(`✅ Swap successful: ${explorerUrl(swapTxid)}`);
+        const metadataData = await metadataResponse.json();
+        const metadataUri = `https://gateway.pinata.cloud/ipfs/${metadataData.IpfsHash}`;
 
-        console.log('⏳ Waiting for token account update...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
-
-        const nootMint = new PublicKey(NOOT_MINT);
-        const tokenAccount = await getAssociatedTokenAddress(
-            nootMint,
-            publicKey
-        );
-
-        const tokenBalance = await connection.getTokenAccountBalance(tokenAccount);
-        const actualNootAmount = tokenBalance.value.amount;
-
-        if (actualNootAmount === '0') {
-            throw new Error('No NOOT tokens found to burn');
-        }
-
-        const burnInstruction = createBurnInstruction(
-            tokenAccount,
-            nootMint,
-            publicKey,
-            BigInt(actualNootAmount),
-            [],
-            TOKEN_2022_PROGRAM_ID
-        );
-
-        const burnTransaction = new Transaction().add(burnInstruction);
-        const burnTxid = await sendTx(burnTransaction);
-
-        console.log(`🔥 Burn successful: ${explorerUrl(burnTxid)}`);
-        console.log(`💰 Burned ${parseFloat(actualNootAmount) / 1e6} NOOT tokens`);
-        return burnTxid;
+        return {
+            name: formData.coinName,
+            symbol: formData.ticker,
+            uri: metadataUri,
+        };
     }
 
-    // --------------------------------------------------
-    // 8. Initialize LP Lock
-    // --------------------------------------------------
-    async function initializeLPLock(lpMint) {
-        const provider = new AnchorProvider(connection, { publicKey, signTransaction: async tx => tx }, {});
-        const lpLockProgram = new Program(lpLockIDL, provider);
-
-        const [lockInfo] = PublicKey.findProgramAddressSync(
-            [Buffer.from("lock"), lpMint.toBuffer()],
-            LP_LOCK_PROGRAM_ID
-        );
-        const [lockVault] = PublicKey.findProgramAddressSync(
-            [Buffer.from("lock_vault"), lpMint.toBuffer()],
-            LP_LOCK_PROGRAM_ID
-        );
-
-        const mintInfo = await getMint(connection, lpMint);
-        const tokenProgramId = mintInfo.tlvData.length > 0 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
-
-        const fromTokenAccount = await getAssociatedTokenAddress(
-            lpMint,
-            publicKey,
-            false,
-            tokenProgramId,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const lpTokenAccount = await getOrCreateAssociatedTokenAccount(
-            connection,
-            publicKey,
-            lpMint,
-            publicKey,
-            false,
-            'confirmed',
-            undefined,
-            tokenProgramId
-        );
-
-        const lockAmount = new BN(lpTokenAccount.amount.toString())
-            .mul(new BN(60))
-            .div(new BN(100));
-
-        const userAtaIx = createAssociatedTokenAccountIdempotentInstruction(
-            publicKey,
-            fromTokenAccount,
-            publicKey,
-            lpMint,
-            tokenProgramId,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-        );
-
-        const ixInitialize = await lpLockProgram.methods
-            .initializeLock(
-                lpMint,
-                lockAmount,
-                new BN(300), // holder_threshold
-                new BN(25000), // volume_threshold_usd
-                PLATFORM_AUTHORITY // oracle_authority
-            )
-            .accounts({
-                lockInfo,
-                authority: publicKey,
-                fromTokenAccount,
-                tokenMint: lpMint,
-                lockTokenAccount: lockVault,
-                tokenProgram: tokenProgramId,
-                systemProgram: SystemProgram.programId,
-                rent: SYSVAR_RENT_PUBKEY,
-            })
-            .instruction();
-
-        console.log(`🔒 Locking ${lockAmount.toString()} LP tokens (60% of balance)`);
-        console.log(`📊 Conditions: 300+ holders, $25,000+ volume`);
-        console.log(`🔑 Oracle authority (platform): ${PLATFORM_AUTHORITY.toString()}`);
-
-        const tx = new Transaction().add(userAtaIx, ixInitialize);
-        const txid = await sendTx(tx);
-
-        console.log("🔒 LP Tokens Locked:", explorerUrl(txid));
-        console.log(`Lock Info Address: ${lockInfo.toString()}`);
-        console.log(`Lock Vault Address: ${lockVault.toString()}`);
-
-        return { txid, lockInfo, lockVault };
-    }
-
-    // --------------------------------------------------
-    // Return all actions
-    // --------------------------------------------------
     return {
-        createMintAccount,
+        createTokenMint,
         addMetadata,
-        mintTokens,
-        transferTokens,
-        collectFees,
-        createRaydiumPoolWithFee,
-        burnNootTokens,
-        initializeLPLock,
-        walletHoldsNFT,
-        validatePoolCreation
+        mintTokensToWallet,
+        initializeBondingCurve,
+        buyTokens,
+        sellTokens,
+        getBondingCurveInfo,
+        getPriceQuote,
+        checkAndAutoMigrate, // Export for manual checks
+        BONDING_CURVE_CONFIG
     };
 };
+
+// ============================================
+// MATH HELPERS
+// ============================================
+const ONE_E9 = new BN("1000000000");
+
+function calculateTokensOut(solIn, solReserves, tokenReserves) {
+    if (solIn.lte(new BN(0))) return new BN(0);
+
+    const k = solReserves.mul(tokenReserves);
+    const newSolReserves = solReserves.add(solIn);
+
+    if (newSolReserves.lte(new BN(0))) throw new Error("Invalid reserves: newSolReserves <= 0");
+
+    const newTokenReserves = k.div(newSolReserves);
+    if (newTokenReserves.gt(tokenReserves)) throw new Error("Reserve inconsistency");
+
+    return tokenReserves.sub(newTokenReserves);
+}
+
+function calculateSolOut(tokensIn, tokenReserves, solReserves) {
+    if (tokensIn.lte(new BN(0))) return new BN(0);
+
+    const k = tokenReserves.mul(solReserves);
+    const newTokenReserves = tokenReserves.add(tokensIn);
+
+    if (newTokenReserves.lte(new BN(0))) throw new Error("Invalid reserves: newTokenReserves <= 0");
+
+    const newSolReserves = k.div(newTokenReserves);
+    if (newSolReserves.gt(solReserves)) throw new Error("Reserve inconsistency");
+
+    return solReserves.sub(newSolReserves);
+}
+
+function calculatePriceImpact(amountIn, reservesIn, reservesOut, isBuy) {
+    const amountOut = isBuy
+        ? calculateTokensOut(amountIn, reservesIn, reservesOut)
+        : calculateSolOut(amountIn, reservesIn, reservesOut);
+
+    if (amountOut.lte(new BN(0))) return 0;
+
+    const effectivePrice = amountIn.mul(ONE_E9).div(amountOut);
+    const spotPrice = reservesIn.mul(ONE_E9).div(reservesOut);
+
+    const impact = effectivePrice.sub(spotPrice).mul(new BN(10000)).div(spotPrice);
+    return Math.abs(parseFloat(impact.toString()) / 100);
+}

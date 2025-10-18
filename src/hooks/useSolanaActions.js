@@ -18,30 +18,82 @@ export const useSolanaActions = () => {
     }
 
     async function sendTx(tx, signers = []) {
-        tx.feePayer = publicKey;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-    
-        // 🔹 Partially sign with local keypairs (like mintKeypair)
-        if (signers.length > 0) {
-            tx.partialSign(...signers);
+        try {
+            // 🔹 ALWAYS fetch a fresh blockhash
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+            
+            tx.feePayer = publicKey;
+            tx.recentBlockhash = blockhash;
+        
+            // 🔹 Partially sign with local keypairs (like mintKeypair)
+            if (signers.length > 0) {
+                tx.partialSign(...signers);
+            }
+        
+            // 🔹 Then request wallet signature (for publicKey)
+            const signedTx = await signTransaction?.(tx);
+            if (!signedTx) throw new Error("Failed to sign transaction");
+        
+            // 🔹 Send with retry logic and proper confirmation
+            const txid = await connection.sendRawTransaction(signedTx.serialize(), { 
+                skipPreflight: false,
+                maxRetries: 3,
+                preflightCommitment: 'confirmed'
+            });
+            
+            // 🔹 Use block height confirmation instead of just confirmed
+            const confirmation = await connection.confirmTransaction({
+                signature: txid,
+                blockhash,
+                lastValidBlockHeight
+            }, 'confirmed');
+
+            if (confirmation.value.err) {
+                throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+            }
+
+            return txid;
+        } catch (error) {
+            console.error("Transaction error:", error);
+            
+            // Handle specific error cases
+            if (error.message?.includes('already been processed')) {
+                console.warn("Transaction may have succeeded despite error");
+                // You could optionally return the signature from the error if available
+            }
+            throw error;
         }
-    
-        // 🔹 Then request wallet signature (for publicKey)
-        const signedTx = await signTransaction?.(tx);
-        if (!signedTx) throw new Error("Failed to sign transaction");
-    
-        const txid = await connection.sendRawTransaction(signedTx.serialize(), { skipPreflight: false });
-        await connection.confirmTransaction(txid, 'confirmed');
-        return txid;
     }
     
     async function sendVersionedTx(versionedTx) {
-        const signedTx = await signTransaction?.(versionedTx);
-        if (!signedTx) throw new Error("Failed to sign transaction");
+        try {
+            // 🔹 Fetch fresh blockhash for versioned transactions
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+            
+            const signedTx = await signTransaction?.(versionedTx);
+            if (!signedTx) throw new Error("Failed to sign transaction");
 
-        const txid = await connection.sendRawTransaction(signedTx.serialize(), { skipPreflight: false });
-        await connection.confirmTransaction(txid, 'confirmed');
-        return txid;
+            const txid = await connection.sendRawTransaction(signedTx.serialize(), { 
+                skipPreflight: false,
+                maxRetries: 3,
+                preflightCommitment: 'confirmed'
+            });
+            
+            const confirmation = await connection.confirmTransaction({
+                signature: txid,
+                blockhash,
+                lastValidBlockHeight
+            }, 'confirmed');
+
+            if (confirmation.value.err) {
+                throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+            }
+
+            return txid;
+        } catch (error) {
+            console.error("Versioned transaction error:", error);
+            throw error;
+        }
     }
 
     return { connection, publicKey, sendTx, sendVersionedTx, signTransaction };
