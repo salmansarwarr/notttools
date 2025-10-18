@@ -38,7 +38,8 @@ import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
-import bs58 from 'bs58'
+import bs58 from 'bs58';
+import { toast } from 'react-toastify';
 
 // Constants
 const BONDING_CURVE_PROGRAM_ID = new PublicKey("C1yuYbMvQ69dtx4EfZafFKdi34H3YdYWEX9QzXfNDFxb");
@@ -47,25 +48,24 @@ const PLATFORM_AUTHORITY = new PublicKey("35Bk7MrW3c17QWioRuABBEMFwNk4NitXRFBvkz
 const SOL_MINT = new PublicKey('So11111111111111111111111111111111111111112');
 const RPC_URL = "https://api.devnet.solana.com";
 
-// ⚡ MIGRATION BOT KEYPAIR - Store this securely in production (use env vars)
 const MIGRATION_BOT_PRIVATE_KEY = import.meta.env.VITE_MIGRATION_BOT_PRIVATE_KEY ||
-    "YOUR_BASE58_PRIVATE_KEY_HERE"; // Replace with actual private key
+    "YOUR_BASE58_PRIVATE_KEY_HERE";
 
 const BONDING_CURVE_CONFIG = {
     TOTAL_SUPPLY: 1_000_000_000,
     DECIMALS: 9,
-    VIRTUAL_SOL_RESERVES: 30, // 30 SOL virtual liquidity
-    VIRTUAL_TOKEN_RESERVES: 1_073_000_000, // ~1.073B tokens (creates initial price)
-    MIGRATION_THRESHOLD: 1, // 🔥 Changed to 1 SOL for testing
-    INITIAL_REAL_TOKENS: 800_000_000, // 800M tokens available for trading (80%)
+    VIRTUAL_SOL_RESERVES: 30,
+    VIRTUAL_TOKEN_RESERVES: 1_073_000_000,
+    MIGRATION_THRESHOLD: 1,
+    INITIAL_REAL_TOKENS: 800_000_000,
 };
 
-// Transaction deduplication helper
 const pendingTransactions = new Set();
 
 function withDeduplication(key, fn) {
     return async (...args) => {
         if (pendingTransactions.has(key)) {
+            toast.warn("Transaction already in progress");
             throw new Error("Transaction already in progress");
         }
 
@@ -74,7 +74,6 @@ function withDeduplication(key, fn) {
             const result = await fn(...args);
             return result;
         } finally {
-            // Remove after a delay to prevent immediate resubmission
             setTimeout(() => pendingTransactions.delete(key), 5000);
         }
     };
@@ -93,19 +92,16 @@ export const useBondingCurveFlow = () => {
         .use(mplToolbox())
         .use(walletAdapterIdentity(wallet));
 
-    // ============================================
-    // MIGRATION BOT HELPER
-    // ============================================
     function getMigrationBotWallet() {
         try {
             return Keypair.fromSecretKey(bs58.decode(MIGRATION_BOT_PRIVATE_KEY));
         } catch (error) {
             console.error("Failed to load migration bot keypair:", error);
+            toast.error("Migration bot configuration invalid");
             throw new Error("Migration bot configuration invalid");
         }
     }
 
-    // Helper function to send transaction with proper confirmation
     async function sendAndConfirmTransactionWithRetry(connection, transaction, signers, options = {}) {
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
 
@@ -129,9 +125,6 @@ export const useBondingCurveFlow = () => {
         return signature;
     }
 
-    // ============================================
-    // CHECK AND AUTO-MIGRATE
-    // ============================================
     async function checkAndAutoMigrate(mint) {
         const checkKey = `check-migrate-${mint.toString()}`;
 
@@ -162,20 +155,12 @@ export const useBondingCurveFlow = () => {
 
                 const curveData = await program.account.bondingCurve.fetch(bondingCurve);
 
-                console.log("📊 Checking migration eligibility...");
-                console.log(`   Real SOL Reserves: ${curveData.realSolReserves.toNumber() / 1e9} SOL`);
-                console.log(`   Migration Threshold: ${curveData.migrationThreshold.toNumber() / 1e9} SOL`);
-                console.log(`   Is Migrated: ${curveData.isMigrated}`);
-
-                // Check if migration threshold reached and not already migrated
                 if (curveData.realSolReserves.gte(curveData.migrationThreshold) && !curveData.isMigrated) {
-                    console.log("🚀 MIGRATION THRESHOLD REACHED! Starting automatic migration...");
+                    toast.info("🚀 Migration threshold reached! Starting automatic migration...");
                     await autoMigrateToRaydium(mint, botWallet, botConnection);
                     return true;
-                } else {
-                    console.log("⏳ Migration threshold not yet reached");
-                    return false;
                 }
+                return false;
             } catch (error) {
                 console.error("Error checking migration status:", error);
                 return false;
@@ -183,11 +168,9 @@ export const useBondingCurveFlow = () => {
         })();
     }
 
-    // ============================================
-    // AUTO-MIGRATE TO RAYDIUM (BOT CONTROLLED)
-    // ============================================
     async function autoMigrateToRaydium(mint, botWallet, botConnection) {
         const migrateKey = `migrate-${mint.toString()}`;
+        const toastId = toast.loading("Migrating to Raydium...");
 
         return withDeduplication(migrateKey, async () => {
             try {
@@ -217,8 +200,7 @@ export const useBondingCurveFlow = () => {
                     BONDING_CURVE_PROGRAM_ID
                 );
 
-                // Step 1: Migrate to Raydium (charges 5% fee)
-                console.log("Step 1: Calling migrate_to_raydium...");
+                toast.update(toastId, { render: "Step 1/4: Preparing migration..." });
                 const migrateIx = await program.methods
                     .migrateToRaydium()
                     .accounts({
@@ -237,13 +219,9 @@ export const useBondingCurveFlow = () => {
                     { commitment: "finalized" }
                 );
 
-                console.log("✅ Migration prepared:", explorerUrl(sig));
-
-                // Refresh curve data
                 const updatedCurveData = await program.account.bondingCurve.fetch(bondingCurve);
 
-                // Step 2: Withdraw tokens and SOL for pool creation
-                console.log("Step 2: Withdrawing tokens and SOL for pool...");
+                toast.update(toastId, { render: "Step 2/4: Withdrawing tokens and SOL..." });
                 const [tokenVault] = PublicKey.findProgramAddressSync(
                     [Buffer.from("token_vault"), mint.toBuffer()],
                     BONDING_CURVE_PROGRAM_ID
@@ -287,10 +265,7 @@ export const useBondingCurveFlow = () => {
                     { commitment: "finalized" }
                 );
 
-                console.log("💰 Tokens & SOL withdrawn:", explorerUrl(sig1));
-
-                // Step 3: Create Raydium Pool
-                console.log("Step 3: Creating Raydium pool...");
+                toast.update(toastId, { render: "Step 3/4: Creating Raydium pool..." });
                 const raydium = await Raydium.load({
                     owner: botWallet.publicKey,
                     signAllTransactions: async (transactions) => {
@@ -341,16 +316,16 @@ export const useBondingCurveFlow = () => {
 
                 const poolTx = await execute({ sendAndConfirm: true });
 
-                console.log("🏊 Raydium Pool Created:", explorerUrl(poolTx.txId));
-                console.log(`   LP Mint: ${extInfo.address.lpMint}`);
-                console.log(`   Pool Address: ${extInfo.address.ammId?.toString()}`);
-
-                // Step 4: Lock 60% of LP tokens
-                console.log("Step 4: Locking LP tokens...");
+                toast.update(toastId, { render: "Step 4/4: Locking LP tokens..." });
                 const lpMint = new PublicKey(extInfo.address.lpMint);
                 await autoLockLPTokens(lpMint, botWallet, botConnection);
 
-                console.log("🎉 MIGRATION COMPLETE!");
+                toast.update(toastId, { 
+                    render: "🎉 Migration complete! Token now trading on Raydium", 
+                    type: "success", 
+                    isLoading: false,
+                    autoClose: 5000
+                });
 
                 return {
                     migrateTxid: sig,
@@ -361,22 +336,22 @@ export const useBondingCurveFlow = () => {
                 };
             } catch (error) {
                 console.error("❌ Auto-migration failed:", error);
+                toast.update(toastId, { 
+                    render: `Migration failed: ${error.message}`, 
+                    type: "error", 
+                    isLoading: false,
+                    autoClose: 5000
+                });
                 throw error;
             }
         })();
     }
 
-    // ============================================
-    // AUTO-LOCK LP TOKENS (BOT CONTROLLED)
-    // ============================================
     async function autoLockLPTokens(lpMint, botWallet, botConnection) {
         const lockKey = `lock-${lpMint.toString()}`;
 
         return withDeduplication(lockKey, async () => {
             try {
-                console.log("Waiting for LP tokens to arrive...");
-
-                // Wait for pool creation to fully settle
                 await new Promise(resolve => setTimeout(resolve, 3000));
 
                 const provider = new AnchorProvider(botConnection, {
@@ -404,12 +379,8 @@ export const useBondingCurveFlow = () => {
                     LP_LOCK_PROGRAM_ID
                 );
 
-                // Get mint info to determine token program
                 const mintInfo = await getMint(botConnection, lpMint, 'confirmed');
                 const tokenProgramId = mintInfo.tlvData.length > 0 ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID;
-
-                console.log(`LP Mint: ${lpMint.toString()}`);
-                console.log(`Token Program: ${tokenProgramId.toString()}`);
 
                 const fromTokenAccount = await getAssociatedTokenAddress(
                     lpMint,
@@ -418,9 +389,6 @@ export const useBondingCurveFlow = () => {
                     tokenProgramId
                 );
 
-                console.log(`Bot's LP Token Account: ${fromTokenAccount.toString()}`);
-
-                // Verify the account exists and has a balance
                 let retries = 5;
                 let lpBalance;
 
@@ -429,15 +397,12 @@ export const useBondingCurveFlow = () => {
                         lpBalance = await botConnection.getTokenAccountBalance(fromTokenAccount, 'confirmed');
 
                         if (lpBalance && lpBalance.value.amount !== '0') {
-                            console.log(`LP Balance found: ${lpBalance.value.amount}`);
                             break;
                         }
 
-                        console.log(`Retry ${6 - retries}: No balance yet, waiting...`);
                         await new Promise(resolve => setTimeout(resolve, 2000));
                         retries--;
                     } catch (error) {
-                        console.log(`Retry ${6 - retries}: Account not found, waiting...`);
                         await new Promise(resolve => setTimeout(resolve, 2000));
                         retries--;
                     }
@@ -447,14 +412,10 @@ export const useBondingCurveFlow = () => {
                     throw new Error("LP tokens not found in bot wallet after multiple retries");
                 }
 
-                // Lock 60% of LP tokens
                 const lockAmount = new BN(lpBalance.value.amount)
                     .mul(new BN(60))
                     .div(new BN(100));
 
-                console.log(`Locking ${lockAmount.toString()} LP tokens (60% of ${lpBalance.value.amount})`);
-
-                // Create ATA instruction (idempotent, safe to call even if exists)
                 const userAtaIx = createAssociatedTokenAccountIdempotentInstruction(
                     botWallet.publicKey,
                     fromTokenAccount,
@@ -467,9 +428,9 @@ export const useBondingCurveFlow = () => {
                     .initializeLock(
                         lpMint,
                         lockAmount,
-                        new BN(300), // 300+ holders
-                        new BN(25000), // $25,000 volume
-                        PLATFORM_AUTHORITY // oracle authority
+                        new BN(300),
+                        new BN(25000),
+                        PLATFORM_AUTHORITY
                     )
                     .accounts({
                         lockInfo,
@@ -491,28 +452,14 @@ export const useBondingCurveFlow = () => {
                     { commitment: "finalized" }
                 );
 
-                console.log("🔒 LP Tokens Locked (60%):", explorerUrl(txid));
-                console.log(`   Amount: ${lockAmount.toString()} LP tokens`);
-                console.log(`   Lock Info PDA: ${lockInfo.toString()}`);
-                console.log(`   Lock Vault: ${lockVault.toString()}`);
-
                 return { txid, lockInfo, lockVault };
             } catch (error) {
                 console.error("Error locking LP tokens:", error);
-
-                // Log more details for debugging
-                if (error.message?.includes('TokenAccountNotFoundError')) {
-                    console.error("LP token account was not created. This might be a timing issue or the pool creation failed.");
-                }
-
                 throw error;
             }
         })();
     }
 
-    // ============================================
-    // 1. CREATE TOKEN MINT
-    // ============================================
     async function createTokenMint(formData) {
         const mintKey = `create-mint-${Date.now()}`;
 
@@ -553,15 +500,11 @@ export const useBondingCurveFlow = () => {
             );
 
             const txid = await sendTx(tx, [mintKeypair]);
-            console.log("🪙 Token Mint Created:", explorerUrl(txid));
 
             return { mint, mintKeypair, txid };
         })();
     }
 
-    // ============================================
-    // 2. ADD METADATA
-    // ============================================
     async function addMetadata(mintKeypair, formData) {
         const metadataKey = `metadata-${mintKeypair.publicKey.toString()}`;
 
@@ -585,14 +528,10 @@ export const useBondingCurveFlow = () => {
             }).sendAndConfirm(umi);
 
             const metadataSig = base58.deserialize(metadataTx.signature);
-            console.log("🧾 Metadata Added:", explorerUrl(metadataSig[0]));
             return metadataSig[0];
         })();
     }
 
-    // ============================================
-    // 3. MINT TOKENS TO WALLET
-    // ============================================
     async function mintTokensToWallet(mint) {
         const mintTokensKey = `mint-tokens-${mint.toString()}`;
 
@@ -627,15 +566,10 @@ export const useBondingCurveFlow = () => {
             const tx = new Transaction().add(createAtaIx, mintToInstruction);
             const txid = await sendTx(tx);
 
-            console.log("🪙 Tokens Minted to Creator:", explorerUrl(txid));
-
             return { creatorTokenAccount, txid };
         })();
     }
 
-    // ============================================
-    // 4. INITIALIZE BONDING CURVE & TRANSFER TOKENS
-    // ============================================
     async function initializeBondingCurve(mint, creatorTokenAccount) {
         const initKey = `init-curve-${mint.toString()}`;
 
@@ -716,183 +650,197 @@ export const useBondingCurveFlow = () => {
             const tx = new Transaction().add(initializeIx, transferIx, revokeIx);
             const txid = await sendTx(tx);
 
-            console.log("📈 Bonding Curve Initialized:", explorerUrl(txid));
-
             return { bondingCurve, tokenVault, solVault, txid };
         })();
     }
 
-    // ============================================
-    // 5. BUY TOKENS ON CURVE (WITH AUTO-MIGRATION CHECK)
-    // ============================================
     async function buyTokens(mint, solAmount, slippageBps = 100) {
         const buyKey = `buy-${mint.toString()}-${Date.now()}`;
+        const toastId = toast.loading("Preparing buy transaction...");
 
         return withDeduplication(buyKey, async () => {
-            const provider = new AnchorProvider(
-                connection,
-                { publicKey, signTransaction: async tx => tx },
-                {}
-            );
-            const program = new Program(bondingCurveIDL, provider);
+            try {
+                const provider = new AnchorProvider(
+                    connection,
+                    { publicKey, signTransaction: async tx => tx },
+                    {}
+                );
+                const program = new Program(bondingCurveIDL, provider);
 
-            const [bondingCurve] = PublicKey.findProgramAddressSync(
-                [Buffer.from("bonding_curve"), mint.toBuffer()],
-                BONDING_CURVE_PROGRAM_ID
-            );
+                const [bondingCurve] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("bonding_curve"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
 
-            const [tokenVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("token_vault"), mint.toBuffer()],
-                BONDING_CURVE_PROGRAM_ID
-            );
+                const [tokenVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("token_vault"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
 
-            const [solVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("sol_vault"), mint.toBuffer()],
-                BONDING_CURVE_PROGRAM_ID
-            );
+                const [solVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("sol_vault"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
 
-            const buyerTokenAccount = await getAssociatedTokenAddress(
-                mint,
-                publicKey,
-                false,
-                TOKEN_2022_PROGRAM_ID
-            );
+                const buyerTokenAccount = await getAssociatedTokenAddress(
+                    mint,
+                    publicKey,
+                    false,
+                    TOKEN_2022_PROGRAM_ID
+                );
 
-            const solAmountBN = new BN(solAmount * 1e9);
-            const curveData = await program.account.bondingCurve.fetch(bondingCurve);
-            const tokensOut = calculateTokensOut(
-                solAmountBN,
-                curveData.virtualSolReserves.add(curveData.realSolReserves),
-                curveData.virtualTokenReserves.add(curveData.realTokenReserves)
-            );
-            const minTokensOut = tokensOut.mul(new BN(10000 - slippageBps)).div(new BN(10000));
+                const solAmountBN = new BN(solAmount * 1e9);
+                const curveData = await program.account.bondingCurve.fetch(bondingCurve);
+                const tokensOut = calculateTokensOut(
+                    solAmountBN,
+                    curveData.virtualSolReserves.add(curveData.realSolReserves),
+                    curveData.virtualTokenReserves.add(curveData.realTokenReserves)
+                );
+                const minTokensOut = tokensOut.mul(new BN(10000 - slippageBps)).div(new BN(10000));
 
-            const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
-                publicKey,
-                buyerTokenAccount,
-                publicKey,
-                mint,
-                TOKEN_2022_PROGRAM_ID
-            );
-
-            const buyIx = await program.methods
-                .buy(solAmountBN, minTokensOut)
-                .accounts({
-                    bondingCurve,
-                    buyer: publicKey,
+                const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
+                    publicKey,
                     buyerTokenAccount,
-                    bondingCurveTokenVault: tokenVault,
-                    bondingCurveSolVault: solVault,
-                    tokenMint: mint,
-                    tokenProgram: TOKEN_2022_PROGRAM_ID,
-                    systemProgram: SystemProgram.programId,
-                })
-                .instruction();
+                    publicKey,
+                    mint,
+                    TOKEN_2022_PROGRAM_ID
+                );
 
-            const tx = new Transaction().add(createAtaIx, buyIx);
-            const txid = await sendTx(tx);
+                const buyIx = await program.methods
+                    .buy(solAmountBN, minTokensOut)
+                    .accounts({
+                        bondingCurve,
+                        buyer: publicKey,
+                        buyerTokenAccount,
+                        bondingCurveTokenVault: tokenVault,
+                        bondingCurveSolVault: solVault,
+                        tokenMint: mint,
+                        tokenProgram: TOKEN_2022_PROGRAM_ID,
+                        systemProgram: SystemProgram.programId,
+                    })
+                    .instruction();
 
-            console.log("💰 Bought tokens:", explorerUrl(txid));
+                const tx = new Transaction().add(createAtaIx, buyIx);
+                
+                toast.update(toastId, { render: "Confirm transaction in wallet..." });
+                const txid = await sendTx(tx);
 
-            // // 🔥 CHECK FOR AUTO-MIGRATION AFTER BUY (with delay)
-            // setTimeout(async () => {
-            //     try {
-            //         const migrated = await checkAndAutoMigrate(mint);
-            //         if (migrated) {
-            //             console.log("🎉 Token automatically migrated to Raydium!");
-            //         }
-            //     } catch (error) {
-            //         console.error("Auto-migration check failed:", error);
-            //     }
-            // }, 5000); // Wait 5 seconds for transaction to fully confirm
+                toast.update(toastId, { 
+                    render: `✅ Successfully bought ${(tokensOut.toNumber() / 1e9).toFixed(2)} tokens!`, 
+                    type: "success", 
+                    isLoading: false,
+                    autoClose: 5000
+                });
 
-            return { txid, tokensOut };
+                return { txid, tokensOut };
+            } catch (error) {
+                toast.update(toastId, { 
+                    render: `Buy failed: ${error.message}`, 
+                    type: "error", 
+                    isLoading: false,
+                    autoClose: 5000
+                });
+                throw error;
+            }
         })();
     }
 
-    // ============================================
-    // 6. SELL TOKENS ON CURVE
-    // ============================================
     async function sellTokens(mint, tokenAmount, slippageBps = 100) {
         const sellKey = `sell-${mint.toString()}-${Date.now()}`;
+        const toastId = toast.loading("Preparing sell transaction...");
 
         return withDeduplication(sellKey, async () => {
-            const tokenAmountBN = new BN(Math.floor(tokenAmount * 1e9).toString());
+            try {
+                const tokenAmountBN = new BN(Math.floor(tokenAmount * 1e9).toString());
 
-            const provider = new AnchorProvider(
-                connection,
-                { publicKey, signTransaction: async tx => tx },
-                {}
-            );
+                const provider = new AnchorProvider(
+                    connection,
+                    { publicKey, signTransaction: async tx => tx },
+                    {}
+                );
 
-            const program = new Program(bondingCurveIDL, provider);
+                const program = new Program(bondingCurveIDL, provider);
 
-            const [bondingCurve] = PublicKey.findProgramAddressSync(
-                [Buffer.from("bonding_curve"), mint.toBuffer()],
-                BONDING_CURVE_PROGRAM_ID
-            );
-            const [tokenVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("token_vault"), mint.toBuffer()],
-                BONDING_CURVE_PROGRAM_ID
-            );
-            const [solVault] = PublicKey.findProgramAddressSync(
-                [Buffer.from("sol_vault"), mint.toBuffer()],
-                BONDING_CURVE_PROGRAM_ID
-            );
+                const [bondingCurve] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("bonding_curve"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
+                const [tokenVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("token_vault"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
+                const [solVault] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("sol_vault"), mint.toBuffer()],
+                    BONDING_CURVE_PROGRAM_ID
+                );
 
-            const sellerTokenAccount = await getAssociatedTokenAddress(
-                mint,
-                publicKey,
-                false,
-                TOKEN_2022_PROGRAM_ID
-            );
+                const sellerTokenAccount = await getAssociatedTokenAddress(
+                    mint,
+                    publicKey,
+                    false,
+                    TOKEN_2022_PROGRAM_ID
+                );
 
-            const curveData = await program.account.bondingCurve.fetch(bondingCurve);
+                const curveData = await program.account.bondingCurve.fetch(bondingCurve);
 
-            const totalTokenReserves = curveData.virtualTokenReserves.add(curveData.realTokenReserves);
-            const totalSolReserves = curveData.virtualSolReserves.add(curveData.realSolReserves);
+                const totalTokenReserves = curveData.virtualTokenReserves.add(curveData.realTokenReserves);
+                const totalSolReserves = curveData.virtualSolReserves.add(curveData.realSolReserves);
 
-            if (totalTokenReserves.lte(new BN(0)) || totalSolReserves.lte(new BN(0))) {
-                throw new Error("Invalid bonding curve state: zero reserves");
+                if (totalTokenReserves.lte(new BN(0)) || totalSolReserves.lte(new BN(0))) {
+                    throw new Error("Invalid bonding curve state: zero reserves");
+                }
+
+                const solOut = calculateSolOut(tokenAmountBN, totalTokenReserves, totalSolReserves);
+
+                if (!solOut || solOut.lte(new BN(0))) {
+                    throw new Error("Invalid output amount");
+                }
+
+                const minSolOut = solOut.mul(new BN(10000 - slippageBps)).div(new BN(10000));
+
+                const sellIx = await program.methods
+                    .sell(tokenAmountBN, minSolOut)
+                    .accounts({
+                        bondingCurve,
+                        buyer: publicKey,
+                        buyerTokenAccount: sellerTokenAccount,
+                        bondingCurveTokenVault: tokenVault,
+                        bondingCurveSolVault: solVault,
+                        tokenMint: mint,
+                        tokenProgram: TOKEN_2022_PROGRAM_ID,
+                        systemProgram: SystemProgram.programId,
+                    })
+                    .instruction();
+
+                const tx = new Transaction().add(sellIx);
+                
+                toast.update(toastId, { render: "Confirm transaction in wallet..." });
+                const txid = await sendTx(tx);
+
+                toast.update(toastId, { 
+                    render: `✅ Successfully sold for ${(solOut.toNumber() / 1e9).toFixed(4)} SOL!`, 
+                    type: "success", 
+                    isLoading: false,
+                    autoClose: 5000
+                });
+
+                return {
+                    txid,
+                    solOut: parseFloat(solOut.toString()) / 1e9,
+                    minSolOut: parseFloat(minSolOut.toString()) / 1e9,
+                };
+            } catch (error) {
+                toast.update(toastId, { 
+                    render: `Sell failed: ${error.message}`, 
+                    type: "error", 
+                    isLoading: false,
+                    autoClose: 5000
+                });
+                throw error;
             }
-
-            const solOut = calculateSolOut(tokenAmountBN, totalTokenReserves, totalSolReserves);
-
-            if (!solOut || solOut.lte(new BN(0))) {
-                throw new Error("Invalid output amount");
-            }
-
-            const minSolOut = solOut.mul(new BN(10000 - slippageBps)).div(new BN(10000));
-
-            const sellIx = await program.methods
-                .sell(tokenAmountBN, minSolOut)
-                .accounts({
-                    bondingCurve,
-                    buyer: publicKey,
-                    buyerTokenAccount: sellerTokenAccount,
-                    bondingCurveTokenVault: tokenVault,
-                    bondingCurveSolVault: solVault,
-                    tokenMint: mint,
-                    tokenProgram: TOKEN_2022_PROGRAM_ID,
-                    systemProgram: SystemProgram.programId,
-                })
-                .instruction();
-
-            const tx = new Transaction().add(sellIx);
-            const txid = await sendTx(tx);
-
-            console.log("📤 Sold tokens:", explorerUrl(txid));
-            return {
-                txid,
-                solOut: parseFloat(solOut.toString()) / 1e9,
-                minSolOut: parseFloat(minSolOut.toString()) / 1e9,
-            };
         })();
     }
 
-    // ============================================
-    // 9. GET BONDING CURVE INFO
-    // ============================================
     async function getBondingCurveInfo(mint) {
         try {
             const infoConnection = new Connection(RPC_URL, 'confirmed');
@@ -906,7 +854,6 @@ export const useBondingCurveFlow = () => {
 
             const curveData = await program.account.bondingCurve.fetch(bondingCurve);
 
-            // Convert BN values to numbers with proper decimal handling
             const bnToNumber = (bn, decimals = 9) => {
                 const value = parseFloat(bn.toString()) / Math.pow(10, decimals);
                 return value;
@@ -931,10 +878,8 @@ export const useBondingCurveFlow = () => {
             const migrationThresholdNum = bnToNumber(migrationThreshold, SOL_DECIMALS);
             const totalSupplyNum = bnToNumber(totalSupply, TOKEN_DECIMALS);
 
-            // Calculate price per token in SOL
             const priceInSol = totalTokenReservesNum > 0 ? totalSolReservesNum / totalTokenReservesNum : 0;
 
-            // Convert SOL price to USD
             const SOL_TO_USD = await fetchSolPrice();
             const priceInUsd = priceInSol * SOL_TO_USD;
 
@@ -970,7 +915,6 @@ export const useBondingCurveFlow = () => {
         }
     }
 
-    // Helper function to fetch SOL price
     async function fetchSolPrice() {
         try {
             const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
@@ -978,13 +922,10 @@ export const useBondingCurveFlow = () => {
             return data.solana.usd;
         } catch (error) {
             console.error('Error fetching SOL price:', error);
-            return 186.14; // fallback price
+            return 186.14;
         }
     }
 
-    // ============================================
-    // 10. GET PRICE QUOTE
-    // ============================================
     async function getPriceQuote(mint, solAmount, isBuy) {
         const curveInfo = await getBondingCurveInfo(mint);
 
@@ -1024,9 +965,6 @@ export const useBondingCurveFlow = () => {
         }
     }
 
-    // ============================================
-    // HELPER: Upload to Pinata
-    // ============================================
     async function uploadToPinata(formData) {
         const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
         const PINATA_SECRET_KEY = import.meta.env.VITE_PINATA_SECRET_KEY;
@@ -1087,14 +1025,11 @@ export const useBondingCurveFlow = () => {
         sellTokens,
         getBondingCurveInfo,
         getPriceQuote,
-        checkAndAutoMigrate, // Export for manual checks
+        checkAndAutoMigrate,
         BONDING_CURVE_CONFIG
     };
 };
 
-// ============================================
-// MATH HELPERS
-// ============================================
 const ONE_E9 = new BN("1000000000");
 
 function calculateTokensOut(solIn, solReserves, tokenReserves) {

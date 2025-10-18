@@ -3,15 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { useGlobalState } from "../hooks/useGlobalState";
 import { useBondingCurveFlow } from "../hooks/useSolanaTokenFlow";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { AnchorProvider, Program, BN } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 import constants from "../constants";
-import bondingCurveIDL from "../hooks/bonding_curve.json";
-
-const BONDING_CURVE_PROGRAM_ID = new PublicKey(
-    "C1yuYbMvQ69dtx4EfZafFKdi34H3YdYWEX9QzXfNDFxb"
-);
-const RPC_URL = "https://api.devnet.solana.com";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const TokenDetail = () => {
     const { mintAddress } = useParams();
@@ -25,6 +20,7 @@ const TokenDetail = () => {
     const [bondingCurveInfo, setBondingCurveInfo] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("trade");
+    const [isFetchingQuote, setIsFetchingQuote] = useState(false);
 
     // Trade states
     const [tradeMode, setTradeMode] = useState("buy");
@@ -67,9 +63,12 @@ const TokenDetail = () => {
 
             if (data.data && data.data.length > 0) {
                 setTokenData(data.data[0]);
+            } else {
+                toast.error("Token not found in database");
             }
         } catch (error) {
             console.error("Error fetching token data:", error);
+            toast.error("Failed to load token data");
         } finally {
             setIsLoading(false);
         }
@@ -82,11 +81,15 @@ const TokenDetail = () => {
             setBondingCurveInfo(info);
         } catch (error) {
             console.error("Error fetching bonding curve info:", error);
+            if (!bondingCurveInfo) {
+                toast.error("Failed to load bonding curve data");
+            }
         }
     };
 
     const fetchQuote = async () => {
         try {
+            setIsFetchingQuote(true);
             const mint = new PublicKey(mintAddress);
             const amount = parseFloat(tradeAmount);
             const slippageBps = parseFloat(slippage) * 100;
@@ -100,11 +103,21 @@ const TokenDetail = () => {
         } catch (error) {
             console.error("Error fetching quote:", error);
             setTradeQuote(null);
+        } finally {
+            setIsFetchingQuote(false);
         }
     };
 
     const executeTrade = async () => {
-        if (!wallet.connected || !tradeQuote) return;
+        if (!wallet.connected) {
+            toast.warning("Please connect your wallet first");
+            return;
+        }
+        
+        if (!tradeQuote) {
+            toast.warning("Please enter a valid amount");
+            return;
+        }
 
         try {
             setIsTrading(true);
@@ -114,18 +127,21 @@ const TokenDetail = () => {
 
             if (tradeMode === "buy") {
                 await buyTokens(mint, amount, slippageBps);
-                alert("Buy successful!");
             } else {
                 await sellTokens(mint, amount, slippageBps);
-                alert("Sell successful!");
             }
 
             setTradeAmount("");
             setTradeQuote(null);
-            await fetchBondingCurveInfo();
+            
+            // Refresh bonding curve info after successful trade
+            setTimeout(() => {
+                fetchBondingCurveInfo();
+            }, 2000);
+            
         } catch (error) {
             console.error("Trade failed:", error);
-            alert(`Trade failed: ${error.message}`);
+            // Toast already shown in buyTokens/sellTokens functions
         } finally {
             setIsTrading(false);
         }
@@ -135,8 +151,9 @@ const TokenDetail = () => {
         return (
             <div className="min-h-screen bg-[#0A151E] pt-28 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading token data...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-gray-400 text-lg">Loading token data...</p>
+                    <p className="text-gray-500 text-sm mt-2">Please wait</p>
                 </div>
             </div>
         );
@@ -145,11 +162,27 @@ const TokenDetail = () => {
     if (!tokenData) {
         return (
             <div className="min-h-screen bg-[#0A151E] pt-28 flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-red-400 mb-4">Token not found</p>
+                <div className="text-center bg-[#192630] rounded-2xl p-8 border border-gray-700 max-w-md">
+                    <svg
+                        className="w-20 h-20 text-red-400 mx-auto mb-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                    <p className="text-red-400 mb-4 text-xl font-semibold">Token Not Found</p>
+                    <p className="text-gray-400 mb-6">
+                        The token you're looking for doesn't exist or hasn't been indexed yet.
+                    </p>
                     <button
                         onClick={() => navigate("/")}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                     >
                         Go Home
                     </button>
@@ -166,6 +199,19 @@ const TokenDetail = () => {
 
     return (
         <div className="min-h-screen bg-[#0A151E] pt-28 px-4 pb-8">
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+            />
+
             <div className="max-w-7xl mx-auto">
                 {/* Token Header */}
                 <div className="bg-[#192630] rounded-2xl p-6 mb-6 border border-gray-700">
@@ -429,18 +475,26 @@ const TokenDetail = () => {
                                                         ? "Amount (SOL)"
                                                         : `Amount (${tokenData.symbol})`}
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    value={tradeAmount}
-                                                    onChange={(e) =>
-                                                        setTradeAmount(
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                    placeholder="0.0"
-                                                    step="0.01"
-                                                />
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={tradeAmount}
+                                                        onChange={(e) =>
+                                                            setTradeAmount(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                                        placeholder="0.0"
+                                                        step="0.01"
+                                                        disabled={isTrading}
+                                                    />
+                                                    {isFetchingQuote && (
+                                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* Slippage */}
@@ -458,12 +512,15 @@ const TokenDetail = () => {
                                                                         value
                                                                     )
                                                                 }
+                                                                disabled={
+                                                                    isTrading
+                                                                }
                                                                 className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
                                                                     slippage ===
                                                                     value
                                                                         ? "bg-blue-600 text-white"
                                                                         : "bg-gray-800 text-gray-400 hover:text-white"
-                                                                }`}
+                                                                } disabled:opacity-50 disabled:cursor-not-allowed`}
                                                             >
                                                                 {value}%
                                                             </button>
@@ -473,8 +530,8 @@ const TokenDetail = () => {
                                             </div>
 
                                             {/* Quote Display */}
-                                            {tradeQuote && (
-                                                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
+                                            {tradeQuote && !isFetchingQuote && (
+                                                <div className="bg-gray-800/50 rounded-lg p-4 space-y-2 border border-gray-700">
                                                     <div className="flex justify-between text-sm">
                                                         <span className="text-gray-400">
                                                             You{" "}
@@ -527,6 +584,9 @@ const TokenDetail = () => {
                                                                 tradeQuote.priceImpact >
                                                                 5
                                                                     ? "text-red-400"
+                                                                    : tradeQuote.priceImpact >
+                                                                      2
+                                                                    ? "text-yellow-400"
                                                                     : "text-green-400"
                                                             }`}
                                                         >
@@ -539,28 +599,93 @@ const TokenDetail = () => {
                                                 </div>
                                             )}
 
+                                            {/* Loading Quote */}
+                                            {isFetchingQuote && (
+                                                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                                                    <div className="flex items-center justify-center gap-2 text-gray-400">
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                                        <span className="text-sm">
+                                                            Calculating quote...
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             {/* Trade Button */}
                                             <button
                                                 onClick={executeTrade}
                                                 disabled={
                                                     !wallet.connected ||
                                                     !tradeQuote ||
-                                                    isTrading
+                                                    isTrading ||
+                                                    isFetchingQuote
                                                 }
-                                                className={`w-full py-4 rounded-lg font-bold transition-all ${
+                                                className={`w-full py-4 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
                                                     tradeMode === "buy"
                                                         ? "bg-green-600 hover:bg-green-700"
                                                         : "bg-red-600 hover:bg-red-700"
-                                                } text-white disabled:bg-gray-600 disabled:cursor-not-allowed`}
+                                                } text-white disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50`}
                                             >
-                                                {!wallet.connected
-                                                    ? "Connect Wallet"
-                                                    : isTrading
-                                                    ? "Trading..."
-                                                    : tradeMode === "buy"
-                                                    ? "Buy Tokens"
-                                                    : "Sell Tokens"}
+                                                {isTrading ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                                        <span>
+                                                            Processing...
+                                                        </span>
+                                                    </>
+                                                ) : !wallet.connected ? (
+                                                    "Connect Wallet"
+                                                ) : isFetchingQuote ? (
+                                                    "Calculating..."
+                                                ) : (
+                                                    <>
+                                                        {tradeMode === "buy"
+                                                            ? "Buy Tokens"
+                                                            : "Sell Tokens"}
+                                                    </>
+                                                )}
                                             </button>
+
+                                            {/* Warning for high price impact */}
+                                            {tradeQuote &&
+                                                tradeQuote.priceImpact > 5 && (
+                                                    <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+                                                        <div className="flex gap-2">
+                                                            <svg
+                                                                className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5"
+                                                                fill="currentColor"
+                                                                viewBox="0 0 20 20"
+                                                            >
+                                                                <path
+                                                                    fillRule="evenodd"
+                                                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                                    clipRule="evenodd"
+                                                                />
+                                                            </svg>
+                                                            <div>
+                                                                <h4 className="text-yellow-300 font-semibold text-sm mb-1">
+                                                                    High Price
+                                                                    Impact
+                                                                    Warning
+                                                                </h4>
+                                                                <p className="text-yellow-200 text-xs">
+                                                                    This trade
+                                                                    will have a
+                                                                    significant
+                                                                    price impact
+                                                                    (
+                                                                    {tradeQuote.priceImpact.toFixed(
+                                                                        2
+                                                                    )}
+                                                                    %). Consider
+                                                                    reducing
+                                                                    your trade
+                                                                    size.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                             {/* Info Note */}
                                             <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4">
@@ -635,8 +760,7 @@ const TokenDetail = () => {
                                                         Current Price
                                                     </p>
                                                     <p className="text-white">
-                                                        $
-                                                        {currentPrice}
+                                                        ${currentPrice}
                                                     </p>
                                                 </div>
                                                 <div>

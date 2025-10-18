@@ -66,3 +66,56 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* React Toastify Custom Styles */
+.Toastify__toast {
+  background: #192630 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+.Toastify__toast-body {
+  color: #ffffff !important;
+  font-family: inherit !important;
+  padding: 8px !important;
+}
+
+.Toastify__progress-bar--success {
+  background: linear-gradient(to right, #10b981, #059669) !important;
+}
+
+.Toastify__progress-bar--error {
+  background: linear-gradient(to right, #ef4444, #dc2626) !important;
+}
+
+.Toastify__progress-bar--info {
+  background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+}
+
+.Toastify__progress-bar--warning {
+  background: linear-gradient(to right, #f59e0b, #d97706) !important;
+}
+
+.Toastify__close-button {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  from {
+      transform: rotate(0deg);
+  }
+  to {
+      transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+} 

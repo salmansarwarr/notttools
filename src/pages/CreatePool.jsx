@@ -3,8 +3,8 @@ import { useBondingCurveFlow } from "../hooks/useSolanaTokenFlow";
 import { useGlobalState } from "../hooks/useGlobalState";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import constants from "../constants";
-import axios from "axios";
-import { PublicKey } from "@solana/web3.js";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const BondingCurveCreateCoin = () => {
     const wallet = useUnifiedWallet();
@@ -157,10 +157,13 @@ const BondingCurveCreateCoin = () => {
             const { mint, mintKeypair, txid } = await createTokenMint(formData);
 
             setCreationProgress("Adding metadata to IPFS...");
+            toast.info("Uploading metadata to IPFS...");
+
             await addMetadata(mintKeypair, formData);
 
             setStepStatus((prev) => ({ ...prev, step1: "success" }));
             setCreationProgress("Token & metadata created successfully!");
+            toast.success("✅ Token created successfully!");
 
             return { mint, mintKeypair };
         } catch (error) {
@@ -171,6 +174,7 @@ const BondingCurveCreateCoin = () => {
                 message: error.message || "Failed to create token & metadata",
                 details: error.toString(),
             });
+            toast.error(`Step 1 failed: ${error.message}`);
             throw error;
         }
     };
@@ -179,11 +183,13 @@ const BondingCurveCreateCoin = () => {
         try {
             setStepStatus((prev) => ({ ...prev, step2: "loading" }));
             setCreationProgress("Minting total supply to creator wallet...");
+            toast.info("Minting tokens to your wallet...");
 
             const { creatorTokenAccount, txid } = await mintTokensToWallet(mint);
 
             setStepStatus((prev) => ({ ...prev, step2: "success" }));
             setCreationProgress("Tokens minted successfully!");
+            toast.success("✅ Tokens minted successfully!");
 
             return { creatorTokenAccount };
         } catch (error) {
@@ -194,6 +200,7 @@ const BondingCurveCreateCoin = () => {
                 message: error.message || "Failed to mint tokens",
                 details: error.toString(),
             });
+            toast.error(`Step 2 failed: ${error.message}`);
             throw error;
         }
     };
@@ -205,9 +212,11 @@ const BondingCurveCreateCoin = () => {
 
             const { bondingCurve, tokenVault, solVault, txid } = 
                 await initializeBondingCurve(mint, creatorTokenAccount);
+            toast.info("Setting up bonding curve...");
 
             setStepStatus((prev) => ({ ...prev, step3: "success" }));
             setCreationProgress("Bonding curve initialized! Token ready for trading!");
+            toast.success("🎉 Token launched on bonding curve!");
 
             return { bondingCurve, tokenVault, solVault };
         } catch (error) {
@@ -218,6 +227,7 @@ const BondingCurveCreateCoin = () => {
                 message: error.message || "Failed to initialize bonding curve",
                 details: error.toString(),
             });
+            toast.error(`Step 3 failed: ${error.message}`);
             throw error;
         }
     };
@@ -299,6 +309,8 @@ const BondingCurveCreateCoin = () => {
     };
 
     const saveToDirectus = async (mintAddress) => {
+        const toastId = toast.loading("Saving token information...");
+
         try {
             setCreationProgress("Saving token information...");
 
@@ -306,6 +318,7 @@ const BondingCurveCreateCoin = () => {
             let bannerFileId = null;
 
             if (formData.coinMedia) {
+                toast.update(toastId, { render: "Uploading logo..." });
                 const logoFormData = new FormData();
                 logoFormData.append("file", formData.coinMedia);
                 const logoResponse = await fetch(
@@ -325,6 +338,7 @@ const BondingCurveCreateCoin = () => {
             }
 
             if (formData.banner) {
+                toast.update(toastId, { render: "Uploading banner..." });
                 const bannerFormData = new FormData();
                 bannerFormData.append("file", formData.banner);
                 const bannerResponse = await fetch(
@@ -342,6 +356,8 @@ const BondingCurveCreateCoin = () => {
                     bannerFileId = bannerResult.data.id;
                 }
             }
+
+            toast.update(toastId, { render: "Saving project data..." });
 
             const projectData = {
                 name: formData.coinName,
@@ -370,8 +386,20 @@ const BondingCurveCreateCoin = () => {
             });
 
             setCreationProgress("Token saved successfully!");
+            toast.update(toastId, { 
+                render: "✅ Token information saved!", 
+                type: "success", 
+                isLoading: false,
+                autoClose: 3000
+            });
         } catch (error) {
             console.error("Error saving to Directus:", error);
+            toast.update(toastId, { 
+                render: "⚠️ Token created but failed to save metadata", 
+                type: "warning", 
+                isLoading: false,
+                autoClose: 5000
+            });
         }
     };
 
@@ -488,6 +516,18 @@ const BondingCurveCreateCoin = () => {
 
     return (
         <div className="min-h-screen bg-[#0A151E] py-8 px-4 pt-28">
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+            />
             {/* Creation Modal */}
             {showCreationModal && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
