@@ -1,0 +1,180 @@
+general
+
+IDENTIFICATION DATA
+
+Company name
+This website is owned by the company NOOTTOOLS SL (hereinafter, the "Company"). Through this website, the Company provides its users with an information society service, electronically and at the user's individual request, within the framework of an economic activity proper to a commercial company.
+
+Registered office
+NOOTTOOLS SL has its registered office at:
+Calle Campo Sagrado, núm. 11, 4º D, 33205 Gijón (Asturias) – SPAIN.
+
+Incorporation details
+NOOTTOOLS SL (Tax ID B-22808646) was incorporated by public deed on July 30, 2025.
+It is classified under CNAE 6201 – Computer Programming Activities.
+Within the SIC business classification system, NOOTTOOLS SL is listed under number 7372.
+The company is registered in the Mercantile Registry of Asturias and its incorporation details are published in the BORME (Official Bulletin of the Mercantile Registry).
+
+Contact email
+For all legal purposes, the Company’s official email address is: noot@noottools.io
+
+GENERAL TERMS AND CONDITIONS OF USE OF THE WEBSITE
+Acceptance of the terms and conditions of use
+
+Any person who accesses and uses this website declares that they understand and accept these "General Conditions", which are available to any user through its Legal Notice.
+Understanding and accepting these General Conditions are a necessary prerequisite for accessing the information society services offered by NOOTTOOLS SL and benefiting from their provision.
+Therefore, any person who does not agree with these provisions is not authorized to use this website.
+
+Ownership of the website
+
+This website (www.noottools.io
+) is the exclusive property of NOOTTOOLS SL.
+All intellectual property rights, exploitation rights, and reproduction rights over this website, as well as its content, appearance, and design, belong solely to the Company, unless expressly stated otherwise.
+
+Any improper or unauthorized use of this website or its contents may be prosecuted in accordance with applicable law.
+
+NOOTTOOLS SL reserves the right to modify, update, expand, or delete the content of this website at any time and without prior notice, including these terms of use.
+The Company may also restrict or deny access to this website at its sole discretion and for any reason it deems appropriate.
+
+Scope of the website
+
+All information provided to users through this website constitutes its "Content" and is intended for informational purposes only.
+
+The Company does not intend to use this website, directly or indirectly, as a medium or instrument for conducting business, offering services, or entering into contracts, unless expressly indicated otherwise.
+
+The content of this website does not constitute legal, financial, or investment advice regarding the cryptocurrency market. Its purpose is purely informative.
+
+Therefore, the information contained herein should not be considered a recommendation or relied upon as a basis for making investments or financial decisions. Users are solely responsible for seeking appropriate advice on the risks, applicable regulations, and functioning of cryptoasset markets.
+
+This website may also include third-party information, for which NOOTTOOLS SL assumes no responsibility regarding its accuracy or any damages resulting from its use.
+
+Additionally, this site may contain links to other websites for informational purposes. Users are solely responsible for evaluating the content and usefulness of information published on such external websites. The Company disclaims any responsibility for the security, privacy, or content of third-party sites.
+
+Any third parties wishing to establish links to this website must obtain prior written authorization from NOOTTOOLS SL.
+
+Use of the website
+
+The content of this website may be downloaded, copied, or printed only for personal use if such options are available.
+
+The Company is not responsible for any discrepancies between printed versions and the electronic version of the information contained herein.
+
+Except as stated above, it is strictly prohibited to copy, duplicate, redistribute, reproduce, publish, market, or exploit in any way the content of this website —whether partially or in full, in written or graphical form— without prior written authorization from the Company, even when citing the source.
+
+Important notice
+
+NOOTTOOLS SL expressly warns users about the risks related to cryptocurrency markets and cryptoassets:
+
+Volatility risk – Investments in cryptoassets may fluctuate significantly in value, both upwards and downwards, and investors may even lose their entire investment.
+
+Startup risk – Investments in early-stage or “startup” projects entail a high level of risk, requiring a thorough understanding of the business model.
+
+Lack of protection – Cryptoassets are not covered by customer protection mechanisms such as the Deposit Guarantee Fund or the Investor Compensation Scheme.
+
+Liquidity risk – Many cryptoassets suffer from low liquidity, which may make it difficult or impossible to sell assets without incurring significant losses.
+
+Technology risk – Distributed ledger technologies are still in an early stage of development and may present operational or security vulnerabilities.
+
+Protocol attack risk – Distributed networks rely on consensus mechanisms that may be vulnerable to attacks. In the event of a successful attack, balances and cryptoassets could be permanently lost.
+
+Cybersecurity risk – Due to the pseudonymous or anonymous nature of cryptoassets, they are frequent targets for cybercriminals. Theft of private keys or credentials could result in the irretrievable loss of funds.
+
+Custody risk – Proper custody of private keys is crucial. Losing access credentials can result in the total loss of cryptoassets.
+
+Limited acceptance – Cryptoassets are not widely accepted as a means of payment, and there is no legal obligation for third parties to accept them.
+
+Jurisdictional risk – If the service provider is located outside the European Union, resolving disputes can be costly and may fall outside the jurisdiction of EU authorities.
+
+Privacy policy
+
+Users are informed that NOOTTOOLS SL does not collect or process personal data in connection with the provision of its informational services.
+
+Under no circumstances will the Company's activity involve collecting, storing, or processing personal data, nor using or transferring such data, except when required by applicable law as an information society service provider.
+
+Furthermore, NOOTTOOLS SL guarantees the confidentiality of connections and the protection of users’ data, adopting legally required security measures consistent with the current state of technology.
+
+Liability
+
+The Company offers no guarantees and assumes no responsibility for any damages, losses, claims, or expenses of any kind arising from or related to:
+
+The use or inability to use this website.
+
+Unauthorized, negligent, or fraudulent use of the website.
+
+Any inaccuracies or omissions in its contents.
+
+Although the Company may update and improve the content to provide a better user experience, the information provided herein is not official and should not be relied upon as such.
+
+Given the nature of the technology and the markets involved, NOOTTOOLS SL does not guarantee the security, availability, or uninterrupted functionality of this website.
+Users should also be aware that any information transmitted through the site may be intercepted.
+
+Governing law and jurisdiction
+
+This legal notice and the NOOTTOOLS SL website are governed by Spanish law.
+
+Any disputes that may arise between the Company and users shall be submitted to the courts and tribunals of Asturias, Spain, with the express waiver of any other jurisdiction that may apply.
+
+
+
+2
+
+Legal Advice
+
+All the content on our website and any content accessible through hyperlinks, as well as that which may derive from applications, forums, blogs, social networks, and other platforms associated with NOOTTOOLS, is intended solely to provide users with general information and is in no way aimed at the commercialization of specific products.
+
+We cannot guarantee the accuracy, precision, or timeliness of the published data. The publication of information by NOOTTOOLS does not imply, nor should it be interpreted as, financial, legal, or any other type of advice regarding the suitability of investing in the markets and products mentioned.
+
+Any use or exploitation of the information provided will be carried out at the user's own risk and responsibility. Users interested in investing must conduct their own research and analysis, reviewing and verifying such data and content before relying on it.
+
+The commercial transactions referred to in the information involve very high risk and may result in significant losses for the investor. Therefore, users are advised to seek appropriate professional advice before making any decision.
+
+Nothing contained on our website constitutes or should be considered an invitation or offer to make investments.
+
+
+3 
+Privacy Policy
+1. Introduction
+
+At NOOTTOOLS SL, we are committed to protecting the privacy of our users.
+This Privacy Policy explains how we collect, use, and safeguard the personal information you provide through our application.
+
+2. Information We Collect
+
+We collect the following data from our users:
+
+Wallet address – Used as a unique user identifier.
+
+Email address or Telegram username – Used to send relevant notifications.
+
+3. Use of Information
+
+The information collected is used exclusively for the following purposes:
+
+User identification and authentication.
+
+Sending relevant notifications via email or Telegram.
+
+4. Storage and Protection of Information
+
+All collected information is stored in our secure database and is not shared with third parties.
+We implement appropriate security measures to protect your data from unauthorized access, alteration, disclosure, or destruction.
+
+5. User Rights
+
+You have the right to access, rectify, or delete your personal information at any time.
+
+To exercise these rights, please contact us by sending an email to noot@noottools.io
+ or by mail at:
+
+Calle Campo Sagrado, 11 - 4º D, 33205 Gijón, Asturias, Spain.
+
+6. Changes to the Privacy Policy
+
+We reserve the right to update this Privacy Policy at any time.
+Any changes will be communicated through our application or via email.
+
+7. Contact
+
+If you have any questions or concerns about our Privacy Policy, please contact us by email at noot@noottools.io
+ or by mail at:
+
+Calle Campo Sagrado, 11 - 4º D, 33205 Gijón, Asturias, Spain.
