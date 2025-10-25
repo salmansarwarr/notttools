@@ -189,26 +189,46 @@ export const useBondingCurveFlow = () => {
                 TOKEN_2022_PROGRAM_ID
             );
 
-            const tx = new Transaction().add(createAtaIx, mintToInstruction);
+            // Revoke mint authority
+            const revokeMintAuthorityIx = createSetAuthorityInstruction(
+                mint,
+                publicKey,
+                AuthorityType.MintTokens,
+                null, // Setting to null revokes the authority
+                [],
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            // Revoke freeze authority
+            const revokeFreezeAuthorityIx = createSetAuthorityInstruction(
+                mint,
+                publicKey,
+                AuthorityType.FreezeAccount,
+                null, // Setting to null revokes the authority
+                [],
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            const tx = new Transaction().add(createAtaIx, mintToInstruction, revokeMintAuthorityIx, revokeFreezeAuthorityIx);
             const txid = await sendTx(tx);
 
             return { creatorTokenAccount, txid };
         });
     }
 
-        async function initializeBondingCurve(mint, creatorTokenAccount) {
-            const initKey = `init-curve-${mint.toString()}`;
+    async function initializeBondingCurve(mint, creatorTokenAccount) {
+        const initKey = `init-curve-${mint.toString()}`;
 
-            return withDeduplication(initKey, async () => {
-                const provider = new AnchorProvider(
-                    connection,
-                    wallet,
-                    { commitment: 'confirmed' }
-                );
-                
-                const program = new Program(bondingCurveIDL, provider);
+        return withDeduplication(initKey, async () => {
+            const provider = new AnchorProvider(
+                connection,
+                wallet,
+                { commitment: 'confirmed' }
+            );
 
-                        // 🔍 DEBUG: Check what's in your IDL
+            const program = new Program(bondingCurveIDL, provider);
+
+            // 🔍 DEBUG: Check what's in your IDL
             console.log('🔍 Program ID:', program.programId.toString());
             console.log('🔍 Expected ID:', 'DZZCYzB3kBB38xkFAU1xdSc4qwvzJATAULBtKcqweVXd');
             console.log('🔍 IDL Instructions:', program.idl.instructions.map(i => i.name));
@@ -220,119 +240,119 @@ export const useBondingCurveFlow = () => {
             );
             console.log('🔍 Instruction exists:', hasInstruction);
 
-                // Derive PDAs
-                const [bondingCurve] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("bonding_curve"), mint.toBuffer()],
-                    BONDING_CURVE_PROGRAM_ID
-                );
+            // Derive PDAs
+            const [bondingCurve] = PublicKey.findProgramAddressSync(
+                [Buffer.from("bonding_curve"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
 
-                const [tokenVault] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("token_vault"), mint.toBuffer()],
-                    BONDING_CURVE_PROGRAM_ID
-                );
+            const [tokenVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("token_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
 
-                const [firstBuyerLockVault] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("first_buyer_lock_vault"), mint.toBuffer()],
-                    BONDING_CURVE_PROGRAM_ID
-                );
+            const [firstBuyerLockVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("first_buyer_lock_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
 
-                const [solVault] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("sol_vault"), mint.toBuffer()],
-                    BONDING_CURVE_PROGRAM_ID
-                );
+            const [solVault] = PublicKey.findProgramAddressSync(
+                [Buffer.from("sol_vault"), mint.toBuffer()],
+                BONDING_CURVE_PROGRAM_ID
+            );
 
-                // Calculate amounts
-                const totalSupply = new BN(BONDING_CURVE_CONFIG.TOTAL_SUPPLY)
-                    .mul(new BN(10).pow(new BN(BONDING_CURVE_CONFIG.DECIMALS)));
+            // Calculate amounts
+            const totalSupply = new BN(BONDING_CURVE_CONFIG.TOTAL_SUPPLY)
+                .mul(new BN(10).pow(new BN(BONDING_CURVE_CONFIG.DECIMALS)));
 
-                const virtualTokenReserves = new BN(BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES)
-                    .mul(new BN(1_000_000_000));
+            const virtualTokenReserves = new BN(BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES)
+                .mul(new BN(1_000_000_000));
 
-                const virtualSolReserves = new BN(BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES)
-                    .mul(new BN(1_000_000_000));
+            const virtualSolReserves = new BN(BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES)
+                .mul(new BN(1_000_000_000));
 
-                const migrationThreshold = new BN(BONDING_CURVE_CONFIG.MIGRATION_THRESHOLD)
-                    .mul(new BN(1_000_000_000));
+            const migrationThreshold = new BN(BONDING_CURVE_CONFIG.MIGRATION_THRESHOLD)
+                .mul(new BN(1_000_000_000));
 
-                console.log('📊 Initializing Bonding Curve...');
-                console.log('   Total Supply:', totalSupply.toString());
-                console.log('   Virtual Token Reserves:', virtualTokenReserves.toString());
-                console.log('   Virtual SOL Reserves:', virtualSolReserves.toString());
-                console.log('   Migration Threshold:', migrationThreshold.toString());
+            console.log('📊 Initializing Bonding Curve...');
+            console.log('   Total Supply:', totalSupply.toString());
+            console.log('   Virtual Token Reserves:', virtualTokenReserves.toString());
+            console.log('   Virtual SOL Reserves:', virtualSolReserves.toString());
+            console.log('   Migration Threshold:', migrationThreshold.toString());
 
-                // Step 1: Initialize bonding curve (creates all PDAs)
-                console.log('📋 Step 1: Initializing bonding curve with first buyer lock...');
-                
-                const initIx = await program.methods
-                    .initializeBondingCurve(
-                        virtualTokenReserves,
-                        virtualSolReserves,
-                        migrationThreshold,
-                        totalSupply,
-                        new BN(BONDING_CURVE_CONFIG.HOLDER_THRESHOLD),
-                        new BN(BONDING_CURVE_CONFIG.VOLUME_THRESHOLD_USD_CENTS)
-                    )
-                    .accounts({
-                        bondingCurve,
-                        tokenVault,
-                        firstBuyerLockVault,
-                        solVault,
-                        tokenMint: mint,
-                        creator: wallet.publicKey,
-                        oracleAuthority: PLATFORM_AUTHORITY,
-                        tokenProgram: TOKEN_2022_PROGRAM_ID,
-                        systemProgram: SystemProgram.programId,
-                        rent: SYSVAR_RENT_PUBKEY,
-                    })
-                    .instruction();
+            // Step 1: Initialize bonding curve (creates all PDAs)
+            console.log('📋 Step 1: Initializing bonding curve with first buyer lock...');
 
-                // Step 2: Transfer all tokens to bonding curve vault
-                console.log('📋 Step 2: Transferring tokens to bonding curve vault...');
-                
-                const transferIx = createTransferCheckedInstruction(
-                    creatorTokenAccount,
-                    mint,
-                    tokenVault,
-                    wallet.publicKey,
+            const initIx = await program.methods
+                .initializeBondingCurve(
+                    virtualTokenReserves,
+                    virtualSolReserves,
+                    migrationThreshold,
                     totalSupply,
-                    BONDING_CURVE_CONFIG.DECIMALS,
-                    [],
-                    TOKEN_2022_PROGRAM_ID
-                );
-
-                // Step 3: Revoke mint authority
-                console.log('📋 Step 3: Revoking mint authority...');
-                
-                const revokeIx = createSetAuthorityInstruction(
-                    mint,
-                    wallet.publicKey,
-                    AuthorityType.MintTokens,
-                    null,
-                    [],
-                    TOKEN_2022_PROGRAM_ID
-                );
-
-                // Combine all instructions
-                const tx = new Transaction().add(initIx, transferIx, revokeIx);
-                
-                console.log('📤 Sending transaction...');
-                const txid = await sendTx(tx);
-
-                console.log('✅ Transaction confirmed:', txid);
-                console.log('✅ Bonding curve initialized!');
-                console.log('   - All tokens in vault ready for trading');
-                console.log('   - First buyer will have tokens locked');
-                console.log('   - Mint authority revoked');
-
-                return { 
-                    bondingCurve, 
-                    tokenVault, 
+                    new BN(BONDING_CURVE_CONFIG.HOLDER_THRESHOLD),
+                    new BN(BONDING_CURVE_CONFIG.VOLUME_THRESHOLD_USD_CENTS)
+                )
+                .accounts({
+                    bondingCurve,
+                    tokenVault,
                     firstBuyerLockVault,
-                    solVault, 
-                    txid 
-                };
-            });
-        }
+                    solVault,
+                    tokenMint: mint,
+                    creator: wallet.publicKey,
+                    oracleAuthority: PLATFORM_AUTHORITY,
+                    tokenProgram: TOKEN_2022_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                    rent: SYSVAR_RENT_PUBKEY,
+                })
+                .instruction();
+
+            // Step 2: Transfer all tokens to bonding curve vault
+            console.log('📋 Step 2: Transferring tokens to bonding curve vault...');
+
+            const transferIx = createTransferCheckedInstruction(
+                creatorTokenAccount,
+                mint,
+                tokenVault,
+                wallet.publicKey,
+                totalSupply,
+                BONDING_CURVE_CONFIG.DECIMALS,
+                [],
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            // Step 3: Revoke mint authority
+            console.log('📋 Step 3: Revoking mint authority...');
+
+            const revokeIx = createSetAuthorityInstruction(
+                mint,
+                wallet.publicKey,
+                AuthorityType.MintTokens,
+                null,
+                [],
+                TOKEN_2022_PROGRAM_ID
+            );
+
+            // Combine all instructions
+            const tx = new Transaction().add(initIx, transferIx, revokeIx);
+
+            console.log('📤 Sending transaction...');
+            const txid = await sendTx(tx);
+
+            console.log('✅ Transaction confirmed:', txid);
+            console.log('✅ Bonding curve initialized!');
+            console.log('   - All tokens in vault ready for trading');
+            console.log('   - First buyer will have tokens locked');
+            console.log('   - Mint authority revoked');
+
+            return {
+                bondingCurve,
+                tokenVault,
+                firstBuyerLockVault,
+                solVault,
+                txid
+            };
+        });
+    }
 
     async function buyTokens(mint, solAmount, slippageBps = 100) {
         const buyKey = `buy-${mint.toString()}-${Date.now()}`;
@@ -407,28 +427,28 @@ export const useBondingCurveFlow = () => {
                     .instruction();
 
                 const tx = new Transaction().add(createAtaIx, buyIx);
-                
+
                 toast.update(toastId, { render: "Confirm transaction in wallet..." });
                 const txid = await sendTx(tx);
 
                 // Check if this was the first buy
                 const isFirstBuy = curveData.firstBuyer === null;
-                const message = isFirstBuy 
+                const message = isFirstBuy
                     ? `🔒 First buy! 60% tokens locked until conditions met`
                     : `✅ Successfully bought tokens!`;
 
-                toast.update(toastId, { 
-                    render: message, 
-                    type: "success", 
+                toast.update(toastId, {
+                    render: message,
+                    type: "success",
                     isLoading: false,
                     autoClose: 5000
                 });
 
                 return { txid, tokensOut, isFirstBuy };
             } catch (error) {
-                toast.update(toastId, { 
-                    render: `Buy failed: ${error.message}`, 
-                    type: "error", 
+                toast.update(toastId, {
+                    render: `Buy failed: ${error.message}`,
+                    type: "error",
                     isLoading: false,
                     autoClose: 5000
                 });
@@ -510,13 +530,13 @@ export const useBondingCurveFlow = () => {
                     .instruction();
 
                 const tx = new Transaction().add(sellIx);
-                
+
                 toast.update(toastId, { render: "Confirm transaction in wallet..." });
                 const txid = await sendTx(tx);
 
-                toast.update(toastId, { 
-                    render: `✅ Successfully sold tokens for SOL!`, 
-                    type: "success", 
+                toast.update(toastId, {
+                    render: `✅ Successfully sold tokens for SOL!`,
+                    type: "success",
                     isLoading: false,
                     autoClose: 5000
                 });
@@ -527,9 +547,9 @@ export const useBondingCurveFlow = () => {
                     minSolOut: parseFloat(minSolOut.toString()) / 1e9,
                 };
             } catch (error) {
-                toast.update(toastId, { 
-                    render: `Sell failed: ${error.message}`, 
-                    type: "error", 
+                toast.update(toastId, {
+                    render: `Sell failed: ${error.message}`,
+                    type: "error",
                     isLoading: false,
                     autoClose: 5000
                 });
@@ -573,18 +593,18 @@ export const useBondingCurveFlow = () => {
                 const tx = new Transaction().add(updateIx);
                 const txid = await sendTx(tx);
 
-                toast.update(toastId, { 
-                    render: "✅ Successfully updated bonding curve data!", 
-                    type: "success", 
+                toast.update(toastId, {
+                    render: "✅ Successfully updated bonding curve data!",
+                    type: "success",
                     isLoading: false,
                     autoClose: 5000
                 });
 
                 return { txid };
             } catch (error) {
-                toast.update(toastId, { 
-                    render: `Update failed: ${error.message}`, 
-                    type: "error", 
+                toast.update(toastId, {
+                    render: `Update failed: ${error.message}`,
+                    type: "error",
                     isLoading: false,
                     autoClose: 5000
                 });
@@ -623,9 +643,9 @@ export const useBondingCurveFlow = () => {
 
                 const curveData = await program.account.bondingCurve.fetch(bondingCurve);
 
-                toast.update(toastId, { 
-                    render: curveData.unlockable 
-                        ? "🎉 Unlock conditions met!" 
+                toast.update(toastId, {
+                    render: curveData.unlockable
+                        ? "🎉 Unlock conditions met!"
                         : "⏳ Unlock conditions not yet met",
                     type: curveData.unlockable ? "success" : "info",
                     isLoading: false,
@@ -634,9 +654,9 @@ export const useBondingCurveFlow = () => {
 
                 return { txid, unlockable: curveData.unlockable };
             } catch (error) {
-                toast.update(toastId, { 
-                    render: `Check failed: ${error.message}`, 
-                    type: "error", 
+                toast.update(toastId, {
+                    render: `Check failed: ${error.message}`,
+                    type: "error",
                     isLoading: false,
                     autoClose: 5000
                 });
@@ -690,18 +710,18 @@ export const useBondingCurveFlow = () => {
                 const tx = new Transaction().add(unlockIx);
                 const txid = await sendTx(tx);
 
-                toast.update(toastId, { 
-                    render: "🔓 Successfully unlocked first buyer tokens!", 
-                    type: "success", 
+                toast.update(toastId, {
+                    render: "🔓 Successfully unlocked first buyer tokens!",
+                    type: "success",
                     isLoading: false,
                     autoClose: 5000
                 });
 
                 return { txid };
             } catch (error) {
-                toast.update(toastId, { 
-                    render: `Unlock failed: ${error.message}`, 
-                    type: "error", 
+                toast.update(toastId, {
+                    render: `Unlock failed: ${error.message}`,
+                    type: "error",
                     isLoading: false,
                     autoClose: 5000
                 });
