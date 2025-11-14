@@ -1,6 +1,6 @@
 // 🔧 NETWORK CONFIGURATION
 // Change: 'devnet' | 'testnet' | 'mainnet-beta'
-const NETWORK_TYPE = "mainnet-beta";
+const NETWORK_TYPE = "devnet";
 
 // 🌐 SOLANA NETWORK ENDPOINTS
 const SOLANA_NETWORKS = {
@@ -12,7 +12,7 @@ const SOLANA_NETWORKS = {
 
 // 📝 SOLANA PROGRAM ADDRESSES
 const PROGRAM_ADDRESSES = {
-  devnet: "C5iywAsfLev5sx4bYuuMw7U1Ms8Dhe2Y9j4vjTrpxHx7",
+  devnet: "6hgRdDw7rRrpd7a6UPpomnPCHBMk9siWuvSCigQe2PUn",  
   testnet: "DAbyh1R9NeSoYnmUxwogR6w3MP9Bd7jtxrmEVG4iY3y5",
   "mainnet-beta": "BF27BrKA4jbkqdNETXs7oYqZge8rMk4GyMFsJvNdrgzi",
 };
@@ -37,7 +37,7 @@ const NFT_CONFIG = {
 // 🖼️ METADATA SETTINGS
 const METADATA_CONFIG = {
   defaultImage: "/pengu.png", // Default NFT image
-  defaultDescription: "Noottools Genesis NFT Collection",
+  defaultDescription: "The NOOTTOOLS NFT collection is a unique collection of 5000 with it you can have exclusive access to special tools and functions in the ecosystem",
   defaultExternalUrl: "https://metadata.noottools.io/metadata",
   animationUrlPrefix: "https://noottools.uncw3b.com/nft-animations/",
 };
@@ -152,6 +152,13 @@ const constants = {
   ui: UI_CONFIG,
   wallet: WALLET_CONFIG,
   legal: LEGAL_PAGES,
+  commission: {
+    walletAddress: {
+      'devnet': '35Bk7MrW3c17QWioRuABBEMFwNk4NitXRFBvkzYAupfF',
+      'testnet': 'YOUR_TESTNET_ADMIN_WALLET_HERE',
+      'mainnet-beta': 'YOUR_MAINNET_ADMIN_WALLET_HERE' // ✅ Add your mainnet admin wallet
+    }
+  },
 
   // Helper functions
   getExplorerUrl: (signature, type = "tx") => {

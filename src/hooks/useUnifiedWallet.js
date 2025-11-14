@@ -27,7 +27,7 @@ export function useUnifiedWallet() {
         connected: appKitConnected,
         connecting: false,
         disconnecting: false,
-        wallet: null,
+        wallet: walletProvider, // ✅ FIX: Export wallet provider
         
         signMessage: async (message) => {
           if (!walletProvider?.signMessage) {
@@ -50,6 +50,41 @@ export function useUnifiedWallet() {
           return await walletProvider.signAllTransactions(transactions);
         },
         
+        // ✅ FIX: Add sendTransaction method for AppKit
+        sendTransaction: async (transaction, connection, options = {}) => {
+          if (!walletProvider?.signTransaction) {
+            throw new Error("Wallet does not support transaction signing");
+          }
+          
+          // Get latest blockhash if not provided
+          if (!transaction.recentBlockhash) {
+            const { blockhash } = await connection.getLatestBlockhash();
+            transaction.recentBlockhash = blockhash;
+          }
+          
+          // Set fee payer
+          transaction.feePayer = new PublicKey(address);
+          
+          // Add signers if provided
+          if (options.signers && options.signers.length > 0) {
+            transaction.partialSign(...options.signers);
+          }
+          
+          // Sign with wallet
+          const signedTransaction = await walletProvider.signTransaction(transaction);
+          
+          // Send to network
+          const signature = await connection.sendRawTransaction(
+            signedTransaction.serialize(),
+            {
+              skipPreflight: options.skipPreflight || false,
+              preflightCommitment: options.preflightCommitment || "confirmed",
+            }
+          );
+          
+          return signature;
+        },
+        
         disconnect: async () => {
           // AppKit disconnect is handled through useAppKit's open() modal
           console.warn("Disconnect through AppKit modal");
@@ -64,6 +99,7 @@ export function useUnifiedWallet() {
       // Wallet Adapter is active (or nothing is connected)
       return {
         ...walletAdapter,
+        wallet: walletAdapter.wallet, // ✅ FIX: Explicitly export wallet
         isAppKit: false,
       };
     }

@@ -721,16 +721,20 @@ const createFallbackMetadata = (mintAddress) => {
 /**
  * 4. User'ın Tüm NFT'lerini Getir
  */
+const processBatch = async (items, batchSize, processor) => {
+  const results = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    const batchResults = await Promise.allSettled(
+      batch.map(processor)
+    );
+    results.push(...batchResults.map(r => r.status === 'fulfilled' ? r.value : null).filter(Boolean));
+  }
+  return results;
+};
 
-export const getUserNFTs = async (wallet, options = {}) => {
+export const getUserNFTs = async (wallet, onProgress) => {
   try {
-    const {
-      limit = 20,
-      offset = 0,
-      onProgress = null,
-      filterName = "NOOT".toLowerCase(), // ✅ Filter parameter
-    } = options;
-
     console.log("🎨 Fetching user NFTs...");
 
     if (!wallet.publicKey) {
@@ -747,25 +751,17 @@ export const getUserNFTs = async (wallet, options = {}) => {
 
     console.log(`✅ Found ${tokenAccounts.value.length} token accounts`);
 
-    // ✅ We need to process ALL to filter by name (since name is in metadata)
-    // But we'll do it in batches
-    const batchSize = 10;
-    const startIdx = offset;
-    const endIdx = Math.min(startIdx + batchSize, tokenAccounts.value.length);
-    const batch = tokenAccounts.value.slice(startIdx, endIdx);
+    // Update progress
+    if (onProgress) {
+      onProgress({ current: 0, total: tokenAccounts.value.length });
+    }
 
-    console.log(`📦 Processing batch: ${startIdx}-${endIdx} of ${tokenAccounts.value.length}`);
+    const allNFTs = [];
+    let processedCount = 0;
 
-    const nftPromises = batch.map(async (tokenAccountInfo, index) => {
+    // Process token accounts in batches
+    const processTokenAccount = async (tokenAccountInfo, index) => {
       try {
-        if (onProgress) {
-          onProgress({
-            current: startIdx + index + 1,
-            total: tokenAccounts.value.length,
-            status: 'processing'
-          });
-        }
-
         const tokenAccountData = await connection.getParsedAccountInfo(
           tokenAccountInfo.pubkey
         );
@@ -784,26 +780,24 @@ export const getUserNFTs = async (wallet, options = {}) => {
             PROGRAM_ID
           );
 
-          console.log(`🎨 Processing NFT: ${mintAddress.slice(0, 8)}...`);
+          console.log(`🎨 Processing NFT ${index + 1}/${tokenAccounts.value.length}: ${mintAddress.slice(0, 8)}...`);
           
-          // Get metadata
+          // Fetch metadata with timeout
           const metadata = await Promise.race([
             getNFTMetadata(mintAddress),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error("Metadata timeout")), 2000)
+              setTimeout(() => reject(new Error("Metadata timeout")), 3000)
             )
           ]).catch(error => {
-            console.warn(`⚠️ Metadata fetch failed for ${mintAddress.slice(0, 8)}`);
+            console.warn(`⚠️ Metadata fetch failed for ${mintAddress.slice(0, 8)}:`, error.message);
             return createFallbackMetadata(mintAddress);
           });
 
-          // ✅ FILTER BY NAME - Skip if doesn't contain "NOOT"
-          if (!metadata.name || !metadata.name.toUpperCase().includes(filterName.toUpperCase())) {
-            console.log(`⏭️ Skipping ${metadata.name} (not a NOOT NFT)`);
+          // ✅ FILTER: Only include NFTs with "noot" in the name (case-insensitive)
+          if (!metadata.name || !metadata.name.toLowerCase().includes("noot")) {
+            console.log(`⏭️ Skipping ${metadata.name || 'Unknown'} - doesn't contain "noot"`);
             return null;
           }
-
-          console.log(`✅ Found NOOT NFT: ${metadata.name}`);
 
           let nftInfo = {
             mintAddress,
@@ -872,7 +866,7 @@ export const getUserNFTs = async (wallet, options = {}) => {
               }
             }
           } catch (error) {
-            console.warn(`⚠️ Stake check failed for ${mintAddress.slice(0, 8)}`);
+            console.warn(`⚠️ Stake check failed for ${mintAddress.slice(0, 8)}:`, error.message);
           }
 
           return nftInfo;
@@ -881,21 +875,37 @@ export const getUserNFTs = async (wallet, options = {}) => {
       } catch (error) {
         console.error("Error processing token account:", error);
         return null;
+      } finally {
+        processedCount++;
+        if (onProgress) {
+          onProgress({ current: processedCount, total: tokenAccounts.value.length });
+        }
       }
-    });
+    };
 
-    const batchResults = await Promise.all(nftPromises);
-    const validNFTs = batchResults.filter(nft => nft !== null);
+    // Process in batches of 10 concurrent requests
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < tokenAccounts.value.length; i += BATCH_SIZE) {
+      const batch = tokenAccounts.value.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(
+        batch.map((account, idx) => processTokenAccount(account, i + idx))
+      );
+      
+      const validNFTs = batchResults
+        .map(r => r.status === 'fulfilled' ? r.value : null)
+        .filter(Boolean);
+      
+      allNFTs.push(...validNFTs);
+    }
 
-    console.log(`✅ Found ${validNFTs.length} NOOT NFTs in this batch`);
+    console.log(`✅ Processed ${allNFTs.length} "noot" NFTs from wallet (filtered from ${tokenAccounts.value.length} tokens)`);
 
-    // Check for staked NOOT NFTs in vault (only on first load)
-    let stakedInVault = [];
-    if (offset === 0) {
-      try {
-        console.log("📡 Checking for staked NOOT NFTs in vault...");
-        
-        const programAccountsPromise = connection.getProgramAccounts(PROGRAM_ID, {
+    // Check for staked NFTs in vault
+    try {
+      console.log("📡 Checking for staked NFTs in vault...");
+      
+      const programAccounts = await Promise.race([
+        connection.getProgramAccounts(PROGRAM_ID, {
           filters: [
             {
               memcmp: {
@@ -904,120 +914,117 @@ export const getUserNFTs = async (wallet, options = {}) => {
               },
             },
           ],
-        });
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Program accounts timeout")), 10000)
+        )
+      ]);
 
-        const programAccounts = await Promise.race([
-          programAccountsPromise,
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Program accounts timeout")), 8000)
-          )
-        ]);
+      for (const accountInfo of programAccounts) {
+        try {
+          const data = accountInfo.account.data;
 
-        const stakedPromises = programAccounts.map(async (accountInfo) => {
-          try {
-            const data = accountInfo.account.data;
-            const discriminator = data.slice(0, 8);
-            const expectedDiscriminator = [66, 62, 68, 70, 108, 179, 183, 235];
+          const discriminator = data.slice(0, 8);
+          const expectedDiscriminator = [66, 62, 68, 70, 108, 179, 183, 235];
 
-            if (!discriminator.equals(Buffer.from(expectedDiscriminator))) {
-              return null;
-            }
-
-            let offset = 8;
-            const mint = new PublicKey(data.slice(offset, offset + 32)).toString();
-            offset += 32;
-            const owner = new PublicKey(data.slice(offset, offset + 32)).toString();
-            offset += 32;
-
-            if (owner !== userPubkey.toString()) {
-              return null;
-            }
-
-            const stakeTimestamp = data.readBigInt64LE(offset);
-            offset += 8;
-            const unlockTimestamp = data.readBigInt64LE(offset);
-            offset += 8;
-            const originalStakeTimestamp = data.readBigInt64LE(offset);
-            offset += 8;
-            const isStaked = data.readUInt8(offset) === 1;
-
-            if (!isStaked) return null;
-
-            // Check if already in validNFTs
-            if (validNFTs.some(nft => nft.mintAddress === mint)) {
-              return null;
-            }
-
-            console.log(`🎨 Found staked NFT in vault: ${mint.slice(0, 8)}...`);
-            
-            const metadata = await Promise.race([
-              getNFTMetadata(mint),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Metadata timeout")), 2000)
-              )
-            ]).catch(() => createFallbackMetadata(mint));
-
-            // ✅ FILTER BY NAME - Skip if doesn't contain "NOOT"
-            if (!metadata.name || !metadata.name.toUpperCase().includes(filterName.toUpperCase())) {
-              console.log(`⏭️ Skipping staked ${metadata.name} (not a NOOT NFT)`);
-              return null;
-            }
-
-            console.log(`✅ Found staked NOOT NFT: ${metadata.name}`);
-
-            const stakeDate = new Date(Number(stakeTimestamp) * 1000);
-            const unlockDate = new Date(Number(unlockTimestamp) * 1000);
-            const now = new Date();
-
-            return {
-              mintAddress: mint,
-              tokenAccount: null,
-              name: metadata.name,
-              symbol: metadata.symbol,
-              image: metadata.image,
-              description: metadata.description,
-              staked: true,
-              stakeDate: stakeDate.toISOString(),
-              unlockDate: unlockDate.toISOString(),
-              isLocked: now < unlockDate,
-              daysRemaining: Math.max(
-                0,
-                Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24))
-              ),
-              explorerUrl: constants.getExplorerUrl(mint, "address"),
-              stakeInfoPda: accountInfo.pubkey.toString(),
-            };
-          } catch (error) {
-            return null;
+          if (!discriminator.equals(Buffer.from(expectedDiscriminator))) {
+            continue;
           }
-        });
 
-        const stakedResults = await Promise.all(stakedPromises);
-        stakedInVault = stakedResults.filter(nft => nft !== null);
-        
-        console.log(`✅ Found ${stakedInVault.length} staked NOOT NFTs in vault`);
-      } catch (error) {
-        console.warn("⚠️ Error fetching staked NFTs:", error.message);
+          let offset = 8;
+
+          const mint = new PublicKey(
+            data.slice(offset, offset + 32)
+          ).toString();
+          offset += 32;
+
+          const owner = new PublicKey(
+            data.slice(offset, offset + 32)
+          ).toString();
+          offset += 32;
+
+          if (owner !== userPubkey.toString()) {
+            continue;
+          }
+
+          const stakeTimestamp = data.readBigInt64LE(offset);
+          offset += 8;
+
+          const unlockTimestamp = data.readBigInt64LE(offset);
+          offset += 8;
+
+          const originalStakeTimestamp = data.readBigInt64LE(offset);
+          offset += 8;
+
+          const isStaked = data.readUInt8(offset) === 1;
+
+          if (isStaked) {
+            const existingNFTIndex = allNFTs.findIndex(
+              (nft) => nft.mintAddress === mint
+            );
+
+            if (existingNFTIndex === -1) {
+              console.log(`🎨 Found staked NFT in vault: ${mint.slice(0, 8)}...`);
+              
+              const metadata = await Promise.race([
+                getNFTMetadata(mint),
+                new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error("Metadata timeout")), 3000)
+                )
+              ]).catch(error => {
+                console.warn(`⚠️ Metadata fetch failed for ${mint.slice(0, 8)}:`, error.message);
+                return createFallbackMetadata(mint);
+              });
+
+              // ✅ FILTER: Only include NFTs with "noot" in the name
+              if (!metadata.name || !metadata.name.toLowerCase().includes("noot")) {
+                console.log(`⏭️ Skipping staked ${metadata.name || 'Unknown'} - doesn't contain "noot"`);
+                continue;
+              }
+
+              const stakeDate = new Date(Number(stakeTimestamp) * 1000);
+              const unlockDate = new Date(Number(unlockTimestamp) * 1000);
+              const now = new Date();
+
+              allNFTs.push({
+                mintAddress: mint,
+                tokenAccount: null,
+                name: metadata.name,
+                symbol: metadata.symbol,
+                image: metadata.image,
+                description: metadata.description,
+                staked: true,
+                stakeDate: stakeDate.toISOString(),
+                unlockDate: unlockDate.toISOString(),
+                isLocked: now < unlockDate,
+                daysRemaining: Math.max(
+                  0,
+                  Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24))
+                ),
+                explorerUrl: constants.getExplorerUrl(mint, "address"),
+                stakeInfoPda: accountInfo.pubkey.toString(),
+              });
+            }
+          }
+        } catch (error) {
+          console.warn("Error parsing stake info account:", error.message);
+          continue;
+        }
       }
+    } catch (error) {
+      console.warn("⚠️ Error fetching program accounts (staked NFTs):", error.message);
     }
 
-    const allNFTs = [...validNFTs, ...stakedInVault];
+    console.log(`✅ Found ${allNFTs.length} "noot" NFTs total (${allNFTs.filter(n => n.staked).length} staked)`);
 
-    return {
-      nfts: allNFTs.sort((a, b) => {
-        if (a.staked && !b.staked) return -1;
-        if (!a.staked && b.staked) return 1;
-        if (a.staked && b.staked) {
-          return new Date(b.stakeDate) - new Date(a.stakeDate);
-        }
-        return 0;
-      }),
-      hasMore: endIdx < tokenAccounts.value.length,
-      totalAccounts: tokenAccounts.value.length,
-      processedAccounts: endIdx,
-      nootNFTsFound: allNFTs.length,
-      nextOffset: endIdx,
-    };
+    return allNFTs.sort((a, b) => {
+      if (a.staked && !b.staked) return -1;
+      if (!a.staked && b.staked) return 1;
+      if (a.staked && b.staked) {
+        return new Date(b.stakeDate) - new Date(a.stakeDate);
+      }
+      return 0;
+    });
   } catch (error) {
     console.error("❌ Error fetching user NFTs:", error);
     throw error;
@@ -1104,82 +1111,179 @@ export const getUserStakes = async (wallet) => {
 };
 
 /**
- * 6. Config bilgilerini getir
+ * Fetch config from database API (NEW)
+ */
+export const getConfigFromDatabase = async () => {
+  try {
+    console.log("🔧 Fetching config from database API...");
+    
+    const response = await fetch('/api/get-nft-config', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch config from database');
+    }
+
+    console.log("✅ Config fetched from database:", data.config);
+
+    return {
+      admin: data.config.admin_wallet || null,
+      mintingFee: data.config.minting_fee_sol,
+      mintingFeeLamports: data.config.minting_fee_lamports,
+      maxNftsPerWallet: data.config.max_nfts_per_wallet,
+      stakingDurationMonths: data.config.staking_duration_months,
+      collectionMint: data.config.collection_mint,
+      programId: data.config.program_id,
+      rpcEndpoint: data.config.rpc_endpoint,
+      isActive: data.config.is_active,
+      updatedAt: data.config.updated_at,
+      source: 'database', // Indicate this came from database
+    };
+  } catch (error) {
+    console.error("❌ Error fetching config from database:", error);
+    
+    // Return error object
+    return {
+      source: 'error',
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * 6. Get config info - HYBRID: Database + Blockchain fallback
  */
 export const getConfigInfo = async () => {
   try {
-    console.log("🔧 Fetching config info...");
+    console.log("🔧 Fetching config info (hybrid mode)...");
+    
     const connection = getConnection();
-
     const [configPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
       PROGRAM_ID
     );
 
-    console.log("Config PDA:", configPda.toString());
+    // Fetch both sources in parallel
+    const [dbConfig, blockchainConfig] = await Promise.allSettled([
+      getConfigFromDatabase(),
+      connection.getAccountInfo(configPda)
+    ]);
 
-    const configAccount = await connection.getAccountInfo(configPda);
+    // Parse blockchain config if available
+    let blockchainData = null;
+    if (blockchainConfig.status === 'fulfilled' && blockchainConfig.value) {
+      const configData = blockchainConfig.value.data;
+      let offset = 8;
 
-    if (!configAccount) {
-      console.warn("⚠️ Config account not found - program not initialized yet");
-      return {
+      const admin = new PublicKey(configData.slice(offset, offset + 32)).toString();
+      offset += 32;
+
+      const mintingFeeLamports = configData.readBigUInt64LE(offset);
+      offset += 8;
+
+      const maxNftsPerWallet = configData.readUInt8(offset);
+      offset += 1;
+
+      const stakingDurationMonths = configData.readUInt8(offset);
+      offset += 1;
+
+      const totalMinted = configData.readBigUInt64LE(offset);
+      offset += 8;
+
+      const totalStaked = configData.readBigUInt64LE(offset);
+
+      blockchainData = {
+        admin,
+        mintingFee: Number(mintingFeeLamports) / LAMPORTS_PER_SOL,
+        mintingFeeLamports: Number(mintingFeeLamports),
+        maxNftsPerWallet,
+        stakingDurationMonths,
+        totalMinted: Number(totalMinted),
+        totalStaked: Number(totalStaked),
+        configPda: configPda.toString(),
+      };
+
+      console.log("✅ Blockchain config fetched:", blockchainData);
+    } else {
+      console.warn("⚠️ Blockchain config not available");
+    }
+
+    // Build final config with fallback logic
+    let finalConfig = {
+      configPda: configPda.toString(),
+      source: 'hybrid',
+    };
+
+    // Priority: Database -> Blockchain -> Constants
+    if (dbConfig.status === 'fulfilled' && dbConfig.value.source === 'database') {
+      console.log("✅ Database config available");
+      const db = dbConfig.value;
+      
+      finalConfig = {
+        ...finalConfig,
+        admin: db.admin || blockchainData?.admin || "Unknown",
+        mintingFee: db.mintingFee ?? blockchainData?.mintingFee ?? constants.nft.defaultMintPrice,
+        mintingFeeLamports: db.mintingFeeLamports ?? blockchainData?.mintingFeeLamports ?? (constants.nft.defaultMintPrice * LAMPORTS_PER_SOL),
+        maxNftsPerWallet: db.maxNftsPerWallet ?? blockchainData?.maxNftsPerWallet ?? constants.nft.maxNftsPerWallet,
+        stakingDurationMonths: db.stakingDurationMonths ?? blockchainData?.stakingDurationMonths ?? constants.nft.stakingDurationMonths,
+        collectionMint: db.collectionMint,
+        programId: db.programId,
+        rpcEndpoint: db.rpcEndpoint,
+        isActive: db.isActive,
+        updatedAt: db.updatedAt,
+        // Always use blockchain for real-time stats
+        totalMinted: blockchainData?.totalMinted ?? 0,
+        totalStaked: blockchainData?.totalStaked ?? 0,
+      };
+    } else if (blockchainData) {
+      console.log("⚠️ Database unavailable, using blockchain config");
+      finalConfig = {
+        ...finalConfig,
+        ...blockchainData,
+        source: 'blockchain',
+      };
+    } else {
+      console.warn("⚠️ Both sources unavailable, using constants");
+      finalConfig = {
+        ...finalConfig,
         admin: "Unknown",
         mintingFee: constants.nft.defaultMintPrice,
+        mintingFeeLamports: constants.nft.defaultMintPrice * LAMPORTS_PER_SOL,
         maxNftsPerWallet: constants.nft.maxNftsPerWallet,
         stakingDurationMonths: constants.nft.stakingDurationMonths,
         totalMinted: 0,
         totalStaked: 0,
-        configPda: configPda.toString(),
+        source: 'constants',
       };
     }
 
-    console.log("✅ Config account found, parsing data...");
+    console.log("✅ Final hybrid config:", finalConfig);
+    return finalConfig;
 
-    const configData = configAccount.data;
-    let offset = 8;
-
-    const admin = new PublicKey(
-      configData.slice(offset, offset + 32)
-    ).toString();
-    offset += 32;
-
-    const mintingFee = configData.readBigUInt64LE(offset);
-    offset += 8;
-
-    const maxNftsPerWallet = configData.readUInt8(offset);
-    offset += 1;
-
-    const stakingDurationMonths = configData.readUInt8(offset);
-    offset += 1;
-
-    const totalMinted = configData.readBigUInt64LE(offset);
-    offset += 8;
-
-    const totalStaked = configData.readBigUInt64LE(offset);
-
-    const result = {
-      admin,
-      mintingFee: Number(mintingFee) / LAMPORTS_PER_SOL,
-      maxNftsPerWallet,
-      stakingDurationMonths,
-      totalMinted: Number(totalMinted),
-      totalStaked: Number(totalStaked),
-      configPda: configPda.toString(),
-    };
-
-    console.log("✅ Config parsed successfully:", result);
-    return result;
   } catch (error) {
     console.error("❌ Error fetching config:", error);
 
     return {
       admin: "Unknown",
       mintingFee: constants.nft.defaultMintPrice,
+      mintingFeeLamports: constants.nft.defaultMintPrice * LAMPORTS_PER_SOL,
       maxNftsPerWallet: constants.nft.maxNftsPerWallet,
       stakingDurationMonths: constants.nft.stakingDurationMonths,
       totalMinted: 0,
       totalStaked: 0,
       configPda: "Unknown",
+      source: 'error',
+      error: error.message,
     };
   }
 };
@@ -1360,4 +1464,5 @@ export default {
   getPDAs,
   getConnection,
   getProvider,
+  getConfigFromDatabase
 };

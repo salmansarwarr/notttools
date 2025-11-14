@@ -15,7 +15,7 @@ import {
   CheckCircle,
   RefreshCw,
 } from "lucide-react";
-import { getConfigInfo } from "../hooks/frontend-functions";
+import { getConfigInfo } from "../hooks/frontend-functions-old";
 
 const Nfts = () => {
   const [activeTab, setActiveTab] = useState("overview");

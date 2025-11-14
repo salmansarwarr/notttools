@@ -16,7 +16,8 @@ import WalletLogin from "../components/Walletlogin";
 import { useGlobalState } from "../hooks/useGlobalState";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import constants from "../constants.jsx";
-import { mintRandomNFT, getConfigInfo } from "../hooks/frontend-functions";
+import { mintRandomNFT } from "../hooks/frontend-functions";
+import { getConfigInfo } from "../hooks/frontend-functions-old.js";
 
 const NftMinting = () => {
   const { globalState } = useGlobalState();
@@ -158,7 +159,7 @@ const NftMinting = () => {
       for (let i = 0; i < mintAmount; i++) {
         console.log(`Minting NFT ${i + 1} of ${mintAmount}...`);
         // Basit mint - parametresiz
-        const result = await mintRandomNFT(wallet);
+        const result = await mintRandomNFT(wallet, '2bYhxz75oHUGS59SJmSPTz2qpv9RwQkHyn8dse6aapHQ');
         results.push(result);
         console.log(`NFT ${i + 1} minted successfully!`);
 
@@ -320,14 +321,14 @@ const NftMinting = () => {
                   <div className="bg-gray-800/50 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-purple-400 mb-1">
                       {configInfo
-                        ? configInfo.totalMinted.toLocaleString()
+                        ? configInfo.totalMinted && configInfo.totalMinted.toLocaleString()
                         : "Loading..."}
                     </div>
                     <div className="text-gray-400 text-sm">Minted</div>
                   </div>
                   <div className="bg-gray-800/50 rounded-xl p-4 text-center">
                     <div className="text-2xl font-bold text-green-400 mb-1">
-                      {remaining.toLocaleString()}
+                      {remaining && remaining.toLocaleString()}
                     </div>
                     <div className="text-gray-400 text-sm">Remaining</div>
                   </div>

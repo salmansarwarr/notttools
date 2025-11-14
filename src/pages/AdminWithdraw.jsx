@@ -66,7 +66,7 @@ const AdminWithdraw = () => {
       console.log("Public Key:", publicKey?.toBase58());
       console.log("SendTransaction:", sendTransaction);
 
-      const result = await withdrawFees(publicKey, sendTransaction);
+      const result = await withdrawFees(wallet);
 
       setLastWithdrawal(result);
       console.log("Withdrawal result:", result);

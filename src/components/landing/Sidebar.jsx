@@ -81,7 +81,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
                     >
                         <Droplets size={20} />
-                        <span>SMART TOKEN CREATOR</span>
+                        <span>SMART TOKEN CREATOR DEMO</span>
                     </a>
 
                     <a
@@ -97,7 +97,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
                     >
                         <ChartBarIncreasingIcon size={20} />
-                        <span>NEW PAIRS</span>
+                        <span>NEW PAIRS DEMO</span>
                     </a>
 
                     <a

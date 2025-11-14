@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Image } from "@heroui/react";
 import {
-  Zap,
-  TrendingUp,
-  Clock,
-  Gift,
-  Star,
   Lock,
   Unlock,
   Trophy,
-  Crown,
-  ExternalLink,
   RefreshCw,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import WalletLogin from "../components/Walletlogin";
 import { useGlobalState } from "../hooks/useGlobalState";
-import { useUnifiedWallet  } from "../hooks/useUnifiedWallet";
+import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import {
-  getUserStakes,
   getUserNFTs,
   stakeNFT,
   unstakeNFT,
-  getConfigInfo,
 } from "../hooks/frontend-functions";
+import { getConfigInfo } from "../hooks/frontend-functions-old";
 
 const NftStaking = () => {
   const { globalState } = useGlobalState();
@@ -33,393 +26,359 @@ const NftStaking = () => {
   const isLoggedIn = !!user && !!authToken && wallet.connected;
 
   const [selectedNFTs, setSelectedNFTs] = useState([]);
-  const [stakingInfo, setStakingInfo] = useState(null);
+  const [userNFTs, setUserNFTs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [config, setConfig] = useState(null);
-  const [imageLoadingStates, setImageLoadingStates] = useState({});
+  const [error, setError] = useState(null);
+  const [processingNFT, setProcessingNFT] = useState(null);
 
-  // Load config and user stakes on component mount
+  // Load on mount
   useEffect(() => {
-    loadConfig();
     if (isLoggedIn && wallet.publicKey) {
-      loadUserStakes();
+      loadData();
     }
   }, [isLoggedIn, wallet.publicKey]);
 
-  const loadConfig = async () => {
-    try {
-      const configData = await getConfigInfo();
-      setConfig(configData);
-    } catch (error) {
-      console.error("Error loading config:", error);
-      console.error("Failed to load staking configuration");
-    }
-  };
-
-  const loadUserStakes = async () => {
-    if (!wallet.publicKey || !wallet.connected) return;
-
+  const loadData = async () => {
     setIsLoading(true);
+    setError(null);
+    setLoadingProgress({ current: 0, total: 0 });
+
     try {
-      // Tüm NFT'leri getir (stake edilmiş + edilmemiş)
-      const userNFTs = await getUserNFTs(wallet);
+      console.log("📊 Loading data...");
 
-      // Eski format için de stakes'i hazırla
-      const stakes = userNFTs
-        .filter((nft) => nft.staked)
-        .map((nft) => ({
-          mintAddress: nft.mintAddress,
-          stakeInfoPda: nft.stakeInfoPda,
-          stakeDate: nft.stakeDate,
-          unlockDate: nft.unlockDate,
-          isLocked: nft.isLocked,
-          daysRemaining: nft.daysRemaining,
-          explorerUrl: nft.explorerUrl,
-        }));
-
-      // User stats bilgilerini de al
-      const userStats = await getUserStakes(wallet);
-
-      setStakingInfo({
-        nftsMinted: userStats.nftsMinted,
-        nftsStaked: userStats.nftsStaked,
-        userNFTs: userNFTs, // Tüm NFT'ler
-        stakes: stakes, // Sadece stake edilmiş olanlar
+      // Load config (fast)
+      const configPromise = getConfigInfo(true);
+      
+      // Start loading NFTs
+      const nftsPromise = getUserNFTs(wallet, (progress) => {
+        setLoadingProgress(progress);
       });
 
-      console.log(
-        `🎨 Loaded ${userNFTs.length} total NFTs (${stakes.length} staked)`
-      );
+      const [configData, nftsData] = await Promise.all([
+        configPromise,
+        nftsPromise,
+      ]);
+
+      setConfig(configData);
+      setUserNFTs(nftsData || []);
+
+      console.log("✅ Data loaded:", {
+        config: configData,
+        nfts: nftsData?.length || 0,
+      });
     } catch (error) {
-      console.error("Error loading user stakes:", error);
-      console.error("Failed to load your staking information");
+      console.error("❌ Error loading data:", error);
+      setError(error.message || "Failed to load data");
+      
+      // Set empty defaults on error
+      setUserNFTs([]);
+      setConfig(null);
     } finally {
       setIsLoading(false);
+      setLoadingProgress({ current: 0, total: 0 });
     }
   };
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    setImageLoadingStates({}); // Refresh'te image loading state'leri sıfırla
-    await loadUserStakes();
+    await loadData();
     setRefreshing(false);
-    console.log("Staking information refreshed!");
   };
-
-  const handleImageLoad = (id) => {
-    setImageLoadingStates((prev) => ({ ...prev, [id]: false }));
-  };
-
-  const handleImageError = (e, id) => {
-    e.target.src = "/pengu.png";
-    setImageLoadingStates((prev) => ({ ...prev, [id]: false }));
-  };
-
-  // Staking pool info - config'ten gelen değerleri kullan
-  const stakingPool = {
-    name: "Genesis Staking Pool",
-    apy: config?.apy || "180%",
-    rewardToken: config?.rewardToken || "NTGC",
-    rewardPerDay: config?.rewardPerDay || 10,
-    totalStaked: config?.totalStaked || 0,
-    totalRewardsDistributed: config?.totalRewardsDistributed || "0",
-    lockPeriod: config?.lockPeriod || "No lock period",
-    minStake: config?.minStake || 1,
-    maxStake: config?.maxStake || "No limit",
-  };
-
-  // Gerçek user NFTs - stakingInfo'dan gel
-  const userNFTs = stakingInfo?.userNFTs || [];
-
-  // Eğer stakingInfo yoksa loading göster
-  const isLoadingStakes = isLoading || (!stakingInfo && isLoggedIn);
 
   const stakedNFTs = userNFTs.filter((nft) => nft.staked);
   const unstakedNFTs = userNFTs.filter((nft) => !nft.staked);
-  const totalRewards =
-    stakingInfo?.totalRewards ||
-    stakedNFTs.reduce((sum, nft) => sum + nft.rewards, 0);
 
   const handleStakeNFTs = async () => {
-    if (!isLoggedIn) {
-      return;
-    }
-
-    if (selectedNFTs.length === 0) {
-      return;
-    }
+    if (!isLoggedIn || selectedNFTs.length === 0) return;
 
     setIsLoading(true);
+    setError(null);
+
     try {
-      // For each selected NFT, call the stakeNFT function
-      for (const mintAddress of selectedNFTs) {
+      for (let i = 0; i < selectedNFTs.length; i++) {
+        const mintAddress = selectedNFTs[i];
+        setProcessingNFT(mintAddress);
+        console.log(`🔒 Staking ${i + 1}/${selectedNFTs.length}: ${mintAddress.slice(0, 8)}...`);
         await stakeNFT(wallet, mintAddress);
-        console.log(`Successfully staked NFT ${mintAddress.slice(0, 8)}...`);
       }
 
-      console.log(
-        `Successfully staked ${selectedNFTs.length} NFT${
-          selectedNFTs.length > 1 ? "s" : ""
-        }!`
-      );
       setSelectedNFTs([]);
-
-      // Refresh stakes after successful staking
-      await loadUserStakes();
+      await loadData();
     } catch (error) {
-      console.error("Error staking NFTs:", error);
-      console.error("Failed to stake NFTs. Please try again.");
+      console.error("❌ Stake error:", error);
+      setError(error.message);
     } finally {
       setIsLoading(false);
+      setProcessingNFT(null);
     }
   };
 
   const handleUnstakeNFT = async (mintAddress) => {
-    if (!isLoggedIn) {
-      return;
-    }
+    if (!isLoggedIn) return;
 
     setIsLoading(true);
-    try {
-      await unstakeNFT(wallet, mintAddress);
-      console.log(`NFT ${mintAddress.slice(0, 8)}... unstaked successfully!`);
+    setError(null);
+    setProcessingNFT(mintAddress);
 
-      // Refresh stakes after successful unstaking
-      await loadUserStakes();
+    try {
+      console.log(`🔓 Unstaking: ${mintAddress.slice(0, 8)}...`);
+      await unstakeNFT(wallet, mintAddress);
+      await loadData();
     } catch (error) {
-      console.error("Error unstaking NFT:", error);
-      console.error("Failed to unstake NFT. Please try again.");
+      console.error("❌ Unstake error:", error);
+      setError(error.message);
     } finally {
       setIsLoading(false);
+      setProcessingNFT(null);
     }
   };
 
-  const handleClaimRewards = () => {
-    if (!isLoggedIn) {
-      return;
-    }
-
-    if (totalRewards === 0) {
-      return;
-    }
-
-    // Placeholder claim logic
-    console.log(
-      `Claimed ${totalRewards.toFixed(2)} ${stakingPool.rewardToken} tokens!`
-    );
-  };
-
-  const toggleNFTSelection = (nftId) => {
+  const toggleNFTSelection = (mintAddress) => {
     setSelectedNFTs((prev) =>
-      prev.includes(nftId)
-        ? prev.filter((id) => id !== nftId)
-        : [...prev, nftId]
+      prev.includes(mintAddress)
+        ? prev.filter((id) => id !== mintAddress)
+        : [...prev, mintAddress]
     );
   };
 
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case "Common":
-        return "text-gray-400 bg-gray-600/20";
-      case "Rare":
-        return "text-blue-400 bg-blue-600/20";
-      case "Epic":
-        return "text-purple-400 bg-purple-600/20";
-      case "Legendary":
-        return "text-yellow-400 bg-yellow-600/20";
-      default:
-        return "text-gray-400 bg-gray-600/20";
-    }
+  const selectAllUnstaked = () => {
+    setSelectedNFTs(unstakedNFTs.map(nft => nft.mintAddress));
   };
+
+  const deselectAll = () => {
+    setSelectedNFTs([]);
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-[#0A151E] pt-28 pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-white mb-6">NFT Staking</h1>
+            <p className="text-gray-400 text-xl">
+              Connect your wallet to stake NFTs
+            </p>
+          </div>
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700 text-center">
+              <Trophy className="mx-auto text-yellow-400 mb-4" size={64} />
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Ready to Start Staking?
+              </h2>
+              <p className="text-gray-400 mb-8">
+                Connect your wallet to stake Genesis NFTs
+              </p>
+              <WalletLogin />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0A151E] pt-28 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Section */}
+        {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-2xl px-6 py-3 mb-6">
             <Trophy className="text-yellow-400" size={24} />
             <span className="text-yellow-300 font-semibold">
               Genesis NFT Staking
             </span>
-            {isLoggedIn && (
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="ml-2 p-1 rounded hover:bg-yellow-500/20 transition-colors"
-                title="Refresh staking info"
-              >
-                <RefreshCw
-                  className={`text-yellow-400 ${
-                    refreshing ? "animate-spin" : ""
-                  }`}
-                  size={16}
-                />
-              </button>
-            )}
-          </div>{" "}
-          <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing || isLoading}
+              className="ml-2 p-1 rounded hover:bg-yellow-500/20 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`text-yellow-400 ${refreshing ? "animate-spin" : ""}`}
+                size={16}
+              />
+            </button>
+          </div>
+
+          <h1 className="text-5xl font-bold text-white mb-6">
             Stake Your Genesis NFTs
           </h1>
-          <p className="text-gray-400 text-xl max-w-3xl mx-auto leading-relaxed">
-            Stake your Noottools Genesis NFTs to unlock free access to our token
-            generation features. Staked NFTs grant premium platform privileges.
+          <p className="text-gray-400 text-xl max-w-3xl mx-auto">
+            Stake NFTs for {config?.stakingDurationMonths || "..."} months to unlock premium features
           </p>
         </div>
 
-        {/* Main Content */}
-        {!isLoggedIn ? (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <Trophy className="text-white" size={32} />
+        {/* Error Message */}
+        {error && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="bg-red-600/20 border border-red-500/30 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="text-red-400 flex-shrink-0" size={20} />
+              <div className="flex-1">
+                <div className="text-red-400 font-semibold">Error</div>
+                <div className="text-sm text-gray-300">{error}</div>
               </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-300 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Ready to Start Earning?
-              </h2>
-              <p className="text-gray-400 mb-8">
-                Connect your wallet and login to stake your Genesis NFTs and
-                unlock free token generation features
-              </p>
-
-              <WalletLogin />
+        {/* Loading State with Progress */}
+        {isLoading && userNFTs.length === 0 ? (
+          <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-12 border border-gray-700">
+            <div className="text-center">
+              <Loader2 className="w-16 h-16 text-blue-400 animate-spin mx-auto mb-4" />
+              <div className="text-lg text-white font-semibold mb-2">Loading NFTs...</div>
+              {loadingProgress.total > 0 && (
+                <>
+                  <div className="text-sm text-gray-400 mb-4">
+                    Processing {loadingProgress.current} of {loadingProgress.total} NFTs
+                  </div>
+                  <div className="max-w-md mx-auto bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
+                      style={{
+                        width: `${(loadingProgress.current / loadingProgress.total) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+              {loadingProgress.total === 0 && (
+                <div className="text-sm text-gray-400">Fetching token accounts...</div>
+              )}
             </div>
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Your Staking Overview */}
-            <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700">
-              <h2 className="text-2xl font-bold text-white mb-6">
-                Your Staking Overview
-              </h2>
-
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <>
+            {/* Stats */}
+            <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700 mb-8">
+              <h2 className="text-2xl font-bold text-white mb-6">Overview</h2>
+              <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-400 mb-2">
-                    {isLoadingStakes ? "Loading..." : stakedNFTs.length}
+                  <div className="text-3xl font-bold text-green-400">
+                    {stakedNFTs.length}
                   </div>
-                  <div className="text-gray-400">NFTs Staked</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Free token generation access
-                  </div>
+                  <div className="text-gray-400">Staked</div>
                 </div>
-
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-400 mb-2">
-                    {isLoadingStakes ? "Loading..." : unstakedNFTs.length}
+                  <div className="text-3xl font-bold text-blue-400">
+                    {unstakedNFTs.length}
                   </div>
-                  <div className="text-gray-400">Available to Stake</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Ready for staking
+                  <div className="text-gray-400">Available</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-purple-400">
+                    {config?.stakingDurationMonths || "..."} mo
                   </div>
+                  <div className="text-gray-400">Lock Period</div>
                 </div>
               </div>
-
-              {stakedNFTs.length > 0 && (
-                <div className="bg-green-600/20 border border-green-500/30 rounded-xl p-4 text-center">
-                  <div className="text-green-400 font-semibold">
-                    ✨ Premium Access Unlocked
-                  </div>
-                  <div className="text-sm text-gray-300 mt-1">
-                    You can use token generation features for free!
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Loading State */}
-            {isLoadingStakes && (
-              <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700 text-center">
-                <div className="text-lg text-gray-400">
-                  Loading your NFTs...
-                </div>
-              </div>
-            )}
-
-            {/* No NFTs State */}
-            {!isLoadingStakes && userNFTs.length === 0 && (
-              <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700 text-center">
-                <div className="text-lg text-gray-400 mb-4">
-                  No Genesis NFTs found in your wallet
-                </div>
-                <p className="text-gray-500">
-                  You need to mint Genesis NFTs to start staking.
+            {/* No NFTs */}
+            {userNFTs.length === 0 && !isLoading && (
+              <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-12 border border-gray-700 text-center">
+                <Trophy className="mx-auto text-gray-600 mb-4" size={64} />
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  No NFTs Found
+                </h3>
+                <p className="text-gray-400 mb-6">
+                  Mint Genesis NFTs to start staking
                 </p>
+                <a
+                  href="/nft-minting"
+                  className="inline-block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-semibold transition-all"
+                >
+                  Mint NFTs
+                </a>
               </div>
             )}
 
             {/* Unstaked NFTs */}
-            {!isLoadingStakes && unstakedNFTs.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
+            {unstakedNFTs.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                   <h2 className="text-3xl font-bold text-white">
-                    Available NFTs
+                    Available ({unstakedNFTs.length})
                   </h2>
-                  {selectedNFTs.length > 0 && (
-                    <button
-                      onClick={handleStakeNFTs}
-                      disabled={isLoading}
-                      className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-6 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 disabled:cursor-not-allowed"
-                    >
-                      <Lock size={16} />
-                      {isLoading
-                        ? "Staking..."
-                        : `Stake Selected (${selectedNFTs.length})`}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {unstakedNFTs.length > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={selectAllUnstaked}
+                          className="text-sm text-blue-400 hover:text-blue-300 px-3 py-1 rounded-lg border border-blue-500/30 hover:border-blue-500/50 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        {selectedNFTs.length > 0 && (
+                          <button
+                            onClick={deselectAll}
+                            className="text-sm text-gray-400 hover:text-gray-300 px-3 py-1 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors"
+                          >
+                            Deselect All
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {selectedNFTs.length > 0 && (
+                      <button
+                        onClick={handleStakeNFTs}
+                        disabled={isLoading}
+                        className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition-all"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Staking...
+                          </>
+                        ) : (
+                          <>
+                            <Lock size={16} />
+                            Stake {selectedNFTs.length} NFT{selectedNFTs.length > 1 ? 's' : ''}
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {unstakedNFTs.map((nft) => (
                     <div
                       key={nft.mintAddress}
-                      className={`bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-4 border transition-all cursor-pointer ${
+                      onClick={() => !isLoading && toggleNFTSelection(nft.mintAddress)}
+                      className={`bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-4 border cursor-pointer transition-all ${
                         selectedNFTs.includes(nft.mintAddress)
-                          ? "border-green-500 transform scale-105"
-                          : "border-gray-700 hover:border-gray-600"
-                      }`}
-                      onClick={() => toggleNFTSelection(nft.mintAddress)}
+                          ? "border-green-500 scale-105 shadow-lg shadow-green-500/20"
+                          : "border-gray-700 hover:border-gray-600 hover:scale-102"
+                      } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <div className="aspect-square bg-gray-800 rounded-lg mb-4 p-4 flex items-center justify-center relative">
-                        {imageLoadingStates[nft.mintAddress] !== false && (
-                          <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center rounded-lg">
-                            <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
+                      <div className="aspect-square bg-gray-800 rounded-lg mb-4 overflow-hidden relative">
                         <img
                           src={nft.image}
-                          alt={nft.name || "NFT"}
-                          className={`w-full h-full object-cover rounded-lg transition-opacity duration-300 ${
-                            imageLoadingStates[nft.mintAddress] !== false
-                              ? "opacity-0"
-                              : "opacity-100"
-                          }`}
-                          onLoad={() => handleImageLoad(nft.mintAddress)}
-                          onError={(e) => handleImageError(e, nft.mintAddress)}
+                          alt={nft.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                          onError={(e) => (e.target.src = "/pengu.png")}
                         />
                         {selectedNFTs.includes(nft.mintAddress) && (
-                          <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">
-                              ✓
-                            </span>
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white text-sm font-bold">✓</span>
                           </div>
                         )}
                       </div>
-
-                      <h3 className="text-lg font-bold text-white mb-2">
+                      <h3 className="text-lg font-bold text-white truncate mb-1">
                         {nft.name}
                       </h3>
-
-                      <div className="mb-3">
-                        <span className="text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-300">
-                          {nft.symbol}
-                        </span>
-                      </div>
-
-                      <div className="text-sm text-gray-400">
-                        Stake to unlock free token generation
-                      </div>
+                      <span className="inline-block text-xs px-2 py-1 rounded bg-purple-500/20 text-purple-300">
+                        {nft.symbol}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -427,96 +386,79 @@ const NftStaking = () => {
             )}
 
             {/* Staked NFTs */}
-            {!isLoadingStakes && stakedNFTs.length > 0 && (
+            {stakedNFTs.length > 0 && (
               <div>
                 <h2 className="text-3xl font-bold text-white mb-6">
-                  Staked NFTs
+                  Staked ({stakedNFTs.length})
                 </h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {stakedNFTs.map((nft) => (
                     <div
                       key={nft.mintAddress}
-                      className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-4 border border-gray-700"
+                      className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-4 border border-green-500/30 hover:border-green-500/50 transition-all"
                     >
-                      <div className="aspect-square bg-gray-800 rounded-lg mb-4 p-4 flex items-center justify-center relative">
-                        {imageLoadingStates[`staked_${nft.mintAddress}`] !==
-                          false && (
-                          <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center rounded-lg">
-                            <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
+                      <div className="aspect-square bg-gray-800 rounded-lg mb-4 overflow-hidden relative">
                         <img
                           src={nft.image}
-                          alt={nft.name || "Staked NFT"}
-                          className={`w-full h-full object-cover rounded-lg transition-opacity duration-300 ${
-                            imageLoadingStates[`staked_${nft.mintAddress}`] !==
-                            false
-                              ? "opacity-0"
-                              : "opacity-100"
-                          }`}
-                          onLoad={() =>
-                            handleImageLoad(`staked_${nft.mintAddress}`)
-                          }
-                          onError={(e) =>
-                            handleImageError(e, `staked_${nft.mintAddress}`)
-                          }
+                          alt={nft.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover"
+                          onError={(e) => (e.target.src = "/pengu.png")}
                         />
-                        <div className="absolute top-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                          <Lock className="text-white" size={12} />
+                        <div className="absolute top-2 right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                          <Lock className="text-white" size={14} />
                         </div>
                       </div>
-
-                      <h3 className="text-lg font-bold text-white mb-2">
+                      <h3 className="text-lg font-bold text-white truncate mb-2">
                         {nft.name}
                       </h3>
-
-                      <div className="mb-3">
-                        <span className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-300">
-                          {nft.symbol}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 mb-4">
+                      <span className="inline-block text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-300 mb-3">
+                        {nft.symbol}
+                      </span>
+                      <div className="mt-3 space-y-2">
                         <div className="text-xs text-gray-500">
-                          Staked:{" "}
-                          {nft.stakeDate
-                            ? new Date(nft.stakeDate).toLocaleDateString()
-                            : "N/A"}
+                          Staked: {nft.stakeDate ? new Date(nft.stakeDate).toLocaleDateString() : "N/A"}
                         </div>
-
                         <div className="text-sm text-green-400 font-semibold">
-                          ✨ Premium Access Active
+                          ✨ Premium Active
                         </div>
-
-                        {nft.isLocked && (
-                          <div className="text-xs text-orange-400">
-                            🔒 Locked for {nft.daysRemaining} days
+                        {nft.isLocked ? (
+                          <div className="text-xs text-orange-400 font-medium">
+                            🔒 {nft.daysRemaining} day{nft.daysRemaining !== 1 ? 's' : ''} remaining
+                          </div>
+                        ) : (
+                          <div className="text-xs text-blue-400 font-medium">
+                            🔓 Unlocked - Ready to unstake
                           </div>
                         )}
-
-                        <div className="text-xs text-gray-400">
-                          Free token generation unlocked
-                        </div>
                       </div>
-
                       <button
                         onClick={() => handleUnstakeNFT(nft.mintAddress)}
-                        disabled={isLoading || nft.isLocked}
-                        className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:cursor-not-allowed"
+                        disabled={
+                          isLoading ||
+                          nft.isLocked ||
+                          processingNFT === nft.mintAddress
+                        }
+                        className="w-full mt-4 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all"
                       >
-                        <Unlock size={16} />
-                        {isLoading
-                          ? "Unstaking..."
-                          : nft.isLocked
-                          ? "Locked"
-                          : "Unstake"}
+                        {processingNFT === nft.mintAddress ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Unstaking...
+                          </>
+                        ) : (
+                          <>
+                            <Unlock size={16} />
+                            {nft.isLocked ? `Locked (${nft.daysRemaining}d)` : "Unstake"}
+                          </>
+                        )}
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
