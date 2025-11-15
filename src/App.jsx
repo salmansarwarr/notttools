@@ -29,7 +29,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-const network = WalletAdapterNetwork.Mainnet;
+const network = WalletAdapterNetwork.Devnet;
 const queryClient = new QueryClient();
 
 function App() {
