@@ -1,6 +1,6 @@
 // 🔧 NETWORK CONFIGURATION
 // Change: 'devnet' | 'testnet' | 'mainnet-beta'
-const NETWORK_TYPE = "devnet";
+const NETWORK_TYPE = "mainnet-beta";
 
 // 🌐 SOLANA NETWORK ENDPOINTS
 const SOLANA_NETWORKS = {
@@ -14,7 +14,7 @@ const SOLANA_NETWORKS = {
 const PROGRAM_ADDRESSES = {
   devnet: "6hgRdDw7rRrpd7a6UPpomnPCHBMk9siWuvSCigQe2PUn",  
   testnet: "DAbyh1R9NeSoYnmUxwogR6w3MP9Bd7jtxrmEVG4iY3y5",
-  "mainnet-beta": "BF27BrKA4jbkqdNETXs7oYqZge8rMk4GyMFsJvNdrgzi",
+  "mainnet-beta": "HKa71yrA8bQeyhYtPn2pNMq8uQH5SrWw7EMPh3PKH3Dk",
 };
 
 // ⚙️ SOLANA CONNECTION SETTINGS
@@ -155,8 +155,8 @@ const constants = {
   commission: {
     walletAddress: {
       'devnet': '35Bk7MrW3c17QWioRuABBEMFwNk4NitXRFBvkzYAupfF',
-      'testnet': 'YOUR_TESTNET_ADMIN_WALLET_HERE',
-      'mainnet-beta': 'YOUR_MAINNET_ADMIN_WALLET_HERE' // ✅ Add your mainnet admin wallet
+      'testnet': '9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk',
+      'mainnet-beta': '9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk' // ✅ Add your mainnet admin wallet
     }
   },
 

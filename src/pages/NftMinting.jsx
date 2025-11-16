@@ -53,21 +53,8 @@ const NftMinting = () => {
       }
     };
 
-    // Basit mint test
-    const testSimpleMint = async () => {
-      try {
-        console.log("🧪 NftMinting: Basit mint test başlıyor...");
-        const { mintRandomNFT } = await import("../hooks/frontend-functions");
-        console.log("✅ mintRandomNFT import başarılı:", typeof mintRandomNFT);
-        console.log("✅ Constants:", constants.network.type);
-        console.log("✅ Program ID:", constants.network.programId);
-      } catch (error) {
-        console.error("❌ Basit mint test hatası:", error);
-      }
-    };
     loadConfigInfo();
     loadRandomNfts();
-    testSimpleMint();
   }, []);
 
   // Random NFT'leri yükle
@@ -159,7 +146,7 @@ const NftMinting = () => {
       for (let i = 0; i < mintAmount; i++) {
         console.log(`Minting NFT ${i + 1} of ${mintAmount}...`);
         // Basit mint - parametresiz
-        const result = await mintRandomNFT(wallet, '2bYhxz75oHUGS59SJmSPTz2qpv9RwQkHyn8dse6aapHQ');
+        const result = await mintRandomNFT(wallet, 'BwqA35BKbdEV5miEsJJkQU7373GSHc7qKcyHebtdjPPw');
         results.push(result);
         console.log(`NFT ${i + 1} minted successfully!`);
 

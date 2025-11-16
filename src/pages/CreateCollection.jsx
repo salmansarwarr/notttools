@@ -7,7 +7,7 @@ import {
     mplTokenMetadata 
 } from '@metaplex-foundation/mpl-token-metadata';
 import { 
-    generateSigner,
+    generateSigner, 
     percentAmount,
 } from '@metaplex-foundation/umi';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';

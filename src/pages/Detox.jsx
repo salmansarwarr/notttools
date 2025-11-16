@@ -4,7 +4,7 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Loader2, ShieldCheck, AlertCircle, RefreshCcw, CheckCircle } from "lucide-react";
 import { DetoxService } from "../utils/detoxService";
 
-const detoxService = new DetoxService();
+const detoxService = new DetoxService('https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm');
 
 export default function Detox() {
   const { publicKey, signTransaction } = useUnifiedWallet();

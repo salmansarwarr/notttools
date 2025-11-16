@@ -14,7 +14,7 @@ import {
   
   const RENT_PER_ACCOUNT = 0.00203928; // SOL per token account
   const FEE_PERCENTAGE = 0.20; // 20%
-  const FEE_WALLET = new PublicKey('35Bk7MrW3c17QWioRuABBEMFwNk4NitXRFBvkzYAupfF'); // Replace with your wallet
+  const FEE_WALLET = new PublicKey('9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk'); 
   
   export class DetoxService {
     constructor(rpcUrl = clusterApiUrl('devnet')) {
