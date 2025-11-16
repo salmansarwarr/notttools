@@ -35,7 +35,7 @@ const queryClient = new QueryClient();
 function App() {
   const [theme, setTheme] = useState("light");
 
-  const endpoint = useMemo(() => clusterApiUrl(network), []);
+  const endpoint = useMemo(() => network == WalletAdapterNetwork.Mainnet ? 'https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm' : clusterApiUrl(network), []);
 
   const wallets = useMemo(
     () => [
