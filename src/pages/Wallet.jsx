@@ -154,9 +154,7 @@ const Wallet = () => {
           </h1>
 
           <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed mb-8">
-            Experience the future of crypto with our upcoming mobile wallet.
-            Designed for the Solana ecosystem with seamless integration to the
-            Noottools platform.
+          Experience the future of crypto with our mobile wallet. Designed for the Solana ecosystem with seamless integration to the Noottools platform
           </p>
         </div>
 
@@ -196,7 +194,7 @@ const Wallet = () => {
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {/* iOS App Store */}
-                {/* <div
+                <div
                   className={`rounded-xl p-4 border transition-all duration-300 ${
                     !isLoadingSettings && settings?.wallet_app_store_link
                       ? "bg-gray-800/50 border-gray-600 hover:bg-gray-700/50 cursor-pointer transform hover:scale-105"
@@ -219,7 +217,7 @@ const Wallet = () => {
                       ? "Download Now"
                       : "Coming Soon"}
                   </div>
-                </div> */}
+                </div>
 
                 {/* Google Play */}
                 <div
