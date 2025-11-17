@@ -158,11 +158,6 @@ const Wallet = () => {
             Designed for the Solana ecosystem with seamless integration to the
             Noottools platform.
           </p>
-
-          <div className="inline-flex items-center gap-3 bg-orange-600/20 border border-orange-500/30 rounded-2xl px-6 py-3 text-orange-300 font-semibold">
-            <Bell className="animate-pulse" size={20} />
-            <span>Coming Soon - 2025</span>
-          </div>
         </div>
 
         {/* Phone Mockup */}
@@ -194,14 +189,14 @@ const Wallet = () => {
                 Be the First to Download
               </h2>
               <p className="text-gray-400 mb-6">
-                Get notified when Noottools Mobile Wallet launches. Join
-                thousands of users waiting for the most advanced Solana wallet
+                 Join
+                thousands of users for the most advanced Solana wallet
                 experience.
               </p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {/* iOS App Store */}
-                <div
+                {/* <div
                   className={`rounded-xl p-4 border transition-all duration-300 ${
                     !isLoadingSettings && settings?.wallet_app_store_link
                       ? "bg-gray-800/50 border-gray-600 hover:bg-gray-700/50 cursor-pointer transform hover:scale-105"
@@ -224,7 +219,7 @@ const Wallet = () => {
                       ? "Download Now"
                       : "Coming Soon"}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Google Play */}
                 <div
@@ -268,7 +263,7 @@ const Wallet = () => {
               </div>
             </div>
 
-            <div>
+            {/*<div>
               {!isSubscribed ? (
                 <div className="bg-gray-800/50 rounded-2xl p-6 border border-gray-600">
                   <h3 className="text-xl font-bold text-white mb-4">
@@ -311,13 +306,13 @@ const Wallet = () => {
                   </p>
                 </div>
               )}
-            </div>
+            </div>*/}
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid md:grid-cols-4 gap-6 mb-20">
-          <div className="text-center">
+        <div className="grid md:grid-cols-1 justify-center items-center w-full gap-6 mb-20">
+          {/* <div className="text-center">
             <div className="text-4xl font-bold text-blue-400 mb-2">5,000+</div>
             <div className="text-gray-400">Users Waiting</div>
           </div>
@@ -330,11 +325,11 @@ const Wallet = () => {
               Q4 2025
             </div>
             <div className="text-gray-400">Expected Launch</div>
-          </div>
-          <div className="text-center">
+          </div> */}
+          {/* <div className="text-center">
             <div className="text-4xl font-bold text-yellow-400 mb-2">100%</div>
             <div className="text-gray-400">Free to Use</div>
-          </div>
+          </div> */}
         </div>
 
         {/* FAQ */}
@@ -344,26 +339,26 @@ const Wallet = () => {
           </h2>
           <div className="space-y-6">
             {[
+              // {
+              //   question: "When will the mobile wallet be available?",
+              //   answer:
+              //     "We're targeting Q4 2025 for the initial release. Beta testing will begin earlier for early subscribers.",
+              // },
               {
-                question: "When will the mobile wallet be available?",
+                question: "Is it free to use?",
                 answer:
-                  "We're targeting Q4 2025 for the initial release. Beta testing will begin earlier for early subscribers.",
+                  "Yes! The Noottools Mobile Wallet is completely free to download and use, with no hidden fees.",
               },
               {
-                question: "Will it be free to use?",
+                question: "What platforms are supported?",
                 answer:
-                  "Yes! The Noottools Mobile Wallet will be completely free to download and use, with no hidden fees.",
+                  "We've launched on Android",
               },
-              {
-                question: "What platforms will be supported?",
-                answer:
-                  "We're launching on both iOS and Android simultaneously, with feature parity across both platforms.",
-              },
-              {
-                question: "How will it integrate with Noottools platform?",
-                answer:
-                  "The wallet will have deep integration with our token creation, staking, and NFT features for a seamless experience.",
-              },
+              // {
+              //   question: "How will it integrate with Noottools platform?",
+              //   answer:
+              //     "The wallet will have deep integration with our token creation, staking, and NFT features for a seamless experience.",
+              // },
             ].map((faq, index) => (
               <div
                 key={index}
