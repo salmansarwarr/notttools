@@ -62,6 +62,38 @@ const toMintAmount = (n) => {
 // -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
+async function uploadToPinata(formData) {
+  const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
+  const PINATA_SECRET_KEY = import.meta.env.VITE_PINATA_SECRET_KEY;
+
+  const metadata = {
+      name: formData.coinName,
+      symbol: formData.ticker,
+      description: formData.description,
+      image: formData.imageUrl,
+      external_url: formData.website || "",
+      social: {
+          twitter: formData.twitter || "",
+          telegram: formData.telegram || "",
+      }
+  };
+
+  const metadataResponse = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          'pinata_api_key': PINATA_API_KEY,
+          'pinata_secret_api_key': PINATA_SECRET_KEY,
+      },
+      body: JSON.stringify(metadata),
+  });
+
+  const metadataData = await metadataResponse.json();
+  const metadataUri = `https://gateway.pinata.cloud/ipfs/${metadataData.IpfsHash}`;
+
+  return metadataUri
+}
+
 export const createTokenWithMetadata = async (
   formData,
   wallet,
@@ -193,9 +225,7 @@ export const createTokenWithMetadata = async (
       name: formData?.coinName || "",
       symbol: formData?.ticker?.toUpperCase() || "",
       description: formData?.description || "",
-      image: `https://via.placeholder.com/400x400.png?text=${encodeURIComponent(
-        formData?.coinName || "TOKEN"
-      )}`,
+      image: formData?.imageUrl,
       external_url: formData?.website || "",
       properties: {
         category: "Token",
@@ -253,9 +283,15 @@ export const createTokenWithMetadata = async (
     };
 
     // Enhanced metadata URI with base64 encoding
-    const metadataUri = `data:application/json;base64,${btoa(
-      JSON.stringify(metadataJson, null, 2)
-    )}`;
+    const metadataUri = await uploadToPinata({
+      coinName: formData?.coinName,
+      ticker: formData?.ticker?.toUpperCase(),
+      description: formData?.description,
+      imageUrl: formData?.imageUrl,
+      website: formData?.website,
+      twitter: formData?.twitter,
+      telegram: formData?.telegram
+    });
 
     const name = (formData?.coinName || "").substring(0, 32);
     const symbol = (formData?.ticker?.toUpperCase() || "").substring(0, 10);
@@ -277,7 +313,7 @@ export const createTokenWithMetadata = async (
       // CreateMetadataAccountV3 için doğru data format
       const nameBytes = Buffer.from(name, "utf8");
       const symbolBytes = Buffer.from(symbol, "utf8");
-      const uriBytes = Buffer.from(metadataUri.slice(0, 200), "utf8");
+      const uriBytes = Buffer.from(metadataUri, "utf8");
 
       // Borsh serialization for CreateMetadataAccountV3
       const data = Buffer.alloc(1000); // Yeterince büyük buffer

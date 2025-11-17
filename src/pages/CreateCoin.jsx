@@ -222,6 +222,31 @@ const CreateCoin = () => {
     try {
       setIsCreating(true);
 
+      let imageUrl = null;
+      if (formData.coinMedia) {
+        console.log("Uploading image to Pinata...");
+        
+        const pinataFormData = new FormData();
+        pinataFormData.append('file', formData.coinMedia);
+        
+        const pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+          method: 'POST',
+          headers: {
+            'pinata_api_key': import.meta.env.VITE_PINATA_API_KEY,
+            'pinata_secret_api_key': import.meta.env.VITE_PINATA_SECRET_KEY,
+          },
+          body: pinataFormData,
+        });
+    
+        if (!pinataResponse.ok) {
+          throw new Error(`Pinata upload failed: ${pinataResponse.status}`);
+        }
+    
+        const pinataData = await pinataResponse.json();
+        imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataData.IpfsHash}`;
+        console.log("Image uploaded to Pinata:", imageUrl);
+      }
+
       // TokenCreator'a uygun format için form data'yı düzenle
       const tokenFormData = {
         coinName: formData.coinName.trim(),
@@ -231,6 +256,7 @@ const CreateCoin = () => {
         twitter: formData.twitter.trim(),
         telegram: formData.telegram.trim(),
         initialSupply: formData.initialSupply,
+        imageUrl: imageUrl,
         // Legal agreements
         agreements: {
           generalStatement: agreements.generalStatement,
