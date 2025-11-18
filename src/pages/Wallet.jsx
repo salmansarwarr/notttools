@@ -250,10 +250,10 @@ const Wallet = () => {
               </div>
 
               <div className="flex items-center gap-4 text-sm text-gray-400">
-                <div className="flex items-center gap-2">
+                {/* <div className="flex items-center gap-2">
                   <Users className="text-blue-400" size={16} />
                   <span>5,000+ users waiting</span>
-                </div>
+                </div> */}
                 <div className="flex items-center gap-2">
                   <Star className="text-yellow-400" size={16} />
                   <span>Premium features</span>
@@ -350,7 +350,7 @@ const Wallet = () => {
               {
                 question: "What platforms are supported?",
                 answer:
-                  "We've launched on Android",
+                  "Compatible with iOS and Android",
               },
               // {
               //   question: "How will it integrate with Noottools platform?",
