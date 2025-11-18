@@ -61,8 +61,8 @@ const AppRoutes = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/admin/withdraw" element={<AdminWithdraw />} />
         <Route path="/detox" element={<Detox />} />
-        {/* <Route path="/setup" element={<CollectionSetup/>} />
-        <Route path="/collection" element={<CreateCollection/>} /> */}
+        <Route path="/setup" element={<CollectionSetup/>} />
+        {/*<Route path="/collection" element={<CreateCollection/>} /> */}
       </Route>
 
       <Route path="*" element={<Notfound />} />
