@@ -120,6 +120,59 @@ function CollectionSetup() {
         }
     };
 
+    // NEW: Update Config Function
+    const handleUpdateConfig = async () => {
+        if (!wallet.connected || !wallet.publicKey) {
+            setStatus('❌ Please connect your wallet first');
+            return;
+        }
+
+        if (!configInitialized && !configPda) {
+            setStatus('❌ Config must be initialized first');
+            return;
+        }
+
+        setLoading(true);
+        setStatus('🔄 Updating config...');
+        setTxSignature('');
+
+        try {
+            const program = await getProgram();
+
+            const [configPdaAddress] = PublicKey.findProgramAddressSync(
+                [Buffer.from("config")],
+                PROGRAM_ID
+            );
+
+            // Execute transaction
+            const tx = await program.methods
+                .updateConfig(
+                    new anchor.BN(mintingFee),
+                    maxNfts,
+                    stakingMonths
+                )
+                .accounts({
+                    admin: wallet.publicKey,
+                    config: configPdaAddress,
+                })
+                .rpc();
+
+            setTxSignature(tx);
+            setStatus('✅ Config updated successfully!');
+            
+            console.log('Transaction:', tx);
+        } catch (error) {
+            console.error('Error:', error);
+            if (error.message.includes('Unauthorized')) {
+                setStatus('❌ Only the admin can update config');
+            } else {
+                setStatus(`❌ Error: ${error.message}`);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Step 1: Set Collection Mint
     const handleSetCollectionMint = async () => {
         if (!wallet.connected || !wallet.publicKey) {
@@ -355,6 +408,92 @@ function CollectionSetup() {
                         </button>
                     </div>
 
+                    {/* NEW: Update Config Section */}
+                    <div className="bg-white/5 rounded-lg p-6 border border-orange-500/30">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                                <h3 className="text-xl font-semibold text-white mb-1">
+                                    🔧 Update Config (Admin Only)
+                                </h3>
+                                <p className="text-gray-400 text-sm mb-4">
+                                    Modify config parameters after initialization
+                                </p>
+                                
+                                <div className="bg-orange-500/10 border border-orange-500/30 rounded p-3 mb-4">
+                                    <p className="text-orange-300 text-xs">
+                                        ⚠️ Only the admin wallet can update config. Changes take effect immediately for new mints.
+                                    </p>
+                                </div>
+                                
+                                {/* Same form as above */}
+                                <div className="space-y-3 bg-white/5 rounded p-4 mb-4">
+                                    <div>
+                                        <label className="text-gray-300 text-sm block mb-1">
+                                            New Minting Fee (lamports)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={mintingFee}
+                                            onChange={(e) => setMintingFee(Number(e.target.value))}
+                                            className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                                            placeholder="100000000"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-gray-300 text-sm block mb-1">
+                                            New Max NFTs per Wallet
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={maxNfts}
+                                            onChange={(e) => setMaxNfts(Number(e.target.value))}
+                                            className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                                            placeholder="10"
+                                            min="1"
+                                            max="255"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="text-gray-300 text-sm block mb-1">
+                                            New Staking Duration (months)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={stakingMonths}
+                                            onChange={(e) => setStakingMonths(Number(e.target.value))}
+                                            className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                                            placeholder="6"
+                                            min="1"
+                                            max="255"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <span className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-xs font-semibold ml-4">
+                                ADMIN
+                            </span>
+                        </div>
+                        <button
+                            onClick={handleUpdateConfig}
+                            disabled={!wallet.connected || loading || (!configInitialized && !configPda)}
+                            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
+                        >
+                            {loading && status.includes('Updating config') ? (
+                                <span className="flex items-center justify-center">
+                                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Processing...
+                                </span>
+                            ) : (
+                                'Update Config Parameters'
+                            )}
+                        </button>
+                    </div>
+
                     {/* Step 1 - Set Collection Mint */}
                     <div className="bg-white/5 rounded-lg p-6 border border-white/10">
                         <div className="flex items-start justify-between mb-3">
@@ -454,6 +593,7 @@ function CollectionSetup() {
                     <p className="font-semibold mb-2">⚠️ Important Notes:</p>
                     <ul className="space-y-1 list-disc list-inside">
                         <li>Run Step 1 first to initialize the config with your parameters</li>
+                        <li>Use "Update Config" anytime to modify parameters (admin only)</li>
                         <li>Step 2 stores the collection mint address in config</li>
                         <li>Step 3 transfers authority permanently to the program</li>
                         <li>Make sure collection metadata is finalized before Step 3</li>
