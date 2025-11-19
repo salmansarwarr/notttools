@@ -32,7 +32,6 @@ function CollectionSetup() {
     const [status, setStatus] = useState('');
     const [configPda, setConfigPda] = useState('');
     const [txSignature, setTxSignature] = useState('');
-    const [configInitialized, setConfigInitialized] = useState(false);
 
     // Config form values
     const [mintingFee, setMintingFee] = useState(DEFAULT_MINTING_FEE);
@@ -62,73 +61,10 @@ function CollectionSetup() {
         return new anchor.Program(idl, provider);
     };
 
-    // Step 0: Initialize Config
-    const handleInitializeConfig = async () => {
-        if (!wallet.connected || !wallet.publicKey) {
-            setStatus('❌ Please connect your wallet first');
-            return;
-        }
-
-        setLoading(true);
-        setStatus('🔄 Initializing config...');
-        setTxSignature('');
-
-        try {
-            const program = await getProgram();
-
-            const [configPdaAddress] = PublicKey.findProgramAddressSync(
-                [Buffer.from("config")],
-                PROGRAM_ID
-            );
-
-            setConfigPda(configPdaAddress.toString());
-
-            // Execute transaction
-            const tx = await program.methods
-                .initializeConfig(
-                    new anchor.BN(mintingFee),
-                    maxNfts,
-                    stakingMonths
-                )
-                .accounts({
-                    admin: wallet.publicKey,
-                    config: configPdaAddress,
-                    systemProgram: SystemProgram.programId,
-                })
-                .rpc();
-
-            setTxSignature(tx);
-            setConfigInitialized(true);
-            setStatus('✅ Config initialized successfully!');
-            
-            console.log('Transaction:', tx);
-        } catch (error) {
-            console.error('Error:', error);
-            if (error.message.includes('already in use')) {
-                setStatus('⚠️ Config already initialized. Proceeding to next steps...');
-                setConfigInitialized(true);
-                const [configPdaAddress] = PublicKey.findProgramAddressSync(
-                    [Buffer.from("config")],
-                    PROGRAM_ID
-                );
-                setConfigPda(configPdaAddress.toString());
-            } else {
-                setStatus(`❌ Error: ${error.message}`);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // NEW: Update Config Function
+    // Update Config Function
     const handleUpdateConfig = async () => {
         if (!wallet.connected || !wallet.publicKey) {
             setStatus('❌ Please connect your wallet first');
-            return;
-        }
-
-        if (!configInitialized && !configPda) {
-            setStatus('❌ Config must be initialized first');
             return;
         }
 
@@ -143,6 +79,8 @@ function CollectionSetup() {
                 [Buffer.from("config")],
                 PROGRAM_ID
             );
+
+            setConfigPda(configPdaAddress.toString());
 
             // Execute transaction
             const tx = await program.methods
@@ -173,15 +111,10 @@ function CollectionSetup() {
         }
     };
 
-    // Step 1: Set Collection Mint
+    // Set Collection Mint
     const handleSetCollectionMint = async () => {
         if (!wallet.connected || !wallet.publicKey) {
             setStatus('❌ Please connect your wallet first');
-            return;
-        }
-
-        if (!configInitialized && !configPda) {
-            setStatus('❌ Please initialize config first');
             return;
         }
 
@@ -226,15 +159,10 @@ function CollectionSetup() {
         }
     };
 
-    // Step 2: Update Collection Authority
+    // Update Collection Authority
     const handleUpdateAuthority = async () => {
         if (!wallet.connected || !wallet.publicKey) {
             setStatus('❌ Please connect your wallet first');
-            return;
-        }
-
-        if (!configPda) {
-            setStatus('❌ Please run "Set Collection Mint" first to get Config PDA');
             return;
         }
 
@@ -243,6 +171,13 @@ function CollectionSetup() {
         setTxSignature('');
 
         try {
+            const [configPdaAddress] = PublicKey.findProgramAddressSync(
+                [Buffer.from("config")],
+                PROGRAM_ID
+            );
+
+            setConfigPda(configPdaAddress.toString());
+
             // Initialize UMI
             const endpoint = CLUSTER === "mainnet-beta" 
                 ? "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm"
@@ -256,7 +191,7 @@ function CollectionSetup() {
             const result = await updateV1(umi, {
                 mint: umiPublicKey(COLLECTION_MINT),
                 authority: umi.identity,
-                newUpdateAuthority: umiPublicKey(configPda),
+                newUpdateAuthority: umiPublicKey(configPdaAddress.toString()),
             }).sendAndConfirm(umi);
 
             const signature = Buffer.from(result.signature).toString('base64');
@@ -281,7 +216,7 @@ function CollectionSetup() {
                         Collection Setup
                     </h1>
                     <p className="text-gray-300">
-                        Configure your NFT collection authority
+                        Configure your NFT collection
                     </p>
                 </div>
 
@@ -325,90 +260,7 @@ function CollectionSetup() {
 
                 {/* Action Buttons */}
                 <div className="space-y-4 mb-6">
-                    {/* Step 0 - Initialize Config */}
-                    <div className="bg-white/5 rounded-lg p-6 border border-white/10">
-                        <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                                <h3 className="text-xl font-semibold text-white mb-1">
-                                    Step 1: Initialize Config
-                                </h3>
-                                <p className="text-gray-400 text-sm mb-4">
-                                    Set up program configuration with initial parameters
-                                </p>
-                                
-                                {/* Config Form */}
-                                <div className="space-y-3 bg-white/5 rounded p-4 mb-4">
-                                    <div>
-                                        <label className="text-gray-300 text-sm block mb-1">
-                                            Minting Fee (lamports)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={mintingFee}
-                                            onChange={(e) => setMintingFee(Number(e.target.value))}
-                                            className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                                            placeholder="100000000"
-                                        />
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Default: 0.1 SOL (100,000,000 lamports)
-                                        </p>
-                                    </div>
-                                    
-                                    <div>
-                                        <label className="text-gray-300 text-sm block mb-1">
-                                            Max NFTs per Wallet
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={maxNfts}
-                                            onChange={(e) => setMaxNfts(Number(e.target.value))}
-                                            className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                                            placeholder="10"
-                                            min="1"
-                                            max="255"
-                                        />
-                                    </div>
-                                    
-                                    <div>
-                                        <label className="text-gray-300 text-sm block mb-1">
-                                            Staking Duration (months)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={stakingMonths}
-                                            onChange={(e) => setStakingMonths(Number(e.target.value))}
-                                            className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                                            placeholder="6"
-                                            min="1"
-                                            max="255"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-semibold ml-4">
-                                1/3
-                            </span>
-                        </div>
-                        <button
-                            onClick={handleInitializeConfig}
-                            disabled={!wallet.connected || loading}
-                            className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
-                        >
-                            {loading && status.includes('Initializing') ? (
-                                <span className="flex items-center justify-center">
-                                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                    Processing...
-                                </span>
-                            ) : (
-                                'Initialize Config'
-                            )}
-                        </button>
-                    </div>
-
-                    {/* NEW: Update Config Section */}
+                    {/* Update Config Section */}
                     <div className="bg-white/5 rounded-lg p-6 border border-orange-500/30">
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
@@ -416,7 +268,7 @@ function CollectionSetup() {
                                     🔧 Update Config (Admin Only)
                                 </h3>
                                 <p className="text-gray-400 text-sm mb-4">
-                                    Modify config parameters after initialization
+                                    Modify config parameters
                                 </p>
                                 
                                 <div className="bg-orange-500/10 border border-orange-500/30 rounded p-3 mb-4">
@@ -425,7 +277,7 @@ function CollectionSetup() {
                                     </p>
                                 </div>
                                 
-                                {/* Same form as above */}
+                                {/* Config Form */}
                                 <div className="space-y-3 bg-white/5 rounded p-4 mb-4">
                                     <div>
                                         <label className="text-gray-300 text-sm block mb-1">
@@ -438,6 +290,9 @@ function CollectionSetup() {
                                             className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                                             placeholder="100000000"
                                         />
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Default: 0.1 SOL (100,000,000 lamports)
+                                        </p>
                                     </div>
                                     
                                     <div>
@@ -477,7 +332,7 @@ function CollectionSetup() {
                         </div>
                         <button
                             onClick={handleUpdateConfig}
-                            disabled={!wallet.connected || loading || (!configInitialized && !configPda)}
+                            disabled={!wallet.connected || loading}
                             className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
                         >
                             {loading && status.includes('Updating config') ? (
@@ -499,19 +354,19 @@ function CollectionSetup() {
                         <div className="flex items-start justify-between mb-3">
                             <div>
                                 <h3 className="text-xl font-semibold text-white mb-1">
-                                    Step 2: Set Collection Mint
+                                    Step 1: Set Collection Mint
                                 </h3>
                                 <p className="text-gray-400 text-sm">
                                     Store collection mint in program config
                                 </p>
                             </div>
                             <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-xs font-semibold">
-                                2/3
+                                1/2
                             </span>
                         </div>
                         <button
                             onClick={handleSetCollectionMint}
-                            disabled={!wallet.connected || loading || (!configInitialized && !configPda)}
+                            disabled={!wallet.connected || loading}
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
                         >
                             {loading && status.includes('Setting') ? (
@@ -533,19 +388,19 @@ function CollectionSetup() {
                         <div className="flex items-start justify-between mb-3">
                             <div>
                                 <h3 className="text-xl font-semibold text-white mb-1">
-                                    Step 3: Update Authority
+                                    Step 2: Update Authority
                                 </h3>
                                 <p className="text-gray-400 text-sm">
                                     Transfer collection authority to Config PDA
                                 </p>
                             </div>
                             <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs font-semibold">
-                                3/3
+                                2/2
                             </span>
                         </div>
                         <button
                             onClick={handleUpdateAuthority}
-                            disabled={!wallet.connected || loading || !configPda}
+                            disabled={!wallet.connected || loading}
                             className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
                         >
                             {loading && status.includes('Updating') ? (
@@ -592,11 +447,10 @@ function CollectionSetup() {
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-yellow-200 text-sm">
                     <p className="font-semibold mb-2">⚠️ Important Notes:</p>
                     <ul className="space-y-1 list-disc list-inside">
-                        <li>Run Step 1 first to initialize the config with your parameters</li>
-                        <li>Use "Update Config" anytime to modify parameters (admin only)</li>
-                        <li>Step 2 stores the collection mint address in config</li>
-                        <li>Step 3 transfers authority permanently to the program</li>
-                        <li>Make sure collection metadata is finalized before Step 3</li>
+                        <li>Use "Update Config" to modify parameters anytime (admin only)</li>
+                        <li>Run Step 1 to store the collection mint address in config</li>
+                        <li>Step 2 transfers authority permanently to the program</li>
+                        <li>Make sure collection metadata is finalized before Step 2</li>
                         <li>You must be the current collection authority</li>
                     </ul>
                 </div>
