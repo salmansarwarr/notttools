@@ -630,7 +630,7 @@ export const withdrawFees = async (wallet) => {
 };
 
 /**
- * Get Fee Vault Info
+ * Get Fee Vault Info with Withdrawable Amount
  */
 export const getFeeVaultInfo = async () => {
   try {
@@ -642,14 +642,30 @@ export const getFeeVaultInfo = async () => {
       PROGRAM_ID
     );
 
+    // Get balance
     const feeVaultBalance = await connection.getBalance(feeVaultPda);
+    
+    // Get rent-exempt minimum (0 bytes data account)
+    const rentExemptMinimum = await connection.getMinimumBalanceForRentExemption(0);
+    
+    // Calculate withdrawable amount (same logic as contract)
+    const withdrawableLamports = feeVaultBalance > rentExemptMinimum 
+      ? feeVaultBalance - rentExemptMinimum 
+      : 0;
 
     console.log("✅ Fee vault info fetched successfully");
+    console.log("   Total Balance:", feeVaultBalance, "lamports");
+    console.log("   Rent Exempt:", rentExemptMinimum, "lamports");
+    console.log("   Withdrawable:", withdrawableLamports, "lamports");
 
     return {
       feeVaultPda: feeVaultPda.toString(),
       balance: feeVaultBalance / LAMPORTS_PER_SOL,
       balanceLamports: feeVaultBalance,
+      rentExemptMinimum: rentExemptMinimum / LAMPORTS_PER_SOL,
+      rentExemptMinimumLamports: rentExemptMinimum,
+      withdrawable: withdrawableLamports / LAMPORTS_PER_SOL,
+      withdrawableLamports: withdrawableLamports,
       explorerUrl: constants.getExplorerUrl(feeVaultPda.toString(), "address"),
     };
   } catch (error) {

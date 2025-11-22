@@ -81,6 +81,8 @@ const AdminWithdraw = () => {
     }
   };
 
+
+
   if (!connected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0A151E] via-[#0D1B2A] to-[#0A151E] pt-28 pb-20">
@@ -212,10 +214,10 @@ const AdminWithdraw = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-800/50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Available Balance
+                    Total Balance
                   </h3>
-                  <p className="text-3xl font-bold text-green-400">
-                    {feeVaultInfo.balance.toFixed(4)} SOL
+                  <p className="text-3xl font-bold text-blue-400">
+                    {feeVaultInfo.balance.toFixed(9)} SOL
                   </p>
                   <p className="text-gray-400 text-sm mt-1">
                     {feeVaultInfo.balanceLamports.toLocaleString()} lamports
@@ -224,20 +226,35 @@ const AdminWithdraw = () => {
 
                 <div className="bg-gray-800/50 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-white mb-2">
-                    Fee Vault Address
+                    Withdrawable Amount
                   </h3>
-                  <p className="text-sm text-gray-300 font-mono break-all">
-                    {feeVaultInfo.feeVaultPda}
+                  <p className="text-3xl font-bold text-green-400">
+                    {feeVaultInfo.withdrawable?.toFixed(9) || "0.000000000"} SOL
                   </p>
-                  <a
-                    href={feeVaultInfo.explorerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm mt-2"
-                  >
-                    View on Explorer <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <p className="text-gray-400 text-sm mt-1">
+                    {feeVaultInfo.withdrawableLamports?.toLocaleString() || "0"} lamports
+                  </p>
+                  <p className="text-gray-500 text-xs mt-2">
+                    (Excluding rent-exempt minimum)
+                  </p>
                 </div>
+              </div>
+
+              <div className="bg-gray-800/50 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  Fee Vault Address
+                </h3>
+                <p className="text-sm text-gray-300 font-mono break-all">
+                  {feeVaultInfo.feeVaultPda}
+                </p>
+                <a
+                  href={feeVaultInfo.explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-sm mt-2"
+                >
+                  View on Explorer <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               {/* Withdraw Button */}
@@ -255,13 +272,14 @@ const AdminWithdraw = () => {
                   ) : (
                     <>
                       <Download className="w-5 h-5" />
-                      Withdraw All Fees ({feeVaultInfo.balance.toFixed(4)} SOL)
+                      Withdraw All Fees ({feeVaultInfo.withdrawable?.toFixed(4) || '0'} SOL)
                     </>
                   )}
                 </button>
 
+              <div className="text-center">
                 {feeVaultInfo.balance === 0 && (
-                  <p className="text-gray-400 text-sm mt-2">
+                  <p className="text-gray-400 text-sm">
                     No funds available to withdraw
                   </p>
                 )}
@@ -272,6 +290,7 @@ const AdminWithdraw = () => {
                       ⚠️ Only admin wallet can withdraw funds
                     </p>
                   )}
+              </div>
               </div>
             </div>
           ) : null}
