@@ -32,16 +32,16 @@ import { base58 } from "@metaplex-foundation/umi/serializers";
 import { toast } from 'react-toastify';
 
 // Constants
-const BONDING_CURVE_PROGRAM_ID = new PublicKey("BMX3MoC5FmAHkgtXAGrKa8iPTCUj6RaBKqQfBtXzK9nZ");
-const PLATFORM_AUTHORITY = new PublicKey("35Bk7MrW3c17QWioRuABBEMFwNk4NitXRFBvkzYAupfF")
-const RPC_URL = "https://api.devnet.solana.com";
+const BONDING_CURVE_PROGRAM_ID = new PublicKey("CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT");
+const PLATFORM_AUTHORITY = new PublicKey("9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk")
+const RPC_URL = "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm";
 
 const BONDING_CURVE_CONFIG = {
     TOTAL_SUPPLY: 1_000_000_000,
     DECIMALS: 9,
     VIRTUAL_SOL_RESERVES: 30,
     VIRTUAL_TOKEN_RESERVES: 1_073_000_000,
-    MIGRATION_THRESHOLD: 1, // 85 SOL
+    MIGRATION_THRESHOLD: 85, // 85 SOL
     HOLDER_THRESHOLD: 300,
     VOLUME_THRESHOLD_USD_CENTS: 2500000, // $25,000
 };
@@ -227,12 +227,6 @@ export const useBondingCurveFlow = () => {
             );
 
             const program = new Program(bondingCurveIDL, provider);
-
-            // 🔍 DEBUG: Check what's in your IDL
-            console.log('🔍 Program ID:', program.programId.toString());
-            console.log('🔍 Expected ID:', 'DZZCYzB3kBB38xkFAU1xdSc4qwvzJATAULBtKcqweVXd');
-            console.log('🔍 IDL Instructions:', program.idl.instructions.map(i => i.name));
-            console.log('🔍 Looking for: initializeBondingCurve');
 
             // Check if the instruction exists
             const hasInstruction = program.idl.instructions.some(

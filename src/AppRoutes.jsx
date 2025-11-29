@@ -41,9 +41,9 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingLayout />}>
         <Route index element={<Landing />} />
         <Route path="/create-coin" element={<CreateCoin />} />
-        {/* <Route path="create-pool" element={<CreatePool/>} /> */}
-        {/* <Route path="/tokens" element={<TokensPage />} /> */}
-        {/* <Route path="/token/:mintAddress" element={<TokenDetail />} /> */}
+        <Route path="create-pool" element={<CreatePool/>} />
+        <Route path="/tokens" element={<TokensPage />} />
+        <Route path="/token/:mintAddress" element={<TokenDetail />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/project/:id" element={<SingleProject />} />
         <Route path="/boost" element={<BoostToken />} />
@@ -62,7 +62,7 @@ const AppRoutes = () => {
         <Route path="/admin/withdraw" element={<AdminWithdraw />} />
         <Route path="/detox" element={<Detox />} />
         <Route path="/setup" element={<CollectionSetup/>} />
-        {/*<Route path="/collection" element={<CreateCollection/>} /> */}
+        <Route path="/collection" element={<CreateCollection/>} />
       </Route>
 
       <Route path="*" element={<Notfound />} />

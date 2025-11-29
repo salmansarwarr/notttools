@@ -50,9 +50,9 @@ const tokenMetadata = {
     uri: "https://raw.githubusercontent.com/solana-developers/program-examples/new-examples/tokens/tokens/.assets/spl-token.json",
 };
 
-const LP_LOCK_PROGRAM_ID = new PublicKey("GJBWK2HdEyyQaxNvbjw3TXWEXZXbNz6oYhNKUtj7SvBD");
-const FEE_COLLECTION_WALLET = new PublicKey("4ZqMvu1HaNPLbqvhwx1KXHFzqkhf2pB3pGPSt9HbyvQD");
-const NOOT_MINT = 'HuMqNCmUzNq5LHNKVbRFFBSwD7JkfC4ivPdBerNvQmwS';
+const LP_LOCK_PROGRAM_ID = new PublicKey("4FM8XVyKRy8cAUaQm2GhwF5wB46ugVzoM4X6c8Fh2kQ1");
+const FEE_COLLECTION_WALLET = new PublicKey("9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk");
+const NOOT_MINT = 'CWo8jbSjpoPmvz29Pd5x59n6egrjy2pxBK2Rqrb3uBLV';
 const SLIPPAGE_BPS = '50'; // 0.5% slippage
 const decimals = 9;
 const feeBasisPoints = 75; // 0.75%
