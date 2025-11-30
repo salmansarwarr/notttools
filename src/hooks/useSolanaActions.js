@@ -6,7 +6,7 @@ import { useUnifiedWallet } from './useUnifiedWallet';
 
 export const useSolanaActions = () => {
     const { publicKey, signTransaction } = useUnifiedWallet();
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
+    const connection = new Connection("https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm", "confirmed");
 
     if (!publicKey || !signTransaction) {
         return {
@@ -18,124 +18,144 @@ export const useSolanaActions = () => {
     }
 
     async function sendTx(tx, signers = []) {
-        try {
-            // 🔹 ALWAYS fetch a fresh blockhash
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-            
-            tx.feePayer = publicKey;
-            tx.recentBlockhash = blockhash;
+        const maxAttempts = 3;
         
-            // 🔹 Partially sign with local keypairs (like mintKeypair)
-            if (signers.length > 0) {
-                tx.partialSign(...signers);
-            }
-        
-            // 🔹 Then request wallet signature (for publicKey)
-            const signedTx = await signTransaction?.(tx);
-            if (!signedTx) throw new Error("Failed to sign transaction");
-        
-            // 🔹 Send with reduced retry to avoid duplicates
-            const txid = await connection.sendRawTransaction(signedTx.serialize(), { 
-                skipPreflight: false,
-                maxRetries: 1, // Reduced from 3 to prevent duplicate sends
-                preflightCommitment: 'confirmed'
-            });
-            
-            console.log("Transaction sent:", txid);
-            
-            // 🔹 Use block height confirmation instead of just confirmed
-            const confirmation = await connection.confirmTransaction({
-                signature: txid,
-                blockhash,
-                lastValidBlockHeight
-            }, 'confirmed');
-
-            if (confirmation.value.err) {
-                throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
-            }
-
-            console.log("Transaction confirmed:", txid);
-            return txid;
-        } catch (error) {
-            console.error("Transaction error:", error);
-            
-            // 🔹 Handle specific error cases
-            if (error.message?.includes('already been processed')) {
-                console.warn("Transaction may have already succeeded");
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                console.log(`📤 Transaction attempt ${attempt}/${maxAttempts}`);
                 
-                // Try to extract signature from error message
-                const match = error.message.match(/signature[:\s]+([A-Za-z0-9]{87,88})/i);
-                if (match && match[1]) {
-                    console.log("Found existing signature:", match[1]);
-                    return match[1];
+                // Get fresh blockhash - use 'confirmed' not 'finalized'
+                const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+                
+                tx.feePayer = publicKey;
+                tx.recentBlockhash = blockhash;
+            
+                // Sign with keypairs first
+                if (signers.length > 0) {
+                    tx.partialSign(...signers);
+                }
+            
+                // Then sign with wallet
+                const signedTx = await signTransaction(tx);
+                if (!signedTx) throw new Error("Failed to sign transaction");
+
+                // Send transaction
+                const signature = await connection.sendRawTransaction(
+                    signedTx.serialize(), 
+                    { 
+                        skipPreflight: false,
+                        maxRetries: 2,
+                        preflightCommitment: 'processed'
+                    }
+                );
+                
+                console.log("Transaction sent:", signature);
+                
+                // Wait for confirmation
+                const startTime = Date.now();
+                const timeoutMs = 60000; // 60 seconds
+                
+                while (Date.now() - startTime < timeoutMs) {
+                    const { value: statuses } = await connection.getSignatureStatuses([signature]);
+                    const status = statuses?.[0];
+                    
+                    if (status) {
+                        // Success
+                        if (status.confirmationStatus === 'confirmed' || 
+                            status.confirmationStatus === 'finalized') {
+                            
+                            if (status.err) {
+                                throw new Error(`Transaction failed: ${JSON.stringify(status.err)}`);
+                            }
+                            
+                            console.log("✅ Transaction confirmed:", signature);
+                            return signature;
+                        }
+                        
+                        // Error during execution
+                        if (status.err) {
+                            throw new Error(`Transaction failed: ${JSON.stringify(status.err)}`);
+                        }
+                    }
+                    
+                    // Check block height
+                    const currentHeight = await connection.getBlockHeight('confirmed');
+                    if (currentHeight > lastValidBlockHeight) {
+                        console.warn('Blockhash expired, will retry...');
+                        break; // Break to retry with new blockhash
+                    }
+                    
+                    // Wait before next check
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
                 
-                // If we can't extract signature, inform user
-                throw new Error("Transaction already processed. Please check your wallet history.");
+                // If we got here, either timeout or blockhash expired
+                if (attempt < maxAttempts) {
+                    console.log('⏳ Retrying with fresh blockhash...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    continue;
+                }
+                
+                throw new Error('Transaction confirmation timeout');
+                
+            } catch (error) {
+                console.error(`Attempt ${attempt} error:`, error.message);
+                
+                // Don't retry on these errors
+                if (error.message?.includes('insufficient funds') ||
+                    error.message?.includes('custom program error') ||
+                    error.message?.includes('already been processed')) {
+                    throw error;
+                }
+                
+                // Retry on timeout/network errors
+                if (attempt < maxAttempts) {
+                    console.log(`⏳ Retrying in 2 seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    continue;
+                }
+                
+                throw error;
             }
-            
-            // 🔹 Handle blockhash expiration
-            if (error.message?.includes('block height exceeded') || 
-                error.message?.includes('BlockhashNotFound')) {
-                throw new Error("Transaction expired. Please try again.");
-            }
-            
-            throw error;
         }
     }
     
     async function sendVersionedTx(versionedTx) {
         try {
-            // 🔹 Fetch fresh blockhash for versioned transactions
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
             
-            const signedTx = await signTransaction?.(versionedTx);
+            const signedTx = await signTransaction(versionedTx);
             if (!signedTx) throw new Error("Failed to sign transaction");
 
-            // 🔹 Send with reduced retry to avoid duplicates
             const txid = await connection.sendRawTransaction(signedTx.serialize(), { 
                 skipPreflight: false,
-                maxRetries: 1, // Reduced from 3 to prevent duplicate sends
+                maxRetries: 2,
                 preflightCommitment: 'confirmed'
             });
             
             console.log("Versioned transaction sent:", txid);
             
-            const confirmation = await connection.confirmTransaction({
-                signature: txid,
-                blockhash,
-                lastValidBlockHeight
-            }, 'confirmed');
-
-            if (confirmation.value.err) {
-                throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
-            }
-
-            console.log("Versioned transaction confirmed:", txid);
-            return txid;
-        } catch (error) {
-            console.error("Versioned transaction error:", error);
-            
-            // 🔹 Handle specific error cases
-            if (error.message?.includes('already been processed')) {
-                console.warn("Versioned transaction may have already succeeded");
+            // Same confirmation logic
+            const startTime = Date.now();
+            while (Date.now() - startTime < 60000) {
+                const { value: statuses } = await connection.getSignatureStatuses([txid]);
+                const status = statuses?.[0];
                 
-                // Try to extract signature from error message
-                const match = error.message.match(/signature[:\s]+([A-Za-z0-9]{87,88})/i);
-                if (match && match[1]) {
-                    console.log("Found existing signature:", match[1]);
-                    return match[1];
+                if (status?.confirmationStatus === 'confirmed' || 
+                    status?.confirmationStatus === 'finalized') {
+                    if (status.err) {
+                        throw new Error(`Transaction failed: ${JSON.stringify(status.err)}`);
+                    }
+                    return txid;
                 }
                 
-                throw new Error("Transaction already processed. Please check your wallet history.");
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
             
-            // 🔹 Handle blockhash expiration
-            if (error.message?.includes('block height exceeded') || 
-                error.message?.includes('BlockhashNotFound')) {
-                throw new Error("Transaction expired. Please try again.");
-            }
+            throw new Error('Transaction confirmation timeout');
             
+        } catch (error) {
+            console.error("Versioned transaction error:", error);
             throw error;
         }
     }

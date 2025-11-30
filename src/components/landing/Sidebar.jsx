@@ -77,8 +77,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
                 {/* Navigation Menu */}
                 <nav className="p-6 space-y-2">
                     <a
-                        // href="/create-pool"
-                        className="flex items-center space-x-3 text-gray-500  p-3 rounded-lg transition-colors"
+                        href="/create-pool"
+                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
                     >
                         <Droplets size={20} />
                         <span>SMART TOKEN CREATOR</span>
@@ -93,8 +93,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
                     </a>
 
                     <a
-                        // href=""
-                        className="flex items-center space-x-3 text-gray-500  p-3 rounded-lg transition-colors"
+                        href="/tokens"
+                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
                     >
                         <ChartBarIncreasingIcon size={20} />
                         <span>NEW PAIRS</span>

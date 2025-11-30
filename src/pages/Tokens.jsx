@@ -6,9 +6,9 @@ import constants from "../constants";
 import bondingCurveIDL from "../hooks/bonding_curve.json";
 
 const BONDING_CURVE_PROGRAM_ID = new PublicKey(
-    "BMX3MoC5FmAHkgtXAGrKa8iPTCUj6RaBKqQfBtXzK9nZ"
+    "CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT"
 );
-const RPC_URL = "https://api.devnet.solana.com";
+const RPC_URL = "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm";
 
 const fetchSolPrice = async () => {
     try {
@@ -43,7 +43,7 @@ const TokensPage = () => {
         try {
             setIsLoading(true);
             const response = await fetch(
-                `${constants.backend_url}/items/projects?sort=-date_created&limit=2`
+                `${constants.backend_url}/items/projects?sort=-date_created`
             );
             const data = await response.json();
 

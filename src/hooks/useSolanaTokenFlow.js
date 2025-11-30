@@ -24,7 +24,7 @@ import {
 } from "@solana/spl-token";
 import bondingCurveIDL from './bonding_curve.json';
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { mplTokenMetadata, createV1, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
+import { mplTokenMetadata, createV1, TokenStandard, updateV1 } from "@metaplex-foundation/mpl-token-metadata";
 import { mplToolbox } from "@metaplex-foundation/mpl-toolbox";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { createSignerFromKeypair } from "@metaplex-foundation/umi";
@@ -86,10 +86,114 @@ export const useBondingCurveFlow = () => {
         .use(mplToolbox())
         .use(walletAdapterIdentity(wallet));
 
+    async function createMicroPool(mint) {
+        const toastId = toast.loading("Creating Raydium pool...");
+
+        try {
+            // Initialize Raydium
+            const raydium = await Raydium.load({
+                owner: wallet,
+                connection,
+                cluster: 'mainnet',
+                disableFeatureCheck: true,
+                blockhashCommitment: 'finalized',
+            });
+
+            // Get token accounts
+            const tokenAccounts = await connection.getTokenAccountsByOwner(
+                wallet.publicKey,
+                { programId: TOKEN_2022_PROGRAM_ID }
+            );
+
+            const parsedAccounts = tokenAccounts.value.map((accountInfo) => {
+                return {
+                    pubkey: accountInfo.pubkey,
+                    accountInfo: parseTokenAccountResp(accountInfo.account),
+                };
+            });
+
+            // Set token accounts for Raydium
+            raydium.account.updateTokenAccount(parsedAccounts);
+
+            // Create market first
+            const marketResult = await raydium.marketV2.create({
+                baseInfo: {
+                    mint: mint,
+                    decimals: 9,
+                },
+                quoteInfo: {
+                    mint: new PublicKey('So11111111111111111111111111111111111111112'),
+                    decimals: 9,
+                },
+                lotSize: 1,
+                tickSize: 0.01,
+                dexProgramId: new PublicKey('srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'),
+            });
+
+            const marketTx = await marketResult.execute({ sendAndConfirm: true });
+            console.log('Market created:', marketTx.txId);
+
+            // Wait for market confirmation
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            // Create pool
+            const poolResult = await raydium.liquidity.createPoolV4({
+                programId: new PublicKey('675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8'),
+                marketInfo: {
+                    marketId: marketResult.extInfo.address,
+                    programId: new PublicKey('srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX'),
+                },
+                baseMintInfo: {
+                    mint: mint,
+                    decimals: 9,
+                },
+                quoteMintInfo: {
+                    mint: new PublicKey('So11111111111111111111111111111111111111112'),
+                    decimals: 9,
+                },
+                baseAmount: new BN(1_000_000 * 1e9), // 1M tokens
+                quoteAmount: new BN(0.05 * 1e9), // 0.05 SOL
+                startTime: new BN(0),
+            });
+
+            const poolTx = await poolResult.execute({ sendAndConfirm: true });
+
+            toast.update(toastId, {
+                render: "✅ Pool created successfully!",
+                type: "success",
+                isLoading: false,
+                autoClose: 5000
+            });
+
+            return {
+                poolId: poolResult.extInfo.address.toBase58(),
+                marketId: marketResult.extInfo.address.toBase58(),
+                txId: poolTx.txId,
+            };
+
+        } catch (error) {
+            toast.update(toastId, {
+                render: `Failed: ${error.message}`,
+                type: "error",
+                isLoading: false,
+                autoClose: 5000
+            });
+            throw error;
+        }
+    }
+
     async function createTokenMint(formData) {
         const mintKey = `create-mint-${Date.now()}`;
 
         return withDeduplication(mintKey, async () => {
+            // Check wallet balance first
+            const balance = await connection.getBalance(publicKey);
+            const requiredBalance = 0.01 * 1e9; // 0.01 SOL minimum
+
+            if (balance < requiredBalance) {
+                throw new Error(`Insufficient SOL balance. You have ${balance / 1e9} SOL but need at least ${requiredBalance / 1e9} SOL`);
+            }
+
             const mintKeypair = Keypair.generate();
             const mint = mintKeypair.publicKey;
 
@@ -125,6 +229,12 @@ export const useBondingCurveFlow = () => {
                 )
             );
 
+            // Add compute budget to ensure enough compute units
+            const { ComputeBudgetProgram } = await import('@solana/web3.js');
+            tx.add(
+                ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 })
+            );
+
             const txid = await sendTx(tx, [mintKeypair]);
 
             return { mint, mintKeypair, txid };
@@ -141,11 +251,12 @@ export const useBondingCurveFlow = () => {
                 umi.eddsa.createKeypairFromSecretKey(mintKeypair.secretKey)
             );
 
+            // Create metadata
             const metadataTx = await createV1(umi, {
                 mint: umiMintSigner,
                 authority: umi.identity,
                 payer: umi.identity,
-                updateAuthority: umi.identity,
+                updateAuthority: umi.identity.publicKey,
                 name: tokenMetadata.name,
                 symbol: tokenMetadata.symbol,
                 uri: tokenMetadata.uri,
@@ -154,6 +265,29 @@ export const useBondingCurveFlow = () => {
             }).sendAndConfirm(umi);
 
             const metadataSig = base58.deserialize(metadataTx.signature);
+            console.log('✅ Metadata created:', metadataSig[0]);
+
+            // Wait for metadata to finalize
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Revoke update authority
+            try {
+                console.log('🔒 Revoking metadata update authority...');
+
+                const revokeUpdateAuthTx = await updateV1(umi, {
+                    mint: umiMintSigner.publicKey,
+                    authority: umi.identity,
+                    newUpdateAuthority: null, // Set to null to revoke permanently
+                }).sendAndConfirm(umi);
+
+                const revokeSig = base58.deserialize(revokeUpdateAuthTx.signature);
+                console.log('✅ Metadata update authority revoked:', revokeSig[0]);
+
+            } catch (revokeError) {
+                console.warn('⚠️  Could not revoke update authority:', revokeError.message);
+                // Non-critical error - metadata is still created
+            }
+
             return metadataSig[0];
         });
     }
@@ -172,6 +306,13 @@ export const useBondingCurveFlow = () => {
                 TOKEN_2022_PROGRAM_ID
             );
 
+            const { ComputeBudgetProgram } = await import('@solana/web3.js');
+
+            // ==========================================
+            // TRANSACTION 1: Create Associated Token Account
+            // ==========================================
+            console.log('📋 Creating token account...');
+
             const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
                 publicKey,
                 creatorTokenAccount,
@@ -179,6 +320,35 @@ export const useBondingCurveFlow = () => {
                 mint,
                 TOKEN_2022_PROGRAM_ID
             );
+
+            const createAtaTx = new Transaction().add(createAtaIx);
+
+            try {
+                const ataId = await sendTx(createAtaTx);
+                console.log('✅ Token account created:', ataId);
+            } catch (error) {
+                // ATA might already exist, that's OK with idempotent instruction
+                if (!error.message?.includes('already in use')) {
+                    throw error;
+                }
+                console.log('ℹ️  Token account already exists');
+            }
+
+            // Small delay to ensure account is created
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // ==========================================
+            // TRANSACTION 2: Mint tokens with compute budget
+            // ==========================================
+            console.log('🪙 Minting', BONDING_CURVE_CONFIG.TOTAL_SUPPLY.toLocaleString(), 'tokens...');
+
+            const computeLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+                units: 300_000
+            });
+
+            const computePriceIx = ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: 2000 // Higher priority for large mint
+            });
 
             const mintToInstruction = createMintToInstruction(
                 mint,
@@ -189,28 +359,14 @@ export const useBondingCurveFlow = () => {
                 TOKEN_2022_PROGRAM_ID
             );
 
-            // Revoke mint authority
-            const revokeMintAuthorityIx = createSetAuthorityInstruction(
-                mint,
-                publicKey,
-                AuthorityType.MintTokens,
-                null, // Setting to null revokes the authority
-                [],
-                TOKEN_2022_PROGRAM_ID
+            const mintTx = new Transaction().add(
+                computeLimitIx,
+                computePriceIx,
+                mintToInstruction
             );
 
-            // Revoke freeze authority
-            const revokeFreezeAuthorityIx = createSetAuthorityInstruction(
-                mint,
-                publicKey,
-                AuthorityType.FreezeAccount,
-                null, // Setting to null revokes the authority
-                [],
-                TOKEN_2022_PROGRAM_ID
-            );
-
-            const tx = new Transaction().add(createAtaIx, mintToInstruction, revokeMintAuthorityIx, revokeFreezeAuthorityIx);
-            const txid = await sendTx(tx);
+            const txid = await sendTx(mintTx);
+            console.log('✅ Tokens minted successfully:', txid);
 
             return { creatorTokenAccount, txid };
         });
@@ -227,12 +383,6 @@ export const useBondingCurveFlow = () => {
             );
 
             const program = new Program(bondingCurveIDL, provider);
-
-            // Check if the instruction exists
-            const hasInstruction = program.idl.instructions.some(
-                i => i.name === 'initializeBondingCurve'
-            );
-            console.log('🔍 Instruction exists:', hasInstruction);
 
             // Derive PDAs
             const [bondingCurve] = PublicKey.findProgramAddressSync(
@@ -269,13 +419,11 @@ export const useBondingCurveFlow = () => {
                 .mul(new BN(1_000_000_000));
 
             console.log('📊 Initializing Bonding Curve...');
-            console.log('   Total Supply:', totalSupply.toString());
-            console.log('   Virtual Token Reserves:', virtualTokenReserves.toString());
-            console.log('   Virtual SOL Reserves:', virtualSolReserves.toString());
-            console.log('   Migration Threshold:', migrationThreshold.toString());
 
-            // Step 1: Initialize bonding curve (creates all PDAs)
-            console.log('📋 Step 1: Initializing bonding curve with first buyer lock...');
+            // ============================================
+            // TRANSACTION 1: Initialize bonding curve only
+            // ============================================
+            console.log('📋 Transaction 1: Initializing bonding curve...');
 
             const initIx = await program.methods
                 .initializeBondingCurve(
@@ -300,8 +448,25 @@ export const useBondingCurveFlow = () => {
                 })
                 .instruction();
 
-            // Step 2: Transfer all tokens to bonding curve vault
-            console.log('📋 Step 2: Transferring tokens to bonding curve vault...');
+            // Add compute budget for heavy transaction
+            const { ComputeBudgetProgram } = await import('@solana/web3.js');
+            const computeIx = ComputeBudgetProgram.setComputeUnitLimit({
+                units: 400_000
+            });
+
+            const initTx = new Transaction().add(computeIx, initIx);
+
+            console.log('📤 Sending initialization transaction...');
+            const initTxid = await sendTx(initTx);
+            console.log('✅ Bonding curve initialized:', initTxid);
+
+            // Wait a moment for the transaction to settle
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // ============================================
+            // TRANSACTION 2: Transfer tokens to vault
+            // ============================================
+            console.log('📋 Transaction 2: Transferring tokens to vault...');
 
             const transferIx = createTransferCheckedInstruction(
                 creatorTokenAccount,
@@ -314,36 +479,46 @@ export const useBondingCurveFlow = () => {
                 TOKEN_2022_PROGRAM_ID
             );
 
-            // Step 3: Revoke mint authority
-            console.log('📋 Step 3: Revoking mint authority...');
+            const transferTx = new Transaction().add(transferIx);
 
-            const revokeIx = createSetAuthorityInstruction(
-                mint,
-                wallet.publicKey,
-                AuthorityType.MintTokens,
-                null,
-                [],
-                TOKEN_2022_PROGRAM_ID
-            );
+            console.log('📤 Sending transfer transaction...');
+            const transferTxid = await sendTx(transferTx);
+            console.log('✅ Tokens transferred:', transferTxid);
 
-            // Combine all instructions
-            const tx = new Transaction().add(initIx, transferIx, revokeIx);
+            // ============================================
+            // OPTIONAL TRANSACTION 3: Revoke mint authority
+            // ============================================
+            try {
+                console.log('📋 Transaction 3 (optional): Revoking mint authority...');
 
-            console.log('📤 Sending transaction...');
-            const txid = await sendTx(tx);
+                const revokeIx = createSetAuthorityInstruction(
+                    mint,
+                    wallet.publicKey,
+                    AuthorityType.MintTokens,
+                    null,
+                    [],
+                    TOKEN_2022_PROGRAM_ID
+                );
 
-            console.log('✅ Transaction confirmed:', txid);
-            console.log('✅ Bonding curve initialized!');
-            console.log('   - All tokens in vault ready for trading');
-            console.log('   - First buyer will have tokens locked');
-            console.log('   - Mint authority revoked');
+                const revokeTx = new Transaction().add(revokeIx);
+
+                console.log('📤 Sending revoke transaction...');
+                const revokeTxid = await sendTx(revokeTx);
+                console.log('✅ Mint authority revoked:', revokeTxid);
+            } catch (revokeError) {
+                console.warn('⚠️  Could not revoke mint authority:', revokeError.message);
+                // Don't throw - this is optional
+            }
+
+            console.log('✅ All transactions confirmed!');
+            console.log('✅ Bonding curve ready for trading!');
 
             return {
                 bondingCurve,
                 tokenVault,
                 firstBuyerLockVault,
                 solVault,
-                txid
+                txid: initTxid, // Return the init transaction ID
             };
         });
     }
@@ -921,6 +1096,7 @@ export const useBondingCurveFlow = () => {
         unlockFirstBuyerTokens,
         getBondingCurveInfo,
         getPriceQuote,
+        createMicroPool,
         BONDING_CURVE_CONFIG
     };
 };

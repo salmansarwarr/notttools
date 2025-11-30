@@ -41,7 +41,7 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingLayout />}>
         <Route index element={<Landing />} />
         <Route path="/create-coin" element={<CreateCoin />} />
-        <Route path="create-pool" element={<CreatePool/>} />
+        <Route path="/create-pool" element={<CreatePool/>} />
         <Route path="/tokens" element={<TokensPage />} />
         <Route path="/token/:mintAddress" element={<TokenDetail />} />
         <Route path="/projects" element={<Projects />} />

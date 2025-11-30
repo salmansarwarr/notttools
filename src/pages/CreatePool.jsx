@@ -156,10 +156,10 @@ const BondingCurveCreateCoin = () => {
 
             const { mint, mintKeypair, txid } = await createTokenMint(formData);
 
-            // setCreationProgress("Adding metadata to IPFS...");
-            // toast.info("Uploading metadata to IPFS...");
+            setCreationProgress("Adding metadata to IPFS...");
+            toast.info("Uploading metadata to IPFS...");
 
-            // await addMetadata(mintKeypair, formData);
+            await addMetadata(mintKeypair, formData);
 
             setStepStatus((prev) => ({ ...prev, step1: "success" }));
             setCreationProgress("Token & metadata created successfully!");
@@ -210,10 +210,8 @@ const BondingCurveCreateCoin = () => {
     const executeStep3 = async (mint, creatorTokenAccount) => {
         try {
             setStepStatus((prev) => ({ ...prev, step3: "loading" }));
-            setCreationProgress(
-                "Initializing bonding curve with first buyer lock..."
-            );
-
+            setCreationProgress("Initializing bonding curve (1/3)...");
+    
             const {
                 bondingCurve,
                 tokenVault,
@@ -221,14 +219,13 @@ const BondingCurveCreateCoin = () => {
                 solVault,
                 txid,
             } = await initializeBondingCurve(mint, creatorTokenAccount);
+            
             toast.info("Setting up bonding curve and first buyer lock...");
-
+    
             setStepStatus((prev) => ({ ...prev, step3: "success" }));
-            setCreationProgress(
-                "Bonding curve initialized! Token ready for trading!"
-            );
+            setCreationProgress("Bonding curve initialized! Token ready for trading!");
             toast.success("🎉 Token launched on bonding curve!");
-
+    
             return {
                 bondingCurve,
                 tokenVault,
