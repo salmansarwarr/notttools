@@ -31,6 +31,7 @@ import { createSignerFromKeypair } from "@metaplex-foundation/umi";
 import { base58 } from "@metaplex-foundation/umi/serializers";
 import { toast } from 'react-toastify';
 
+
 // Constants
 const BONDING_CURVE_PROGRAM_ID = new PublicKey("CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT");
 const PLATFORM_AUTHORITY = new PublicKey("9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk")
@@ -985,9 +986,17 @@ export const useBondingCurveFlow = () => {
 
     async function fetchSolPrice() {
         try {
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-            const data = await response.json();
-            return data.solana.usd;
+            const price = await (
+                await fetch(
+                    'https://api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112',
+                {
+                  headers: {
+                    'x-api-key': '60012c1b-4bd1-4e6f-a6a3-eb991ed23e95',
+                  },
+                }
+              )
+            ).json();
+            return price['So11111111111111111111111111111111111111112'].usdPrice;
         } catch (error) {
             console.error('Error fetching SOL price:', error);
             return 186.14;
@@ -1132,15 +1141,50 @@ function calculateSolOut(tokensIn, tokenReserves, solReserves) {
 }
 
 function calculatePriceImpact(amountIn, reservesIn, reservesOut, isBuy) {
-    const amountOut = isBuy
-        ? calculateTokensOut(amountIn, reservesIn, reservesOut)
-        : calculateSolOut(amountIn, reservesIn, reservesOut);
+    try {
+        // Ensure we're working with BN objects
+        const amountInBN = BN.isBN(amountIn) ? amountIn : new BN(amountIn.toString());
+        const reservesInBN = BN.isBN(reservesIn) ? reservesIn : new BN(reservesIn.toString());
+        const reservesOutBN = BN.isBN(reservesOut) ? reservesOut : new BN(reservesOut.toString());
 
-    if (amountOut.lte(new BN(0))) return 0;
+        // Validate inputs
+        if (amountInBN.lte(new BN(0)) || reservesInBN.lte(new BN(0)) || reservesOutBN.lte(new BN(0))) {
+            return 0;
+        }
 
-    const effectivePrice = amountIn.mul(ONE_E9).div(amountOut);
-    const spotPrice = reservesIn.mul(ONE_E9).div(reservesOut);
+        // Calculate output amount
+        const amountOut = isBuy
+            ? calculateTokensOut(amountInBN, reservesInBN, reservesOutBN)
+            : calculateSolOut(amountInBN, reservesInBN, reservesOutBN);
 
-    const impact = effectivePrice.sub(spotPrice).mul(new BN(10000)).div(spotPrice);
-    return Math.abs(parseFloat(impact.toString()) / 100);
+        if (amountOut.lte(new BN(0))) {
+            return 0;
+        }
+
+        // Spot price = current reserves ratio
+        const spotPrice = reservesInBN.mul(ONE_E9).div(reservesOutBN);
+        
+        // Effective price = actual price paid in this trade
+        const effectivePrice = amountInBN.mul(ONE_E9).div(amountOut);
+
+        // Price impact = (effectivePrice - spotPrice) / spotPrice * 100
+        const priceDiff = effectivePrice.sub(spotPrice);
+        const impact = priceDiff.mul(new BN(10000)).div(spotPrice);
+
+        const impactPercent = Math.abs(parseFloat(impact.toString()) / 100);
+        
+        // Debug log (remove after testing)
+        console.log('💰 Price Impact:', {
+            input: amountInBN.toString(),
+            output: amountOut.toString(), 
+            spot: spotPrice.toString(),
+            effective: effectivePrice.toString(),
+            impact: impactPercent.toFixed(4) + '%'
+        });
+
+        return impactPercent;
+    } catch (error) {
+        console.error('Error calculating price impact:', error);
+        return 0;
+    }
 }

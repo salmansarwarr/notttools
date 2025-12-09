@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useBondingCurveFlow } from "../hooks/useSolanaTokenFlow";
 import { useGlobalState } from "../hooks/useGlobalState";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
+import { PublicKey } from "@solana/web3.js";
 import constants from "../constants";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -14,6 +15,7 @@ const BondingCurveCreateCoin = () => {
         addMetadata,
         mintTokensToWallet,
         initializeBondingCurve,
+        buyTokens,
         BONDING_CURVE_CONFIG,
     } = useBondingCurveFlow();
 
@@ -44,6 +46,11 @@ const BondingCurveCreateCoin = () => {
     });
     const [creationProgress, setCreationProgress] = useState("");
     const [errorDetails, setErrorDetails] = useState(null);
+
+    // Buy modal states
+    const [showBuyModal, setShowBuyModal] = useState(true);
+    const [buyAmount, setBuyAmount] = useState("");
+    const [isBuying, setIsBuying] = useState(false);
 
     // Legal agreements
     const [agreements, setAgreements] = useState({
@@ -211,7 +218,7 @@ const BondingCurveCreateCoin = () => {
         try {
             setStepStatus((prev) => ({ ...prev, step3: "loading" }));
             setCreationProgress("Initializing bonding curve (1/3)...");
-    
+
             const {
                 bondingCurve,
                 tokenVault,
@@ -219,13 +226,15 @@ const BondingCurveCreateCoin = () => {
                 solVault,
                 txid,
             } = await initializeBondingCurve(mint, creatorTokenAccount);
-            
+
             toast.info("Setting up bonding curve and first buyer lock...");
-    
+
             setStepStatus((prev) => ({ ...prev, step3: "success" }));
-            setCreationProgress("Bonding curve initialized! Token ready for trading!");
+            setCreationProgress(
+                "Bonding curve initialized! Token ready for trading!"
+            );
             toast.success("🎉 Token launched on bonding curve!");
-    
+
             return {
                 bondingCurve,
                 tokenVault,
@@ -314,6 +323,10 @@ const BondingCurveCreateCoin = () => {
 
             setCreationResult({ mintAddress: mint.toString() });
             localStorage.removeItem("bondingCurveTokenDraft");
+
+            // Show buy modal after successful creation
+            setShowCreationModal(false);
+            setShowBuyModal(true);
         } catch (error) {
             console.error("Creation process failed:", error);
         } finally {
@@ -414,6 +427,62 @@ const BondingCurveCreateCoin = () => {
                 autoClose: 5000,
             });
         }
+    };
+
+    const handleBuyTokens = async () => {
+        if (!buyAmount || parseFloat(buyAmount) <= 0) {
+            toast.error("Please enter a valid amount");
+            return;
+        }
+
+        if (!wallet.connected) {
+            toast.warning("Please connect your wallet first");
+            return;
+        }
+
+        setIsBuying(true);
+        try {
+            const mint = new PublicKey(creationResult.mintAddress);
+            const amount = parseFloat(buyAmount);
+            const slippageBps = 100; // 1% default slippage
+
+            toast.info("Processing buy order...");
+
+            const result = await buyTokens(mint, amount, slippageBps);
+
+            // Check if this was the first buy
+            if (result?.isFirstBuy) {
+                toast.info(
+                    "🔒 You're the first buyer! Your tokens are locked until unlock conditions are met.",
+                    {
+                        autoClose: 8000,
+                    }
+                );
+            } else {
+                toast.success("✅ Tokens purchased successfully!");
+            }
+
+            setShowBuyModal(false);
+
+            // Small delay before redirect to let toast show
+            setTimeout(() => {
+                window.location.href = `/token/${creationResult.mintAddress}`;
+            }, 1500);
+        } catch (error) {
+            console.error("Buy failed:", error);
+            // Toast already shown in buyTokens function, but add fallback
+            if (!error.message.includes("User rejected")) {
+                toast.error(`Failed to buy tokens: ${error.message}`);
+            }
+        } finally {
+            setIsBuying(false);
+        }
+    };
+
+    const skipBuying = () => {
+        setShowBuyModal(false);
+        // Redirect to token page
+        window.location.href = `/token/${creationResult.mintAddress}`;
     };
 
     const closeModal = () => {
@@ -541,6 +610,181 @@ const BondingCurveCreateCoin = () => {
                 pauseOnHover
                 theme="dark"
             />
+
+            {/* Buy Tokens Modal */}
+            {showBuyModal && creationResult && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#192630] rounded-2xl shadow-2xl p-8 border border-gray-700 max-w-md w-full">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg
+                                    className="w-8 h-8 text-green-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M5 13l4 4L19 7"
+                                    ></path>
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold text-white mb-2">
+                                🎉 Token Created Successfully!
+                            </h2>
+                            <p className="text-gray-400 text-sm">
+                                Your token{" "}
+                                <span className="text-blue-400 font-semibold">
+                                    ${formData.ticker}
+                                </span>{" "}
+                                is now live on the bonding curve
+                            </p>
+                        </div>
+
+                        {/* Token Info */}
+                        <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
+                            <div className="flex items-center gap-3 mb-3">
+                                {mediaPreview && (
+                                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-blue-500">
+                                        {formData.coinMedia?.type.startsWith(
+                                            "video"
+                                        ) ? (
+                                            <video
+                                                src={mediaPreview}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={mediaPreview}
+                                                alt="Token"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="text-white font-semibold">
+                                        {formData.coinName}
+                                    </h3>
+                                    <p className="text-gray-400 text-sm">
+                                        ${formData.ticker}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-xs text-gray-400 space-y-1">
+                                <p>
+                                    Initial Price: ~
+                                    {(
+                                        BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES /
+                                        BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES
+                                    ).toFixed(8)}{" "}
+                                    SOL
+                                </p>
+                                <p className="break-all">
+                                    Address: {creationResult.mintAddress}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-6">
+                            <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                >
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                                        clipRule="evenodd"
+                                    ></path>
+                                </svg>
+                                Buy Your Tokens Now?
+                            </h3>
+                            <p className="text-blue-200 text-sm mb-4">
+                                Be the first to support your own token! Enter
+                                the amount of SOL you want to spend.
+                            </p>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    Amount in SOL
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        value={buyAmount}
+                                        onChange={(e) =>
+                                            setBuyAmount(e.target.value)
+                                        }
+                                        placeholder="0.1"
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                                        SOL
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-xs text-gray-400">
+                                    Suggested: 0.1 - 1 SOL for initial buy
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleBuyTokens}
+                                disabled={
+                                    isBuying ||
+                                    !buyAmount ||
+                                    parseFloat(buyAmount) <= 0
+                                }
+                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-600 text-white font-bold py-3 px-6 rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isBuying ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                                            <path
+                                                fillRule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                                                clipRule="evenodd"
+                                            ></path>
+                                        </svg>
+                                        Buy Tokens
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={skipBuying}
+                                disabled={isBuying}
+                                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:cursor-not-allowed"
+                            >
+                                Skip for Now
+                            </button>
+                        </div>
+
+                        <p className="mt-4 text-xs text-center text-gray-500">
+                            You can buy tokens anytime from the token page
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Creation Modal */}
             {showCreationModal && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -682,22 +926,6 @@ const BondingCurveCreateCoin = () => {
                                     </button>
                                 )}
 
-                            {stepStatus.step1 === "success" &&
-                                stepStatus.step2 === "success" &&
-                                stepStatus.step3 === "success" && (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                closeModal();
-                                                resetForm();
-                                            }}
-                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-                                        >
-                                            Close
-                                        </button>
-                                    </>
-                                )}
-
                             {(stepStatus.step1 === "error" ||
                                 stepStatus.step2 === "error" ||
                                 stepStatus.step3 === "error") && (
@@ -718,60 +946,6 @@ const BondingCurveCreateCoin = () => {
                                 </>
                             )}
                         </div>
-
-                        {/* Success Summary */}
-                        {creationResult && stepStatus.step3 === "success" && (
-                            <div className="mt-6 p-4 bg-green-900/30 border border-green-600/50 rounded-lg">
-                                <h3 className="text-green-300 font-semibold mb-2 text-center">
-                                    ✅ Token Launched Successfully!
-                                </h3>
-                                <div className="text-sm text-green-200 space-y-2">
-                                    <p className="break-all">
-                                        <strong>Mint:</strong>{" "}
-                                        {creationResult.mintAddress}
-                                    </p>
-                                    <div className="mt-3 pt-3 border-t border-green-600/30">
-                                        <p className="text-xs text-green-300 font-semibold mb-2">
-                                            📈 Bonding Curve Active:
-                                        </p>
-                                        <ul className="text-xs text-green-200 space-y-1 ml-4 list-disc">
-                                            <li>
-                                                Initial price: ~
-                                                {(
-                                                    BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES /
-                                                    BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES
-                                                ).toFixed(8)}{" "}
-                                                SOL
-                                            </li>
-                                            <li>
-                                                Users can buy/sell on the curve
-                                            </li>
-                                            <li>
-                                                Migration at{" "}
-                                                {
-                                                    BONDING_CURVE_CONFIG.MIGRATION_THRESHOLD
-                                                }{" "}
-                                                SOL
-                                            </li>
-                                            <li>
-                                                60% of First buyer's tokens locked until
-                                                conditions met
-                                            </li>
-                                            <li>
-                                                Unlock requires{" "}
-                                                {
-                                                    BONDING_CURVE_CONFIG.HOLDER_THRESHOLD
-                                                }{" "}
-                                                holders and $
-                                                {BONDING_CURVE_CONFIG.VOLUME_THRESHOLD_USD_CENTS /
-                                                    100}{" "}
-                                                trading volume
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
