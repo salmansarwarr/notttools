@@ -596,6 +596,31 @@ const BondingCurveCreateCoin = () => {
         );
     };
 
+    // Add this function inside BondingCurveCreateCoin component, before the return statement
+const calculateEstimatedTokens = (solAmount) => {
+    if (!solAmount || parseFloat(solAmount) <= 0) return '0';
+    
+    try {
+        const solIn = parseFloat(solAmount);
+        const virtualSol = BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES;
+        const virtualTokens = BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES / 1e9; // Convert to readable units
+        
+        // Constant product formula: k = x * y
+        const k = virtualSol * virtualTokens;
+        const newSolReserves = virtualSol + solIn;
+        const newTokenReserves = k / newSolReserves;
+        const tokensOut = virtualTokens - newTokenReserves;
+        
+        return tokensOut.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    } catch (error) {
+        console.error('Error calculating tokens:', error);
+        return '0';
+    }
+};
+
     return (
         <div className="min-h-screen bg-[#0A151E] py-8 px-4 pt-28">
             <ToastContainer
@@ -709,30 +734,46 @@ const BondingCurveCreateCoin = () => {
                                 the amount of SOL you want to spend.
                             </p>
 
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Amount in SOL
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="number"
-                                        value={buyAmount}
-                                        onChange={(e) =>
-                                            setBuyAmount(e.target.value)
-                                        }
-                                        placeholder="0.1"
-                                        step="0.01"
-                                        min="0"
-                                        className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
-                                    <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
-                                        SOL
-                                    </span>
-                                </div>
-                                <p className="mt-2 text-xs text-gray-400">
-                                    Suggested: 0.1 - 1 SOL for initial buy
-                                </p>
-                            </div>
+{/* In the Buy Tokens Modal, add this after the input field */}
+<div className="mb-4">
+    <label className="block text-sm font-medium text-gray-300 mb-2">
+        Amount in SOL
+    </label>
+    <div className="relative">
+        <input
+            type="number"
+            value={buyAmount}
+            onChange={(e) => setBuyAmount(e.target.value)}
+            placeholder="0.1"
+            step="0.01"
+            min="0"
+            className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+            SOL
+        </span>
+    </div>
+    
+    {/* ADD THIS NEW SECTION */}
+    {buyAmount && parseFloat(buyAmount) > 0 && (
+        <div className="mt-3 p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg">
+            <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-400">You're spending:</span>
+                <span className="text-white font-semibold">{parseFloat(buyAmount).toFixed(4)} SOL</span>
+            </div>
+            <div className="flex justify-between text-sm">
+                <span className="text-gray-400">You'll receive:</span>
+                <span className="text-green-400 font-semibold">
+                    ~{calculateEstimatedTokens(buyAmount)} {formData.ticker || 'tokens'}
+                </span>
+            </div>
+        </div>
+    )}
+    
+    <p className="mt-2 text-xs text-gray-400">
+        Suggested: 0.1 - 1 SOL for initial buy
+    </p>
+</div>
                         </div>
 
                         {/* Action Buttons */}
