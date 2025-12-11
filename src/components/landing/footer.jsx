@@ -924,7 +924,7 @@ export const Footer = () => {
 
             <div>
                 <h3 className="text-xl font-bold text-white mb-3">
-                    9. Contact
+                    10. Contact
                 </h3>
                 <p className="mb-2">
                     For any questions regarding these Terms, please contact us:

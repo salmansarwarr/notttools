@@ -1151,9 +1151,7 @@ const TokenDetail = () => {
                                                         5.
                                                     </span>
                                                     <span>
-                                                        5% platform fee + 60% LP
-                                                        auto-locked after
-                                                        migration
+                                                        3% platform fee + 100% LP burn
                                                     </span>
                                                 </li>
                                             </ul>

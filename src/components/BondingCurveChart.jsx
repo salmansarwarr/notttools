@@ -953,9 +953,13 @@ const BondingCurveChart = ({ mintAddress }) => {
         });
     }, [priceHistory, bondingCurveInfo]);
 
-    const generateSyntheticCandles = (bondingCurveData, timeframe, creationTime) => {
+    const generateSyntheticCandles = (
+        bondingCurveData,
+        timeframe,
+        creationTime
+    ) => {
         if (!bondingCurveData) return [];
-    
+
         const intervals = {
             "1s": 1000,
             "5s": 5000,
@@ -967,15 +971,19 @@ const BondingCurveChart = ({ mintAddress }) => {
             "4h": 14400000,
             "1D": 86400000,
         };
-    
+
         const interval = intervals[timeframe];
         const now = Date.now();
         const startTime = creationTime || now - 3600000;
-        
+
         const candles = [];
         const currentPrice = bondingCurveData.priceInUsd;
-        
-        for (let time = Math.floor(startTime / interval) * interval; time <= now; time += interval) {
+
+        for (
+            let time = Math.floor(startTime / interval) * interval;
+            time <= now;
+            time += interval
+        ) {
             candles.push({
                 timestamp: time,
                 open: currentPrice,
@@ -986,35 +994,40 @@ const BondingCurveChart = ({ mintAddress }) => {
                 buyVolume: 0,
                 sellVolume: 0,
                 hasRealData: false,
-                synthetic: true
+                synthetic: true,
             });
         }
-        
+
         return candles;
     };
 
     useEffect(() => {
         let finalCandles = [];
-        
+
         if (priceHistory.length === 0 || priceHistory.length < 2) {
             if (bondingCurveInfo) {
-                console.log("📊 Generating synthetic candles for low-volume token");
+                console.log(
+                    "📊 Generating synthetic candles for low-volume token"
+                );
                 finalCandles = generateSyntheticCandles(
-                    bondingCurveInfo, 
-                    timeframe, 
+                    bondingCurveInfo,
+                    timeframe,
                     creationDate || Date.now() - 3600000
                 );
             }
         } else {
             finalCandles = aggregateToCandles(priceHistory, timeframe);
         }
-        
+
         if (finalCandles.length > 0) {
             setCandles(finalCandles);
             setViewState({
                 zoom: 1,
                 offsetX: 0,
-                startIndex: Math.max(0, finalCandles.length - (isMobile ? 50 : 100)),
+                startIndex: Math.max(
+                    0,
+                    finalCandles.length - (isMobile ? 50 : 100)
+                ),
                 endIndex: finalCandles.length,
             });
         }
@@ -1513,57 +1526,85 @@ const BondingCurveChart = ({ mintAddress }) => {
         });
     };
 
+    // Add these state variables at the top with your other useState declarations
+    const [visibleTimeLabels, setVisibleTimeLabels] = useState([]);
+
+    // Add this helper function to format timestamps
+    const formatTimestamp = (timestamp, timeframe) => {
+        const date = new Date(timestamp);
+
+        if (timeframe === "1D") {
+            return date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+            });
+        } else if (timeframe === "4h" || timeframe === "1h") {
+            return date.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+            });
+        } else {
+            return date.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+            });
+        }
+    };
+
+    // Replace the entire canvas drawing useEffect with this updated version:
     useEffect(() => {
         if (!canvasRef.current || candles.length === 0) return;
-    
+
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
         const dpr = window.devicePixelRatio || 1;
-    
+
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width * dpr;
         canvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
-    
+
         const width = rect.width;
         const height = rect.height;
-    
-        // Responsive padding
+
+        // Responsive padding - INCREASED BOTTOM PADDING for timestamps
         const padding = isMobile
-            ? { top: 15, right: 55, bottom: 30, left: 5 }
-            : { top: 20, right: 70, bottom: 40, left: 10 };
-    
+            ? { top: 15, right: 55, bottom: 45, left: 5 } // Increased from 30 to 45
+            : { top: 20, right: 70, bottom: 50, left: 10 }; // Increased from 40 to 50
+
         const chartHeight = height - padding.top - padding.bottom;
         const chartWidth = width - padding.left - padding.right;
-    
+
         // Background with gradient
         const gradient = ctx.createLinearGradient(0, 0, 0, height);
         gradient.addColorStop(0, "#0a0a0a");
         gradient.addColorStop(1, "#000000");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
-    
+
         const visibleCandles = candles.slice(
             viewState.startIndex,
             viewState.endIndex
         );
         if (visibleCandles.length === 0) return;
-    
+
         // Calculate price range
         const prices = visibleCandles.flatMap((c) => [c.high, c.low]);
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
         let priceRange = maxPrice - minPrice;
-    
+
         if (priceRange === 0 || !isFinite(priceRange)) {
             priceRange = maxPrice * 0.1;
         }
-    
+
         const paddingPercent = priceRange * 0.15;
         const adjustedMin = minPrice - paddingPercent;
         const adjustedMax = maxPrice + paddingPercent;
         const adjustedRange = adjustedMax - adjustedMin;
-    
+
         const priceToY = (price) => {
             return (
                 padding.top +
@@ -1571,12 +1612,12 @@ const BondingCurveChart = ({ mintAddress }) => {
                 ((price - adjustedMin) / adjustedRange) * chartHeight
             );
         };
-    
+
         // Draw horizontal grid lines
         ctx.strokeStyle = "#1a1a1a";
         ctx.lineWidth = 1;
         const gridLines = isMobile ? 4 : 5;
-    
+
         for (let i = 0; i <= gridLines; i++) {
             const y = padding.top + (chartHeight / gridLines) * i;
             ctx.beginPath();
@@ -1584,12 +1625,12 @@ const BondingCurveChart = ({ mintAddress }) => {
             ctx.lineTo(padding.left + chartWidth, y);
             ctx.stroke();
         }
-    
+
         // Draw price labels
         ctx.fillStyle = "#666";
         ctx.font = isMobile ? "9px monospace" : "10px monospace";
         ctx.textAlign = "left";
-    
+
         for (let i = 0; i <= gridLines; i++) {
             const ratio = 1 - i / gridLines;
             const price = adjustedMin + adjustedRange * ratio;
@@ -1600,59 +1641,121 @@ const BondingCurveChart = ({ mintAddress }) => {
                 y + 3
             );
         }
-    
+
+        // 🔥 DRAW TIMESTAMP LABELS AT BOTTOM (GMGN Style)
+        const totalCandleSpace = chartWidth / visibleCandles.length;
+        const minLabelSpacing = isMobile ? 80 : 100; // Minimum pixels between labels
+        const maxLabels = Math.floor(chartWidth / minLabelSpacing);
+        const labelInterval = Math.max(
+            1,
+            Math.floor(visibleCandles.length / maxLabels)
+        );
+
+        ctx.fillStyle = "#666";
+        ctx.font = isMobile ? "9px monospace" : "10px monospace";
+        ctx.textAlign = "center";
+
+        const timeLabels = [];
+
+        visibleCandles.forEach((candle, i) => {
+            if (i % labelInterval === 0 || i === visibleCandles.length - 1) {
+                const x = padding.left + (i + 0.5) * totalCandleSpace;
+                const labelY = height - padding.bottom + 20;
+
+                // Draw vertical line from chart to label
+                ctx.strokeStyle = "#1a1a1a";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top + chartHeight);
+                ctx.lineTo(x, labelY - 8);
+                ctx.stroke();
+
+                // Draw timestamp label
+                const timeLabel = formatTimestamp(candle.timestamp, timeframe);
+                ctx.fillStyle = "#888";
+                ctx.fillText(timeLabel, x, labelY);
+
+                timeLabels.push({
+                    x,
+                    label: timeLabel,
+                    timestamp: candle.timestamp,
+                });
+            }
+        });
+
+        setVisibleTimeLabels(timeLabels);
+
+        // Draw horizontal line at bottom of chart (GMGN style)
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, padding.top + chartHeight);
+        ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+        ctx.stroke();
+
         // 🔥 GMGN.AI STYLE: Determine if we should show line or candles
-        const hasSignificantTrades = visibleCandles.filter(c => c.hasRealData && c.volume > 0).length;
-        const totalVolume = visibleCandles.reduce((sum, c) => sum + c.volume, 0);
-        const shouldShowLine = chartType === "line" || 
-                              (chartType === "auto" && (hasSignificantTrades < 3 || totalVolume < 0.01));
-    
+        const hasSignificantTrades = visibleCandles.filter(
+            (c) => c.hasRealData && c.volume > 0
+        ).length;
+        const totalVolume = visibleCandles.reduce(
+            (sum, c) => sum + c.volume,
+            0
+        );
+        const shouldShowLine =
+            chartType === "line" ||
+            (chartType === "auto" &&
+                (hasSignificantTrades < 3 || totalVolume < 0.01));
+
         if (shouldShowLine) {
             // 🎨 GMGN.AI LINE CHART STYLE
-            const totalCandleSpace = chartWidth / visibleCandles.length;
-    
             // Create smooth line path
             ctx.beginPath();
             ctx.strokeStyle = "#8b7bff";
             ctx.lineWidth = isMobile ? 2 : 2.5;
             ctx.lineJoin = "round";
             ctx.lineCap = "round";
-    
+
             visibleCandles.forEach((candle, i) => {
                 const x = padding.left + (i + 0.5) * totalCandleSpace;
                 const y = priceToY(candle.close);
-    
+
                 if (i === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     ctx.lineTo(x, y);
                 }
             });
-    
+
             // Add glow effect
             ctx.shadowColor = "#8b7bff";
             ctx.shadowBlur = isMobile ? 6 : 8;
             ctx.stroke();
             ctx.shadowBlur = 0;
-    
+
             // Draw gradient fill under line (GMGN.ai style)
             ctx.beginPath();
-            ctx.moveTo(padding.left + 0.5 * totalCandleSpace, priceToY(visibleCandles[0].close));
-            
+            ctx.moveTo(
+                padding.left + 0.5 * totalCandleSpace,
+                priceToY(visibleCandles[0].close)
+            );
+
             visibleCandles.forEach((candle, i) => {
                 const x = padding.left + (i + 0.5) * totalCandleSpace;
                 const y = priceToY(candle.close);
                 ctx.lineTo(x, y);
             });
-    
+
             // Complete the fill area
             ctx.lineTo(
                 padding.left + (visibleCandles.length - 0.5) * totalCandleSpace,
                 padding.top + chartHeight
             );
-            ctx.lineTo(padding.left + 0.5 * totalCandleSpace, padding.top + chartHeight);
+            ctx.lineTo(
+                padding.left + 0.5 * totalCandleSpace,
+                padding.top + chartHeight
+            );
             ctx.closePath();
-    
+
             const fillGradient = ctx.createLinearGradient(
                 0,
                 padding.top,
@@ -1663,19 +1766,19 @@ const BondingCurveChart = ({ mintAddress }) => {
             fillGradient.addColorStop(1, "rgba(139, 123, 255, 0)");
             ctx.fillStyle = fillGradient;
             ctx.fill();
-    
+
             // Draw data points
             visibleCandles.forEach((candle, i) => {
                 if (candle.hasRealData || candle.volume > 0) {
                     const x = padding.left + (i + 0.5) * totalCandleSpace;
                     const y = priceToY(candle.close);
-    
+
                     // Outer glow circle
                     ctx.beginPath();
                     ctx.arc(x, y, isMobile ? 4 : 5, 0, Math.PI * 2);
                     ctx.fillStyle = "rgba(139, 123, 255, 0.3)";
                     ctx.fill();
-    
+
                     // Inner circle
                     ctx.beginPath();
                     ctx.arc(x, y, isMobile ? 2.5 : 3, 0, Math.PI * 2);
@@ -1683,28 +1786,26 @@ const BondingCurveChart = ({ mintAddress }) => {
                     ctx.fill();
                 }
             });
-    
         } else {
             // 🕯️ TRADITIONAL CANDLES (for high-volume tokens)
-            const totalCandleSpace = chartWidth / visibleCandles.length;
             const maxCandleWidth = isMobile ? 12 : 20;
             const candleWidth = Math.max(
                 2,
                 Math.min(totalCandleSpace * 0.7, maxCandleWidth)
             );
             const wickWidth = Math.max(1, candleWidth * 0.15);
-    
+
             visibleCandles.forEach((candle, i) => {
                 const centerX = padding.left + (i + 0.5) * totalCandleSpace;
-    
+
                 const openY = priceToY(candle.open);
                 const closeY = priceToY(candle.close);
                 const highY = priceToY(candle.high);
                 const lowY = priceToY(candle.low);
-    
+
                 const isGreen = candle.close >= candle.open;
                 const color = isGreen ? "#00c087" : "#ff4976";
-    
+
                 // Draw wick
                 ctx.strokeStyle = color;
                 ctx.lineWidth = wickWidth;
@@ -1712,11 +1813,11 @@ const BondingCurveChart = ({ mintAddress }) => {
                 ctx.moveTo(centerX, highY);
                 ctx.lineTo(centerX, lowY);
                 ctx.stroke();
-    
+
                 // Draw body
                 const bodyTop = Math.min(openY, closeY);
                 const bodyHeight = Math.max(1, Math.abs(closeY - openY));
-    
+
                 ctx.fillStyle = color;
                 ctx.fillRect(
                     centerX - candleWidth / 2,
@@ -1726,7 +1827,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                 );
             });
         }
-    
+
         // Current price line (always show)
         if (
             stats.currentPrice > 0 &&
@@ -1734,10 +1835,10 @@ const BondingCurveChart = ({ mintAddress }) => {
             stats.currentPrice <= adjustedMax
         ) {
             const currentY = priceToY(stats.currentPrice);
-    
+
             ctx.shadowColor = "#8b7bff";
             ctx.shadowBlur = isMobile ? 8 : 10;
-    
+
             ctx.strokeStyle = "#8b7bff";
             ctx.setLineDash([5, 3]);
             ctx.lineWidth = isMobile ? 1 : 1.5;
@@ -1746,9 +1847,9 @@ const BondingCurveChart = ({ mintAddress }) => {
             ctx.lineTo(padding.left + chartWidth, currentY);
             ctx.stroke();
             ctx.setLineDash([]);
-    
+
             ctx.shadowBlur = 0;
-    
+
             // Price label
             ctx.fillStyle = "#8b7bff";
             const priceText = formatPrice(stats.currentPrice);
@@ -1756,20 +1857,19 @@ const BondingCurveChart = ({ mintAddress }) => {
             const textWidth = ctx.measureText(priceText).width;
             const labelPadding = isMobile ? 4 : 6;
             const labelX = padding.left + chartWidth + (isMobile ? 2 : 3);
-    
+
             ctx.fillRect(labelX, currentY - 8, textWidth + labelPadding, 16);
             ctx.fillStyle = "#000";
             ctx.textAlign = "left";
             ctx.fillText(priceText, labelX + labelPadding / 2, currentY + 3);
         }
-    
+
         // Crosshair and tooltip
         if (mousePos && hoveredCandle && (!isMobile || width > 600)) {
             const candleIndex = visibleCandles.indexOf(hoveredCandle);
             if (candleIndex >= 0) {
-                const totalCandleSpace = chartWidth / visibleCandles.length;
                 const x = padding.left + (candleIndex + 0.5) * totalCandleSpace;
-    
+
                 // Crosshair lines
                 ctx.strokeStyle = "rgba(139, 123, 255, 0.3)";
                 ctx.setLineDash([3, 3]);
@@ -1778,16 +1878,22 @@ const BondingCurveChart = ({ mintAddress }) => {
                 ctx.moveTo(x, padding.top);
                 ctx.lineTo(x, padding.top + chartHeight);
                 ctx.stroke();
-    
+
                 ctx.beginPath();
                 ctx.moveTo(padding.left, mousePos.y);
                 ctx.lineTo(padding.left + chartWidth, mousePos.y);
                 ctx.stroke();
                 ctx.setLineDash([]);
-    
+
                 // Tooltip
                 const tooltipWidth = isMobile ? 150 : 170;
-                const tooltipHeight = shouldShowLine ? (isMobile ? 70 : 80) : (isMobile ? 110 : 120);
+                const tooltipHeight = shouldShowLine
+                    ? isMobile
+                        ? 70
+                        : 80
+                    : isMobile
+                    ? 110
+                    : 120;
                 const tooltipX =
                     mousePos.x < width / 2
                         ? mousePos.x + 15
@@ -1799,7 +1905,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                         mousePos.y - tooltipHeight / 2
                     )
                 );
-    
+
                 const tooltipGradient = ctx.createLinearGradient(
                     tooltipX,
                     tooltipY,
@@ -1808,11 +1914,11 @@ const BondingCurveChart = ({ mintAddress }) => {
                 );
                 tooltipGradient.addColorStop(0, "rgba(25, 25, 25, 0.98)");
                 tooltipGradient.addColorStop(1, "rgba(15, 15, 15, 0.98)");
-    
+
                 ctx.fillStyle = tooltipGradient;
                 ctx.strokeStyle = "#444";
                 ctx.lineWidth = 1;
-    
+
                 const radius = 8;
                 ctx.beginPath();
                 ctx.moveTo(tooltipX + radius, tooltipY);
@@ -1850,35 +1956,43 @@ const BondingCurveChart = ({ mintAddress }) => {
                 ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
-    
+
                 ctx.fillStyle = "#fff";
                 ctx.font = isMobile ? "10px monospace" : "11px monospace";
                 ctx.textAlign = "left";
-    
+
                 const lineHeight = isMobile ? 15 : 16;
-                const lines = shouldShowLine ? [
-                    `${new Date(hoveredCandle.timestamp).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    })}`,
-                    `Price: ${formatPrice(hoveredCandle.close)}`,
-                    `Vol: ${hoveredCandle.volume.toFixed(4)} SOL`,
-                ] : [
-                    `${new Date(hoveredCandle.timestamp).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    })}`,
-                    `O: ${formatPrice(hoveredCandle.open)}`,
-                    `H: ${formatPrice(hoveredCandle.high)}`,
-                    `L: ${formatPrice(hoveredCandle.low)}`,
-                    `C: ${formatPrice(hoveredCandle.close)}`,
-                    `Vol: ${hoveredCandle.volume.toFixed(4)} SOL`,
-                ];
-    
+                const lines = shouldShowLine
+                    ? [
+                          `${new Date(hoveredCandle.timestamp).toLocaleString(
+                              "en-US",
+                              {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                              }
+                          )}`,
+                          `Price: ${formatPrice(hoveredCandle.close)}`,
+                          `Vol: ${hoveredCandle.volume.toFixed(4)} SOL`,
+                      ]
+                    : [
+                          `${new Date(hoveredCandle.timestamp).toLocaleString(
+                              "en-US",
+                              {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                              }
+                          )}`,
+                          `O: ${formatPrice(hoveredCandle.open)}`,
+                          `H: ${formatPrice(hoveredCandle.high)}`,
+                          `L: ${formatPrice(hoveredCandle.low)}`,
+                          `C: ${formatPrice(hoveredCandle.close)}`,
+                          `Vol: ${hoveredCandle.volume.toFixed(4)} SOL`,
+                      ];
+
                 lines.forEach((line, i) => {
                     ctx.fillText(
                         line,
@@ -1888,7 +2002,16 @@ const BondingCurveChart = ({ mintAddress }) => {
                 });
             }
         }
-    }, [candles, stats, viewState, mousePos, hoveredCandle, isMobile, chartType]);
+    }, [
+        candles,
+        stats,
+        viewState,
+        mousePos,
+        hoveredCandle,
+        isMobile,
+        chartType,
+        timeframe, // Add timeframe dependency
+    ]);
 
     const formatPrice = (value) => {
         if (!value || !isFinite(value)) return "—";
@@ -1964,41 +2087,41 @@ const BondingCurveChart = ({ mintAddress }) => {
                 </div>
 
                 {/* Chart Type Toggle - Add after timeframe buttons */}
-<div className="flex items-center gap-1 border-l border-gray-700 pl-2 ml-2">
-    <button
-        onClick={() => setChartType("line")}
-        className={`px-2 md:px-2.5 py-1 text-xs font-medium rounded transition-all ${
-            chartType === "line"
-                ? "bg-purple-600 text-white"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-        }`}
-        title="Line Chart"
-    >
-        📈
-    </button>
-    <button
-        onClick={() => setChartType("candles")}
-        className={`px-2 md:px-2.5 py-1 text-xs font-medium rounded transition-all ${
-            chartType === "candles"
-                ? "bg-purple-600 text-white"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-        }`}
-        title="Candlestick Chart"
-    >
-        🕯️
-    </button>
-    <button
-        onClick={() => setChartType("auto")}
-        className={`px-2 md:px-2.5 py-1 text-xs font-medium rounded transition-all ${
-            chartType === "auto"
-                ? "bg-purple-600 text-white"
-                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-        }`}
-        title="Auto (Line for low volume, Candles for high volume)"
-    >
-        ⚡
-    </button>
-</div>
+                <div className="flex items-center gap-1 border-l border-gray-700 pl-2 ml-2">
+                    <button
+                        onClick={() => setChartType("line")}
+                        className={`px-2 md:px-2.5 py-1 text-xs font-medium rounded transition-all ${
+                            chartType === "line"
+                                ? "bg-purple-600 text-white"
+                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                        }`}
+                        title="Line Chart"
+                    >
+                        📈
+                    </button>
+                    <button
+                        onClick={() => setChartType("candles")}
+                        className={`px-2 md:px-2.5 py-1 text-xs font-medium rounded transition-all ${
+                            chartType === "candles"
+                                ? "bg-purple-600 text-white"
+                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                        }`}
+                        title="Candlestick Chart"
+                    >
+                        🕯️
+                    </button>
+                    <button
+                        onClick={() => setChartType("auto")}
+                        className={`px-2 md:px-2.5 py-1 text-xs font-medium rounded transition-all ${
+                            chartType === "auto"
+                                ? "bg-purple-600 text-white"
+                                : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                        }`}
+                        title="Auto (Line for low volume, Candles for high volume)"
+                    >
+                        ⚡
+                    </button>
+                </div>
             </div>
 
             {/* Chart - Responsive */}
