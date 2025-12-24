@@ -7,7 +7,10 @@ import { PublicKey } from "@solana/web3.js";
 import constants from "../constants";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import BondingCurveChart from '../components/BondingCurveChart';
+import BondingCurveChart from "../components/BondingCurveChart";
+import TradesTable from "../components/TradesTable";
+import TradingDashboard from "../components/TradingDashboard";
+import TradingPage from "../components/TradingPage";
 
 const IS_MAINNET = true;
 
@@ -439,28 +442,31 @@ const TokenDetail = () => {
                 {/* GMGN CHART SECTION - ADD THIS HERE */}
                 {/* ============================================ */}
                 {/* ============================================ */}
-{/* CHART SECTION - Custom before migration, GMGN after */}
-{/* ============================================ */}
-{IS_MAINNET && bondingCurveInfo?.isMigrated ? (
-    // Show GMGN chart after migration
-    <div className="bg-[#192630] rounded-2xl border border-gray-700 overflow-hidden mb-6">
-        <div
-            className="relative bg-[#0A151E]"
-            style={{ height: "600px" }}
-        >
-            <iframe
-                src={`https://www.gmgn.cc/kline/sol/${mintAddress}`}
-                className="w-full h-full border-0"
-                title="GMGN Price Chart"
-                allow="clipboard-read; clipboard-write"
-                loading="lazy"
-            />
-        </div>
-    </div>
-) : (
-    // Show custom bonding curve chart before migration
-    <BondingCurveChart mintAddress={mintAddress} />
-)}
+                {/* CHART SECTION - Custom before migration, GMGN after */}
+                {/* ============================================ */}
+                {IS_MAINNET && bondingCurveInfo?.isMigrated ? (
+                    // Show GMGN chart after migration
+                    <div className="bg-[#192630] rounded-2xl border border-gray-700 overflow-hidden mb-6">
+                        <div
+                            className="relative bg-[#0A151E]"
+                            style={{ height: "600px" }}
+                        >
+                            <iframe
+                                src={`https://www.gmgn.cc/kline/sol/${mintAddress}`}
+                                className="w-full h-full border-0"
+                                title="GMGN Price Chart"
+                                allow="clipboard-read; clipboard-write"
+                                loading="lazy"
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    // Show custom bonding curve chart before migration
+                    // <BondingCurveChart mintAddress={mintAddress} />
+                    // <TradingDashboard mintAddress={mintAddress}/>
+                    <TradingPage tokenMint={mintAddress}/>
+                )}
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Trade Section */}
@@ -1151,7 +1157,8 @@ const TokenDetail = () => {
                                                         5.
                                                     </span>
                                                     <span>
-                                                        3% platform fee + 100% LP burn
+                                                        3% platform fee + 100%
+                                                        LP burn
                                                     </span>
                                                 </li>
                                             </ul>

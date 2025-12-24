@@ -1,0 +1,29 @@
+.tv-chart-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  
+  .tv-chart {
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Optional: Custom scrollbar styling */
+  .tv-chart-container ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .tv-chart-container ::-webkit-scrollbar-track {
+    background: #131722;
+  }
+  
+  .tv-chart-container ::-webkit-scrollbar-thumb {
+    background: #2a2e39;
+    border-radius: 4px;
+  }
+  
+  .tv-chart-container ::-webkit-scrollbar-thumb:hover {
+    background: #363a45;
+  }
