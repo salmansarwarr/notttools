@@ -1,24 +1,25 @@
-import { useState } from 'react';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { PublicKey, SystemProgram } from '@solana/web3.js';
-import * as anchor from '@coral-xyz/anchor';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { 
+import { useState } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
+import * as anchor from "@coral-xyz/anchor";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import {
     updateV1,
-    mplTokenMetadata 
-} from '@metaplex-foundation/mpl-token-metadata';
-import { 
-    publicKey as umiPublicKey,
-} from '@metaplex-foundation/umi';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import '@solana/wallet-adapter-react-ui/styles.css';
+    mplTokenMetadata,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { publicKey as umiPublicKey } from "@metaplex-foundation/umi";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import constants from "../constants";
 
 // Configuration
-const PROGRAM_ID = new PublicKey("HKa71yrA8bQeyhYtPn2pNMq8uQH5SrWw7EMPh3PKH3Dk");
+const PROGRAM_ID = new PublicKey(constants.network.programId);
 const COLLECTION_MINT = "BwqA35BKbdEV5miEsJJkQU7373GSHc7qKcyHebtdjPPw";
-const METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
-const CLUSTER = "mainnet-beta";
+const METADATA_PROGRAM_ID = new PublicKey(
+    "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+);
+const CLUSTER = constants.network.type;
 
 // Default config values
 const DEFAULT_MINTING_FEE = 100000000; // 0.1 SOL in lamports
@@ -29,9 +30,9 @@ function CollectionSetup() {
     const { connection } = useConnection();
     const wallet = useWallet();
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState('');
-    const [configPda, setConfigPda] = useState('');
-    const [txSignature, setTxSignature] = useState('');
+    const [status, setStatus] = useState("");
+    const [configPda, setConfigPda] = useState("");
+    const [txSignature, setTxSignature] = useState("");
 
     // Config form values
     const [mintingFee, setMintingFee] = useState(DEFAULT_MINTING_FEE);
@@ -46,49 +47,45 @@ function CollectionSetup() {
                 METADATA_PROGRAM_ID.toBuffer(),
                 mint.toBuffer(),
             ],
-            METADATA_PROGRAM_ID
+            METADATA_PROGRAM_ID,
         )[0];
     };
 
     // Helper: Get Program
     const getProgram = async () => {
-        const provider = new anchor.AnchorProvider(
-            connection,
-            wallet,
-            { commitment: "confirmed" }
+        const provider = new anchor.AnchorProvider(connection, wallet, {
+            commitment: "confirmed",
+        });
+        const idl = await fetch("/solana_nft_anchor.json").then((r) =>
+            r.json(),
         );
-        const idl = await fetch('/solana_nft_anchor.json').then(r => r.json());
         return new anchor.Program(idl, provider);
     };
 
     // Update Config Function
     const handleUpdateConfig = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus('❌ Please connect your wallet first');
+            setStatus("❌ Please connect your wallet first");
             return;
         }
 
         setLoading(true);
-        setStatus('🔄 Updating config...');
-        setTxSignature('');
+        setStatus("🔄 Updating config...");
+        setTxSignature("");
 
         try {
             const program = await getProgram();
 
             const [configPdaAddress] = PublicKey.findProgramAddressSync(
                 [Buffer.from("config")],
-                PROGRAM_ID
+                PROGRAM_ID,
             );
 
             setConfigPda(configPdaAddress.toString());
 
             // Execute transaction
             const tx = await program.methods
-                .updateConfig(
-                    new anchor.BN(mintingFee),
-                    maxNfts,
-                    stakingMonths
-                )
+                .updateConfig(new anchor.BN(mintingFee), maxNfts, stakingMonths)
                 .accounts({
                     admin: wallet.publicKey,
                     config: configPdaAddress,
@@ -96,13 +93,13 @@ function CollectionSetup() {
                 .rpc();
 
             setTxSignature(tx);
-            setStatus('✅ Config updated successfully!');
-            
-            console.log('Transaction:', tx);
+            setStatus("✅ Config updated successfully!");
+
+            console.log("Transaction:", tx);
         } catch (error) {
-            console.error('Error:', error);
-            if (error.message.includes('Unauthorized')) {
-                setStatus('❌ Only the admin can update config');
+            console.error("Error:", error);
+            if (error.message.includes("Unauthorized")) {
+                setStatus("❌ Only the admin can update config");
             } else {
                 setStatus(`❌ Error: ${error.message}`);
             }
@@ -114,23 +111,23 @@ function CollectionSetup() {
     // Set Collection Mint
     const handleSetCollectionMint = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus('❌ Please connect your wallet first');
+            setStatus("❌ Please connect your wallet first");
             return;
         }
 
         setLoading(true);
-        setStatus('🔄 Setting collection mint in config...');
-        setTxSignature('');
+        setStatus("🔄 Setting collection mint in config...");
+        setTxSignature("");
 
         try {
             const program = await getProgram();
 
             const collectionMint = new PublicKey(COLLECTION_MINT);
             const collectionMetadata = getMetadataPDA(collectionMint);
-            
+
             const [configPdaAddress] = PublicKey.findProgramAddressSync(
                 [Buffer.from("config")],
-                PROGRAM_ID
+                PROGRAM_ID,
             );
 
             setConfigPda(configPdaAddress.toString());
@@ -148,11 +145,11 @@ function CollectionSetup() {
                 .rpc();
 
             setTxSignature(tx);
-            setStatus('✅ Collection mint set successfully!');
-            
-            console.log('Transaction:', tx);
+            setStatus("✅ Collection mint set successfully!");
+
+            console.log("Transaction:", tx);
         } catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
             setStatus(`❌ Error: ${error.message}`);
         } finally {
             setLoading(false);
@@ -162,27 +159,25 @@ function CollectionSetup() {
     // Update Collection Authority
     const handleUpdateAuthority = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus('❌ Please connect your wallet first');
+            setStatus("❌ Please connect your wallet first");
             return;
         }
 
         setLoading(true);
-        setStatus('🔄 Updating collection authority...');
-        setTxSignature('');
+        setStatus("🔄 Updating collection authority...");
+        setTxSignature("");
 
         try {
             const [configPdaAddress] = PublicKey.findProgramAddressSync(
                 [Buffer.from("config")],
-                PROGRAM_ID
+                PROGRAM_ID,
             );
 
             setConfigPda(configPdaAddress.toString());
 
             // Initialize UMI
-            const endpoint = CLUSTER === "mainnet-beta" 
-                ? "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm"
-                : "https://api.devnet.solana.com";
-                
+            const endpoint = constants.network.endpoint;
+
             const umi = createUmi(endpoint)
                 .use(mplTokenMetadata())
                 .use(walletAdapterIdentity(wallet));
@@ -194,13 +189,15 @@ function CollectionSetup() {
                 newUpdateAuthority: umiPublicKey(configPdaAddress.toString()),
             }).sendAndConfirm(umi);
 
-            const signature = Buffer.from(result.signature).toString('base64');
+            const signature = Buffer.from(result.signature).toString("base64");
             setTxSignature(signature);
-            setStatus('✅ Authority updated successfully! Config PDA is now the collection authority.');
-            
-            console.log('Transaction:', signature);
+            setStatus(
+                "✅ Authority updated successfully! Config PDA is now the collection authority.",
+            );
+
+            console.log("Transaction:", signature);
         } catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
             setStatus(`❌ Error: ${error.message}`);
         } finally {
             setLoading(false);
@@ -231,16 +228,23 @@ function CollectionSetup() {
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-gray-400">Network:</span>
-                                <span className="text-white font-mono">{CLUSTER}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-400">Collection:</span>
-                                <span className="text-white font-mono text-xs">
-                                    {COLLECTION_MINT.slice(0, 8)}...{COLLECTION_MINT.slice(-8)}
+                                <span className="text-white font-mono">
+                                    {CLUSTER}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Your Wallet:</span>
+                                <span className="text-gray-400">
+                                    Collection:
+                                </span>
+                                <span className="text-white font-mono text-xs">
+                                    {COLLECTION_MINT.slice(0, 8)}...
+                                    {COLLECTION_MINT.slice(-8)}
+                                </span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">
+                                    Your Wallet:
+                                </span>
                                 <span className="text-white font-mono text-xs">
                                     {wallet.publicKey.toString().slice(0, 8)}...
                                     {wallet.publicKey.toString().slice(-8)}
@@ -248,9 +252,12 @@ function CollectionSetup() {
                             </div>
                             {configPda && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">Config PDA:</span>
+                                    <span className="text-gray-400">
+                                        Config PDA:
+                                    </span>
                                     <span className="text-green-400 font-mono text-xs">
-                                        {configPda.slice(0, 8)}...{configPda.slice(-8)}
+                                        {configPda.slice(0, 8)}...
+                                        {configPda.slice(-8)}
                                     </span>
                                 </div>
                             )}
@@ -270,13 +277,15 @@ function CollectionSetup() {
                                 <p className="text-gray-400 text-sm mb-4">
                                     Modify config parameters
                                 </p>
-                                
+
                                 <div className="bg-orange-500/10 border border-orange-500/30 rounded p-3 mb-4">
                                     <p className="text-orange-300 text-xs">
-                                        ⚠️ Only the admin wallet can update config. Changes take effect immediately for new mints.
+                                        ⚠️ Only the admin wallet can update
+                                        config. Changes take effect immediately
+                                        for new mints.
                                     </p>
                                 </div>
-                                
+
                                 {/* Config Form */}
                                 <div className="space-y-3 bg-white/5 rounded p-4 mb-4">
                                     <div>
@@ -286,15 +295,20 @@ function CollectionSetup() {
                                         <input
                                             type="number"
                                             value={mintingFee}
-                                            onChange={(e) => setMintingFee(Number(e.target.value))}
+                                            onChange={(e) =>
+                                                setMintingFee(
+                                                    Number(e.target.value),
+                                                )
+                                            }
                                             className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                                             placeholder="100000000"
                                         />
                                         <p className="text-xs text-gray-400 mt-1">
-                                            Default: 0.1 SOL (100,000,000 lamports)
+                                            Default: 0.1 SOL (100,000,000
+                                            lamports)
                                         </p>
                                     </div>
-                                    
+
                                     <div>
                                         <label className="text-gray-300 text-sm block mb-1">
                                             New Max NFTs per Wallet
@@ -302,14 +316,18 @@ function CollectionSetup() {
                                         <input
                                             type="number"
                                             value={maxNfts}
-                                            onChange={(e) => setMaxNfts(Number(e.target.value))}
+                                            onChange={(e) =>
+                                                setMaxNfts(
+                                                    Number(e.target.value),
+                                                )
+                                            }
                                             className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                                             placeholder="10"
                                             min="1"
                                             max="255"
                                         />
                                     </div>
-                                    
+
                                     <div>
                                         <label className="text-gray-300 text-sm block mb-1">
                                             New Staking Duration (months)
@@ -317,7 +335,11 @@ function CollectionSetup() {
                                         <input
                                             type="number"
                                             value={stakingMonths}
-                                            onChange={(e) => setStakingMonths(Number(e.target.value))}
+                                            onChange={(e) =>
+                                                setStakingMonths(
+                                                    Number(e.target.value),
+                                                )
+                                            }
                                             className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                                             placeholder="6"
                                             min="1"
@@ -335,16 +357,31 @@ function CollectionSetup() {
                             disabled={!wallet.connected || loading}
                             className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
                         >
-                            {loading && status.includes('Updating config') ? (
+                            {loading && status.includes("Updating config") ? (
                                 <span className="flex items-center justify-center">
-                                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    <svg
+                                        className="animate-spin h-5 w-5 mr-3"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="none"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
                                     </svg>
                                     Processing...
                                 </span>
                             ) : (
-                                'Update Config Parameters'
+                                "Update Config Parameters"
                             )}
                         </button>
                     </div>
@@ -369,16 +406,31 @@ function CollectionSetup() {
                             disabled={!wallet.connected || loading}
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
                         >
-                            {loading && status.includes('Setting') ? (
+                            {loading && status.includes("Setting") ? (
                                 <span className="flex items-center justify-center">
-                                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    <svg
+                                        className="animate-spin h-5 w-5 mr-3"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="none"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
                                     </svg>
                                     Processing...
                                 </span>
                             ) : (
-                                'Set Collection Mint'
+                                "Set Collection Mint"
                             )}
                         </button>
                     </div>
@@ -403,16 +455,31 @@ function CollectionSetup() {
                             disabled={!wallet.connected || loading}
                             className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105 disabled:transform-none"
                         >
-                            {loading && status.includes('Updating') ? (
+                            {loading && status.includes("Updating") ? (
                                 <span className="flex items-center justify-center">
-                                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    <svg
+                                        className="animate-spin h-5 w-5 mr-3"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="none"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
                                     </svg>
                                     Processing...
                                 </span>
                             ) : (
-                                'Update Collection Authority'
+                                "Update Collection Authority"
                             )}
                         </button>
                     </div>
@@ -420,24 +487,26 @@ function CollectionSetup() {
 
                 {/* Status Display */}
                 {status && (
-                    <div className={`rounded-lg p-4 mb-4 border ${
-                        status.includes('✅') 
-                            ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-                            : status.includes('❌')
-                            ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                            : status.includes('⚠️')
-                            ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                            : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                    }`}>
+                    <div
+                        className={`rounded-lg p-4 mb-4 border ${
+                            status.includes("✅")
+                                ? "bg-green-500/10 border-green-500/30 text-green-400"
+                                : status.includes("❌")
+                                  ? "bg-red-500/10 border-red-500/30 text-red-400"
+                                  : status.includes("⚠️")
+                                    ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                                    : "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                        }`}
+                    >
                         <p className="font-medium">{status}</p>
                         {txSignature && (
                             <a
-                                href={`https://solscan.io/tx/${txSignature}${CLUSTER !== 'mainnet-beta' ? '?cluster=devnet' : ''}`}
+                                href={constants.getExplorerUrl(txSignature)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm underline mt-2 block hover:text-white transition-colors"
                             >
-                                View on Solscan →
+                                View on Explorer →
                             </a>
                         )}
                     </div>
@@ -447,10 +516,22 @@ function CollectionSetup() {
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-yellow-200 text-sm">
                     <p className="font-semibold mb-2">⚠️ Important Notes:</p>
                     <ul className="space-y-1 list-disc list-inside">
-                        <li>Use "Update Config" to modify parameters anytime (admin only)</li>
-                        <li>Run Step 1 to store the collection mint address in config</li>
-                        <li>Step 2 transfers authority permanently to the program</li>
-                        <li>Make sure collection metadata is finalized before Step 2</li>
+                        <li>
+                            Use "Update Config" to modify parameters anytime
+                            (admin only)
+                        </li>
+                        <li>
+                            Run Step 1 to store the collection mint address in
+                            config
+                        </li>
+                        <li>
+                            Step 2 transfers authority permanently to the
+                            program
+                        </li>
+                        <li>
+                            Make sure collection metadata is finalized before
+                            Step 2
+                        </li>
                         <li>You must be the current collection authority</li>
                     </ul>
                 </div>

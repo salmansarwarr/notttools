@@ -9,20 +9,22 @@ import {
   import { 
     TOKEN_PROGRAM_ID,
     createCloseAccountInstruction,
+    createBurnInstruction,
     getAccount
   } from '@solana/spl-token';
+  import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
   
   const RENT_PER_ACCOUNT = 0.00203928; // SOL per token account
   const FEE_PERCENTAGE = 0.20; // 20%
   const FEE_WALLET = new PublicKey('9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk'); 
   
   export class DetoxService {
-    constructor(rpcUrl = clusterApiUrl('devnet')) {
+    constructor(rpcUrl = import.meta.env.VITE_RPC_URL) {
       this.connection = new Connection(rpcUrl, 'confirmed');
     }
   
     /**
-     * Scan wallet for empty token accounts
+     * Scan wallet for token accounts
      */
     async scanWallet(walletAddress) {
       try {
@@ -33,22 +35,54 @@ import {
           { programId: TOKEN_PROGRAM_ID }
         );
   
-        // Filter for empty accounts (balance = 0)
-        const emptyAccounts = tokenAccounts.value.filter(account => {
-          const amount = account.account.data.parsed.info.tokenAmount.uiAmount;
-          return amount === 0;
-        });
+        const accounts = await Promise.all(tokenAccounts.value.map(async (acc) => {
+          const info = acc.account.data.parsed.info;
+          const amount = info.tokenAmount.uiAmount;
+          const decimals = info.tokenAmount.decimals;
+          const mint = info.mint;
+          
+          let name = 'Unknown Token';
+          let symbol = '???';
+          let image = null;
+
+          try {
+            const metadataPDA = PublicKey.findProgramAddressSync(
+              [
+                Buffer.from("metadata"),
+                new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").toBuffer(),
+                new PublicKey(mint).toBuffer(),
+              ],
+              new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
+            )[0];
+
+            const metadataAccount = await this.connection.getAccountInfo(metadataPDA);
+            if (metadataAccount) {
+                // Simplified metadata parsing or just keep it as unknown for now to avoid complexity
+                // If we want real metadata, we'd need to decode it.
+                // For now, let's just identify common ones or leave as is.
+            }
+          } catch (e) {
+            // Ignore metadata fetch errors
+          }
+
+          return {
+            address: acc.pubkey.toString(),
+            mint: mint,
+            amount: amount,
+            decimals: decimals,
+            isNFT: decimals === 0 && amount === 1,
+            isEmpty: amount === 0,
+            name: name,
+            symbol: symbol
+          };
+        }));
   
         return {
-          emptyAccounts: emptyAccounts.map(acc => ({
-            address: acc.pubkey.toString(),
-            mint: acc.account.data.parsed.info.mint,
-            owner: acc.account.data.parsed.info.owner
-          })),
-          totalAccounts: emptyAccounts.length,
-          recoverableSOL: emptyAccounts.length * RENT_PER_ACCOUNT,
-          feeAmount: (emptyAccounts.length * RENT_PER_ACCOUNT) * FEE_PERCENTAGE,
-          netRecovery: (emptyAccounts.length * RENT_PER_ACCOUNT) * (1 - FEE_PERCENTAGE)
+          accounts: accounts,
+          totalAccounts: accounts.length,
+          emptyAccounts: accounts.filter(a => a.isEmpty),
+          tokenAccounts: accounts.filter(a => !a.isEmpty),
+          recoverableSOL: accounts.length * RENT_PER_ACCOUNT,
         };
       } catch (error) {
         console.error('Error scanning wallet:', error);
@@ -59,31 +93,45 @@ import {
     /**
      * Create detox transaction with fee
      */
-    async createDetoxTransaction(emptyAccounts, userWallet, batchSize = 12) {
+    async createDetoxTransaction(selectedAccounts, userWallet, batchSize = 10) {
       const transactions = [];
       const userPublicKey = new PublicKey(userWallet);
   
       // Process accounts in batches
-      for (let i = 0; i < emptyAccounts.length; i += batchSize) {
-        const batch = emptyAccounts.slice(i, i + batchSize);
+      for (let i = 0; i < selectedAccounts.length; i += batchSize) {
+        const batch = selectedAccounts.slice(i, i + batchSize);
         const transaction = new Transaction();
   
-        // Calculate fee for this batch
+        // Calculate total rent recovered for this batch
         const batchRentRecovered = batch.length * RENT_PER_ACCOUNT;
         const batchFee = batchRentRecovered * FEE_PERCENTAGE;
         const feeLamports = Math.floor(batchFee * LAMPORTS_PER_SOL);
   
-        // Add fee transfer instruction FIRST
-        transaction.add(
-          SystemProgram.transfer({
-            fromPubkey: userPublicKey,
-            toPubkey: FEE_WALLET,
-            lamports: feeLamports
-          })
-        );
+        // Add fee transfer instruction
+        if (feeLamports > 0) {
+          transaction.add(
+            SystemProgram.transfer({
+              fromPubkey: userPublicKey,
+              toPubkey: FEE_WALLET,
+              lamports: feeLamports
+            })
+          );
+        }
   
-        // Add close account instructions
+        // Add burn and close account instructions
         for (const account of batch) {
+          // If not empty, burn tokens first
+          if (account.amount > 0) {
+            const burnInstruction = createBurnInstruction(
+              new PublicKey(account.address),
+              new PublicKey(account.mint),
+              userPublicKey,
+              account.amount * Math.pow(10, account.decimals)
+            );
+            transaction.add(burnInstruction);
+          }
+
+          // Close account instruction
           const closeInstruction = createCloseAccountInstruction(
             new PublicKey(account.address),  // account to close
             userPublicKey,                    // destination for recovered rent
@@ -94,15 +142,13 @@ import {
         }
   
         // Get recent blockhash
-        const { blockhash, lastValidBlockHeight } = 
-          await this.connection.getLatestBlockhash('finalized');
+        const { blockhash } = await this.connection.getLatestBlockhash('finalized');
         
         transaction.recentBlockhash = blockhash;
         transaction.feePayer = userPublicKey;
   
         transactions.push({
           transaction,
-          lastValidBlockHeight,
           accountsClosed: batch.length,
           feeAmount: batchFee
         });
@@ -112,12 +158,12 @@ import {
     }
   
     /**
-     * Execute detox with fee collection
+     * Execute detox
      */
-    async executeDetox(emptyAccounts, userWallet, signTransaction, onProgress) {
+    async executeDetox(selectedAccounts, userWallet, signTransaction, onProgress) {
       try {
         const transactions = await this.createDetoxTransaction(
-          emptyAccounts, 
+          selectedAccounts, 
           userWallet
         );
   
@@ -127,24 +173,14 @@ import {
   
         for (let i = 0; i < transactions.length; i++) {
           const { transaction, accountsClosed, feeAmount } = transactions[i];
-  
-          // Sign transaction
           const signed = await signTransaction(transaction);
-  
-          // Send transaction
+          
           const signature = await this.connection.sendRawTransaction(
             signed.serialize(),
-            {
-              skipPreflight: false,
-              preflightCommitment: 'confirmed'
-            }
+            { skipPreflight: false, preflightCommitment: 'confirmed' }
           );
   
-          // Wait for confirmation
-          const confirmation = await this.connection.confirmTransaction(
-            signature,
-            'confirmed'
-          );
+          const confirmation = await this.connection.confirmTransaction(signature, 'confirmed');
   
           totalClosed += accountsClosed;
           totalFees += feeAmount;
@@ -156,7 +192,6 @@ import {
             feeAmount
           });
   
-          // Progress callback
           if (onProgress) {
             onProgress({
               current: i + 1,

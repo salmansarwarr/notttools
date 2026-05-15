@@ -4,202 +4,257 @@ import {
     Coins,
     Droplets,
     Download,
-    BarChart3,
     Info,
     ChevronDown,
     ChevronUp,
     Palette,
-    HelpCircle,
     Phone,
     Gamepad2,
     Recycle,
-    ChartBarIncreasingIcon
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+
+const ACCENT = {
+    purple: {
+        bg: "from-purple-500/15 to-violet-500/15",
+        border: "border-purple-500/25 hover:border-purple-400/55",
+        icon: "text-purple-300",
+        glow: "hover:shadow-[0_0_18px_rgba(168,85,247,0.28)]",
+    },
+    blue: {
+        bg: "from-blue-500/15 to-cyan-500/15",
+        border: "border-blue-500/25 hover:border-blue-400/55",
+        icon: "text-blue-300",
+        glow: "hover:shadow-[0_0_18px_rgba(59,130,246,0.28)]",
+    },
+    cyan: {
+        bg: "from-cyan-500/15 to-teal-500/15",
+        border: "border-cyan-500/25 hover:border-cyan-400/55",
+        icon: "text-cyan-300",
+        glow: "hover:shadow-[0_0_18px_rgba(6,182,212,0.28)]",
+    },
+    pink: {
+        bg: "from-pink-500/15 to-rose-500/15",
+        border: "border-pink-500/25 hover:border-pink-400/55",
+        icon: "text-pink-300",
+        glow: "hover:shadow-[0_0_18px_rgba(236,72,153,0.28)]",
+    },
+    gold: {
+        bg: "from-amber-500/15 to-yellow-500/15",
+        border: "border-amber-500/25 hover:border-amber-400/55",
+        icon: "text-amber-300",
+        glow: "hover:shadow-[0_0_18px_rgba(245,158,11,0.28)]",
+    },
+    green: {
+        bg: "from-emerald-500/15 to-teal-500/15",
+        border: "border-emerald-500/25 hover:border-emerald-400/55",
+        icon: "text-emerald-300",
+        glow: "hover:shadow-[0_0_18px_rgba(16,185,129,0.28)]",
+    },
+};
+
+const NavItem = ({ href, icon, label, accent = "purple" }) => {
+    const c = ACCENT[accent] || ACCENT.purple;
+    return (
+        <a
+            href={href}
+            className={`group flex items-center space-x-3 bg-gradient-to-r ${c.bg} border ${c.border} ${c.glow} rounded-xl px-4 py-3 transition-all duration-300`}
+        >
+            <span
+                className={`flex-shrink-0 ${c.icon} opacity-80 group-hover:opacity-100 transition-opacity`}
+            >
+                {icon}
+            </span>
+            <span className="font-medium text-gray-200 group-hover:text-white transition-colors text-sm">
+                {label}
+            </span>
+        </a>
+    );
+};
 
 export const Sidebar = ({ isOpen, onClose }) => {
+    const { t } = useTranslation();
     const [isInfoExpanded, setIsInfoExpanded] = useState(false);
 
     return (
         <>
-            {/* Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-[9998] transition-opacity"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] transition-opacity"
                     onClick={onClose}
                 />
             )}
 
-            {/* Sidebar */}
             <div
-                className={`fixed top-0 left-0 h-full w-80 bg-slate-800 z-[9999] transform transition-transform duration-300 shadow-2xl ${
-                    isOpen ? "translate-x-0" : "-translate-x-full"
-                }`}
+                className={`fixed top-0 left-0 h-full w-80 z-[9999] transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+                style={{
+                    background:
+                        "linear-gradient(180deg, #0a1424 0%, #080e18 100%)",
+                    borderRight: "1px solid rgba(168,85,247,0.15)",
+                    boxShadow:
+                        "4px 0 40px rgba(0,0,0,0.6), inset -1px 0 0 rgba(168,85,247,0.08)",
+                }}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 ">
+                <div
+                    className="flex items-center justify-between px-6 py-5"
+                    style={{ borderBottom: "1px solid rgba(168,85,247,0.12)" }}
+                >
                     <button
                         onClick={() => {
                             onClose();
                             window.location.href = "/";
                         }}
-                        className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
+                        className="flex items-center space-x-3 hover:opacity-90 transition-opacity cursor-pointer group"
                     >
-                        <img
-                            src="/pengu.png"
-                            alt="Noottools Logo"
-                            className="w-12 h-12 rounded-sm"
-                        />
-                        <h2 className="text-white text-xl font-bold">
-                            Noottools
-                        </h2>
+                        <div className="relative">
+                            <div className="absolute inset-0 rounded-full bg-purple-500/25 blur-md group-hover:bg-purple-500/45 transition-all duration-300" />
+                            <img
+                                src="/logo.jpeg"
+                                alt="Noottools Logo"
+                                className="relative w-11 h-11 rounded-full ring-1 ring-purple-500/30"
+                            />
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-lg bg-gradient-to-r from-purple-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent">
+                                Noottools
+                            </h2>
+                            <p className="text-xs text-purple-400/70">
+                                Web3 Platform
+                            </p>
+                        </div>
                     </button>
+
                     <button
                         onClick={onClose}
-                        className="bg-[#3D5264] p-2 rounded-md hover:text-white transition-colors"
+                        className="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/25 hover:border-purple-400/50 hover:text-white transition-all duration-300"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="17"
-                            viewBox="0 0 20 17"
-                            fill="none"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                clip-rule="evenodd"
-                                d="M20 15.5833C20 15.9591 19.8495 16.3194 19.5816 16.5851C19.3137 16.8507 18.9503 17 18.5714 17L1.42857 17C1.04971 17 0.686285 16.8507 0.418428 16.5851C0.150572 16.3194 -9.10017e-08 15.9591 -1.23849e-07 15.5833C-1.56696e-07 15.2076 0.150572 14.8473 0.418428 14.5816C0.686285 14.3159 1.04971 14.1667 1.42857 14.1667L18.5714 14.1667C18.9503 14.1667 19.3137 14.3159 19.5816 14.5816C19.8495 14.8473 20 15.2076 20 15.5833ZM20 8.5C20 8.87573 19.8495 9.23606 19.5816 9.50174C19.3137 9.76741 18.9503 9.91667 18.5714 9.91667L10 9.91667C9.62114 9.91667 9.25771 9.76741 8.98986 9.50174C8.722 9.23606 8.57143 8.87573 8.57143 8.5C8.57143 8.1243 8.722 7.7639 8.98986 7.49828C9.25771 7.23265 9.62114 7.08333 10 7.08333L18.5714 7.08333C18.9503 7.08333 19.3137 7.23265 19.5816 7.49828C19.8495 7.7639 20 8.1243 20 8.5ZM20 1.41667C20 1.79237 19.8495 2.15277 19.5816 2.41839C19.3137 2.68402 18.9503 2.83333 18.5714 2.83333L1.42857 2.83334C1.04971 2.83334 0.686284 2.68402 0.418427 2.41839C0.150571 2.15277 -1.32949e-06 1.79237 -1.36234e-06 1.41667C-1.39518e-06 1.04097 0.15057 0.680569 0.418427 0.414943C0.686284 0.149318 1.04971 1.65669e-06 1.42857 1.62357e-06L18.5714 1.2489e-07C18.9503 9.17664e-08 19.3137 0.149317 19.5816 0.414942C19.8495 0.680567 20 1.04097 20 1.41667Z"
-                                fill="#A9C6DB"
-                            />
-                        </svg>
+                        <X size={16} />
                     </button>
                 </div>
 
-                {/* Navigation Menu */}
-                <nav className="p-6 space-y-2">
-                    <a
-                        href="/create-pool"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Droplets size={20} />
-                        <span>SMART TOKEN CREATOR</span>
-                    </a>
+                {/* Section label */}
+                <div className="px-6 pt-5 pb-2">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                        Navigation
+                    </p>
+                </div>
 
-                    <a
+                {/* Nav */}
+                <nav
+                    className="px-4 pb-4 space-y-2 overflow-y-auto"
+                    style={{ maxHeight: "calc(100vh - 160px)" }}
+                >
+                    <NavItem
                         href="/create-coin"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Coins size={20} />
-                        <span>TOKEN GENERATION</span>
-                    </a>
-
-                    <a
-                        href="/tokens"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <ChartBarIncreasingIcon size={20} />
-                        <span>NEW PAIRS</span>
-                    </a>
-
-                    <a
+                        icon={<Coins size={18} />}
+                        label={t("token_generation")}
+                        accent="purple"
+                    />
+                    <NavItem
                         href="/nft-staking"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Coins size={20} />
-                        <span>STAKE NFTS</span>
-                    </a>
-
-                    <a
+                        icon={<Coins size={18} />}
+                        label={t("stake_nfts")}
+                        accent="gold"
+                    />
+                    <NavItem
                         href="/add-liquidity"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Droplets size={20} />
-                        <span>ADD LIQUIDITY</span>
-                    </a>
-
-                    <a
+                        icon={<Droplets size={18} />}
+                        label={t("add_liquidity")}
+                        accent="blue"
+                    />
+                    <NavItem
                         href="/nft-minting"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Palette size={20} />
-                        <span>MINT NFT</span>
-                    </a>
-
-                    <a
+                        icon={<Palette size={18} />}
+                        label={t("mint_nft")}
+                        accent="pink"
+                    />
+                    <NavItem
                         href="/wallet"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Download size={20} />
-                        <span>DOWNLOAD WALLET</span>
-                    </a>
-
-                    <a
+                        icon={<Download size={18} />}
+                        label={t("download_wallet")}
+                        accent="cyan"
+                    />
+                    <NavItem
                         href="/noot-token"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Gamepad2 size={20} />
-                        <span>TOKEN NOOT</span>
-                    </a>
-
-                    <a
+                        icon={<Gamepad2 size={18} />}
+                        label={t("token_noot")}
+                        accent="green"
+                    />
+                    <NavItem
                         href="/detox"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Recycle size={20} />
-                        <span>DETOX & RECLAIM</span>
-                    </a>
+                        icon={<Recycle size={18} />}
+                        label={t("detox_reclaim")}
+                        accent="blue"
+                    />
 
-                    {/* Information Section with Dropdown */}
+                    {/* Information dropdown */}
                     <div className="space-y-1">
                         <button
                             onClick={() => setIsInfoExpanded(!isInfoExpanded)}
-                            className="flex items-center justify-between w-full text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
+                            className="group flex items-center justify-between w-full bg-gradient-to-r from-slate-500/10 to-slate-600/10 border border-slate-600/25 hover:border-slate-400/40 rounded-xl px-4 py-3 transition-all duration-300"
                         >
                             <div className="flex items-center space-x-3">
-                                <Info size={20} />
-                                <span>INFORMATION</span>
+                                <Info
+                                    size={18}
+                                    className="text-slate-400 group-hover:text-slate-200 transition-colors"
+                                />
+                                <span className="font-medium text-gray-300 group-hover:text-white text-sm transition-colors">
+                                    {t("information")}
+                                </span>
                             </div>
                             {isInfoExpanded ? (
-                                <ChevronUp size={16} />
+                                <ChevronUp
+                                    size={14}
+                                    className="text-slate-400"
+                                />
                             ) : (
-                                <ChevronDown size={16} />
+                                <ChevronDown
+                                    size={14}
+                                    className="text-slate-400"
+                                />
                             )}
                         </button>
 
                         {isInfoExpanded && (
-                            <div className="ml-6 space-y-1">
-                                <a
-                                    href="/purpose"
-                                    className="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-slate-700 p-2 rounded-lg transition-colors text-sm"
-                                >
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                    <span>PURPOSE</span>
-                                </a>
-                                <a
-                                    href="/nfts"
-                                    className="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-slate-700 p-2 rounded-lg transition-colors text-sm"
-                                >
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                    <span>NFT'S</span>
-                                </a>
-                                <a
-                                    href="/how-we-do-it"
-                                    className="flex items-center space-x-3 text-gray-400 hover:text-white hover:bg-slate-700 p-2 rounded-lg transition-colors text-sm"
-                                >
-                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                    <span>HOW WE WILL DO IT</span>
-                                </a>
+                            <div className="ml-4 space-y-1 border-l-2 border-purple-500/20 pl-3">
+                                {[
+                                    { href: "/purpose", label: t("purpose") },
+                                    { href: "/nfts", label: t("nfts") },
+                                    {
+                                        href: "/how-we-do-it",
+                                        label: t("how_we_do_it"),
+                                    },
+                                ].map((item) => (
+                                    <a
+                                        key={item.href}
+                                        href={item.href}
+                                        className="flex items-center space-x-2 text-gray-400 hover:text-purple-300 hover:bg-purple-500/10 px-3 py-2 rounded-lg transition-all duration-200 text-sm"
+                                    >
+                                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500/60 flex-shrink-0" />
+                                        <span>{item.label}</span>
+                                    </a>
+                                ))}
                             </div>
                         )}
                     </div>
 
-                    <a
+                    <NavItem
                         href="/contact"
-                        className="flex items-center space-x-3 text-gray-300 hover:text-white hover:bg-slate-700 p-3 rounded-lg transition-colors"
-                    >
-                        <Phone size={20} />
-                        <span>CONTACT</span>
-                    </a>
+                        icon={<Phone size={18} />}
+                        label={t("contact")}
+                        accent="cyan"
+                    />
                 </nav>
+
+                {/* Bottom glow */}
+                <div
+                    className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+                    style={{
+                        background:
+                            "linear-gradient(0deg, rgba(168,85,247,0.06) 0%, transparent 100%)",
+                    }}
+                />
             </div>
         </>
     );

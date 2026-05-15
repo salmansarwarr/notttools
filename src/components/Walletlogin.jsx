@@ -8,8 +8,10 @@ import { useGlobalState } from "../hooks/useGlobalState";
 import useRefreshState from "../hooks/useRefreshState";
 import { AlertCircle, CheckCircle, LogIn, Wallet } from "lucide-react";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet"; 
+import { useTranslation } from "react-i18next";
 
 export default function WalletLogin() {
+  const { t } = useTranslation();
   // Use unified wallet instead of separate hooks
   const { publicKey, signMessage, connected, disconnect } = useUnifiedWallet();
   const { open } = useAppKit();
@@ -134,8 +136,8 @@ export default function WalletLogin() {
           className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 text-sm sm:text-base flex items-center gap-2"
         >
           <Wallet size={16} />
-          <span className="hidden sm:inline">Connect Wallet</span>
-          <span className="sm:hidden">Connect</span>
+          <span className="hidden sm:inline">{t('connect_wallet')}</span>
+          <span className="sm:hidden">{t('connect')}</span>
         </button>
       </div>
     );
@@ -159,8 +161,8 @@ export default function WalletLogin() {
           ) : (
             <>
               <LogIn size={16} className="sm:hidden" />
-              <span className="hidden sm:inline">Login with Solana</span>
-              <span className="sm:hidden">Login</span>
+              <span className="hidden sm:inline">{t('login_with_solana')}</span>
+              <span className="sm:hidden">{t('login')}</span>
             </>
           )}
         </button>

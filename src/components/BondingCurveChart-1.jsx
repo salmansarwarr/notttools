@@ -48,11 +48,10 @@ const BondingCurveChart = ({ mintAddress }) => {
     const [dragStart, setDragStart] = useState(null);
 
     const BONDING_CURVE_PROGRAM_ID = new PublicKey(
-        "CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT"
+        "CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT",
     );
 
-    const RPC_URL =
-        "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm";
+    const RPC_URL = import.meta.env.VITE_RPC_URL;
 
     const prevBondingCurveRef = useRef(null);
     const viewStateRef = useRef(viewState);
@@ -90,7 +89,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                         headers: {
                             "x-api-key": "60012c1b-4bd1-4e6f-a6a3-eb991ed23e95",
                         },
-                    }
+                    },
                 );
                 const price = await response.json();
                 const newSolPrice =
@@ -144,7 +143,9 @@ const BondingCurveChart = ({ mintAddress }) => {
             // Group timestamps by day to reduce API calls
             const uniqueDays = [
                 ...new Set(
-                    timestamps.map((ts) => Math.floor(ts / 86400000) * 86400000)
+                    timestamps.map(
+                        (ts) => Math.floor(ts / 86400000) * 86400000,
+                    ),
                 ),
             ];
 
@@ -152,13 +153,13 @@ const BondingCurveChart = ({ mintAddress }) => {
                 try {
                     const response = await fetch(
                         `https://public-api.birdeye.so/defi/history_price?address=So11111111111111111111111111111111111111112&address_type=token&type=1D&time_from=${Math.floor(
-                            dayTimestamp / 1000
+                            dayTimestamp / 1000,
                         )}&time_to=${Math.floor(dayTimestamp / 1000) + 86400}`,
                         {
                             headers: {
                                 "X-API-KEY": "YOUR_BIRDEYE_API_KEY", // Get free key from birdeye.so
                             },
-                        }
+                        },
                     );
 
                     const data = await response.json();
@@ -191,8 +192,8 @@ const BondingCurveChart = ({ mintAddress }) => {
             // CoinGecko market_chart endpoint
             const response = await fetch(
                 `https://api.coingecko.com/api/v3/coins/solana/market_chart/range?vs_currency=usd&from=${Math.floor(
-                    oldestTimestamp / 1000
-                )}&to=${Math.floor(newestTimestamp / 1000)}`
+                    oldestTimestamp / 1000,
+                )}&to=${Math.floor(newestTimestamp / 1000)}`,
             );
 
             const data = await response.json();
@@ -206,7 +207,7 @@ const BondingCurveChart = ({ mintAddress }) => {
         } catch (error) {
             console.error(
                 "Error fetching historical SOL prices from CoinGecko:",
-                error
+                error,
             );
         }
 
@@ -217,7 +218,7 @@ const BondingCurveChart = ({ mintAddress }) => {
     const getSOLPriceForTimestamp = (
         timestamp,
         historicalPrices,
-        fallbackPrice
+        fallbackPrice,
     ) => {
         if (historicalPrices.size === 0) return fallbackPrice;
 
@@ -244,7 +245,7 @@ const BondingCurveChart = ({ mintAddress }) => {
         connection,
         fetchFn,
         maxRetries = 3,
-        initialDelay = 1000
+        initialDelay = 1000,
     ) => {
         let lastError;
 
@@ -286,13 +287,13 @@ const BondingCurveChart = ({ mintAddress }) => {
                 const mint = new PublicKey(mintAddress);
                 const [bondingCurve] = PublicKey.findProgramAddressSync(
                     [Buffer.from("bonding_curve"), mint.toBuffer()],
-                    BONDING_CURVE_PROGRAM_ID
+                    BONDING_CURVE_PROGRAM_ID,
                 );
 
                 console.log("📊 Fetching bonding curve data...");
 
                 const curveData = await fetchWithRetry(connection, () =>
-                    program.account.bondingCurve.fetch(bondingCurve)
+                    program.account.bondingCurve.fetch(bondingCurve),
                 );
 
                 if (!isMounted) return;
@@ -347,7 +348,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     progress:
                         (parseFloat(realSolReserves.toString()) /
                             parseFloat(
-                                curveData.migrationThreshold.toString()
+                                curveData.migrationThreshold.toString(),
                             )) *
                         100,
                 };
@@ -362,7 +363,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     bondingCurve,
                     priceInUsd,
                     SOL_TO_USD,
-                    bondingCurveData
+                    bondingCurveData,
                 );
 
                 if (!isMounted) return;
@@ -382,20 +383,20 @@ const BondingCurveChart = ({ mintAddress }) => {
                                 const newCurveData =
                                     program.coder.accounts.decode(
                                         "BondingCurve",
-                                        accountInfo.data
+                                        accountInfo.data,
                                     );
 
                                 const newVirtualSol = new BN(
-                                    newCurveData.virtualSolReserves.toString()
+                                    newCurveData.virtualSolReserves.toString(),
                                 );
                                 const newRealSol = new BN(
-                                    newCurveData.realSolReserves.toString()
+                                    newCurveData.realSolReserves.toString(),
                                 );
                                 const newVirtualToken = new BN(
-                                    newCurveData.virtualTokenReserves.toString()
+                                    newCurveData.virtualTokenReserves.toString(),
                                 );
                                 const newRealToken = new BN(
-                                    newCurveData.realTokenReserves.toString()
+                                    newCurveData.realTokenReserves.toString(),
                                 );
 
                                 const newTotalSol =
@@ -428,7 +429,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                                     prevBondingCurveRef.current
                                         ?.realSolReserves || 0;
                                 const solDiff = Math.abs(
-                                    newRealSolNum - prevRealSol
+                                    newRealSolNum - prevRealSol,
                                 );
 
                                 // Only add price point if there was actual trading activity
@@ -474,11 +475,11 @@ const BondingCurveChart = ({ mintAddress }) => {
                             } catch (updateError) {
                                 console.error(
                                     "Error processing update:",
-                                    updateError
+                                    updateError,
                                 );
                             }
                         },
-                        "confirmed"
+                        "confirmed",
                     );
                 }
             } catch (error) {
@@ -486,7 +487,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                 if (isMounted) {
                     setIsLoading(false);
                     setLoadingError(
-                        error.message || "Failed to load chart data"
+                        error.message || "Failed to load chart data",
                     );
                 }
             }
@@ -512,13 +513,15 @@ const BondingCurveChart = ({ mintAddress }) => {
         bondingCurve,
         currentPrice,
         initialSOLPrice,
-        bondingCurveData
+        bondingCurveData,
     ) => {
         try {
             console.log("📊 Fetching transaction history...");
 
             const signatures = await fetchWithRetry(connection, () =>
-                connection.getSignaturesForAddress(bondingCurve, { limit: 200 })
+                connection.getSignaturesForAddress(bondingCurve, {
+                    limit: 200,
+                }),
             );
 
             console.log(`Found ${signatures.length} transactions`);
@@ -557,11 +560,10 @@ const BondingCurveChart = ({ mintAddress }) => {
 
             // NEW: Fetch historical SOL prices
             console.log("📈 Fetching historical SOL prices...");
-            const historicalSOLPrices = await fetchHistoricalSOLPricesCoinGecko(
-                allTimestamps
-            );
+            const historicalSOLPrices =
+                await fetchHistoricalSOLPricesCoinGecko(allTimestamps);
             console.log(
-                `✅ Loaded ${historicalSOLPrices.size} historical SOL prices`
+                `✅ Loaded ${historicalSOLPrices.size} historical SOL prices`,
             );
 
             const pricePoints = [];
@@ -582,7 +584,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                             connection.getTransaction(sig.signature, {
                                 maxSupportedTransactionVersion: 0,
                                 commitment: "confirmed",
-                            })
+                            }),
                         );
 
                         if (tx) {
@@ -614,7 +616,7 @@ const BondingCurveChart = ({ mintAddress }) => {
 
                     logMessages.forEach((log) => {
                         const buyMatch = log.match(
-                            /Buy:\s+(\d+)\s+tokens?\s+for\s+(\d+)\s+SOL/i
+                            /Buy:\s+(\d+)\s+tokens?\s+for\s+(\d+)\s+SOL/i,
                         );
                         if (buyMatch) {
                             const tokenLamports = parseFloat(buyMatch[1]);
@@ -630,12 +632,12 @@ const BondingCurveChart = ({ mintAddress }) => {
                                 if (isFinite(priceInUsd) && priceInUsd > 0) {
                                     console.log(
                                         `✅ BUY: ${tokenAmount.toFixed(
-                                            2
+                                            2,
                                         )} tokens for ${solAmount.toFixed(
-                                            9
+                                            9,
                                         )} SOL (${solLamports} lamports) = $${priceInUsd.toFixed(
-                                            10
-                                        )}`
+                                            10,
+                                        )}`,
                                     );
 
                                     pricePoints.push({
@@ -650,7 +652,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                         }
 
                         const sellMatch = log.match(
-                            /Sell:\s+(\d+)\s+tokens?\s+for\s+(\d+)\s+SOL/i
+                            /Sell:\s+(\d+)\s+tokens?\s+for\s+(\d+)\s+SOL/i,
                         );
                         if (sellMatch) {
                             const tokenLamports = parseFloat(sellMatch[1]);
@@ -666,14 +668,14 @@ const BondingCurveChart = ({ mintAddress }) => {
                                 if (isFinite(priceInUsd) && priceInUsd > 0) {
                                     console.log(
                                         `✅ SELL: ${tokenAmount.toFixed(
-                                            2
+                                            2,
                                         )} tokens for ${solAmount.toFixed(
-                                            9
+                                            9,
                                         )} SOL (${solLamports} lamports) = $${priceInUsd.toFixed(
-                                            10
+                                            10,
                                         )} | Price per token: ${priceInSol.toFixed(
-                                            12
-                                        )} SOL`
+                                            12,
+                                        )} SOL`,
                                     );
 
                                     pricePoints.push({
@@ -690,7 +692,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                 } catch (parseError) {
                     console.warn(
                         "Error parsing transaction:",
-                        parseError.message
+                        parseError.message,
                     );
                 }
             });
@@ -704,7 +706,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                         price: p.price.toFixed(10),
                         volume: p.volume.toFixed(9),
                         solPrice: p.solPrice,
-                    }))
+                    })),
                 );
 
                 console.log("\n💰 Price range:");
@@ -732,7 +734,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     // Add intermediate points for SOL price changes
                     const numPoints = Math.min(
                         5,
-                        Math.floor(timeDiff / 300000)
+                        Math.floor(timeDiff / 300000),
                     );
 
                     for (let j = 1; j <= numPoints; j++) {
@@ -773,12 +775,12 @@ const BondingCurveChart = ({ mintAddress }) => {
             });
 
             const validPricePoints = interpolatedPoints.filter(
-                (p) => p.price > 0 && isFinite(p.price) && p.timestamp > 0
+                (p) => p.price > 0 && isFinite(p.price) && p.timestamp > 0,
             );
 
             if (validPricePoints.length > 0) {
                 console.log(
-                    `✅ Loaded ${validPricePoints.length} price points (including SOL price interpolations)`
+                    `✅ Loaded ${validPricePoints.length} price points (including SOL price interpolations)`,
                 );
                 setPriceHistory(validPricePoints);
             } else {
@@ -805,7 +807,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const fillHistoricalGaps = (
                 pricePoints,
                 currentPrice,
-                currentSOLPrice
+                currentSOLPrice,
             ) => {
                 if (pricePoints.length === 0) {
                     // No data at all - create minimal synthetic history
@@ -842,7 +844,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     if (gap > MAX_GAP) {
                         const numPoints = Math.min(
                             10,
-                            Math.floor(gap / MAX_GAP)
+                            Math.floor(gap / MAX_GAP),
                         ); // Max 10 points per gap
 
                         for (let j = 1; j <= numPoints; j++) {
@@ -866,7 +868,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const filledPricePoints = fillHistoricalGaps(
                 validPricePoints,
                 currentPrice,
-                initialSOLPrice
+                initialSOLPrice,
             );
             setPriceHistory(filledPricePoints);
 
@@ -878,7 +880,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     price: p.price.toFixed(10),
                     type: p.type,
                     volume: p.volume.toFixed(6),
-                }))
+                })),
             );
 
             console.log("📊 Last 20 price points:");
@@ -888,7 +890,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     price: p.price.toFixed(10),
                     type: p.type,
                     volume: p.volume.toFixed(6),
-                }))
+                })),
             );
         } catch (error) {
             console.error("❌ Error fetching transaction history:", error);
@@ -938,7 +940,7 @@ const BondingCurveChart = ({ mintAddress }) => {
 
         const volume24h = recentData.reduce(
             (sum, p) => sum + (p.volume || 0),
-            0
+            0,
         );
 
         setStats({
@@ -956,7 +958,7 @@ const BondingCurveChart = ({ mintAddress }) => {
     const generateSyntheticCandles = (
         bondingCurveData,
         timeframe,
-        creationTime
+        creationTime,
     ) => {
         if (!bondingCurveData) return [];
 
@@ -1007,12 +1009,12 @@ const BondingCurveChart = ({ mintAddress }) => {
         if (priceHistory.length === 0 || priceHistory.length < 2) {
             if (bondingCurveInfo) {
                 console.log(
-                    "📊 Generating synthetic candles for low-volume token"
+                    "📊 Generating synthetic candles for low-volume token",
                 );
                 finalCandles = generateSyntheticCandles(
                     bondingCurveInfo,
                     timeframe,
-                    creationDate || Date.now() - 3600000
+                    creationDate || Date.now() - 3600000,
                 );
             }
         } else {
@@ -1026,7 +1028,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                 offsetX: 0,
                 startIndex: Math.max(
                     0,
-                    finalCandles.length - (isMobile ? 50 : 100)
+                    finalCandles.length - (isMobile ? 50 : 100),
                 ),
                 endIndex: finalCandles.length,
             });
@@ -1163,7 +1165,7 @@ const BondingCurveChart = ({ mintAddress }) => {
 
         console.log(
             "🔍 Aggregating candles from data points:",
-            sortedData.length
+            sortedData.length,
         );
 
         // Group data points by candle time
@@ -1187,7 +1189,7 @@ const BondingCurveChart = ({ mintAddress }) => {
 
         // Get all candle times and sort them
         const candleTimes = Array.from(candleGroups.keys()).sort(
-            (a, b) => a - b
+            (a, b) => a - b,
         );
 
         // Fill in gaps between candles
@@ -1237,7 +1239,7 @@ const BondingCurveChart = ({ mintAddress }) => {
         console.log("✅ Total candles created:", candles.length);
         console.log(
             "📊 Candles with real data:",
-            candles.filter((c) => c.hasRealData).length
+            candles.filter((c) => c.hasRealData).length,
         );
 
         return candles;
@@ -1330,7 +1332,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const newStart = Math.max(0, currentView.startIndex - candleShift);
             const newEnd = Math.min(
                 candlesRef.current.length,
-                currentView.endIndex - candleShift
+                currentView.endIndex - candleShift,
             );
 
             if (newEnd - newStart > 10 && newStart !== currentView.startIndex) {
@@ -1350,7 +1352,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const currentView = viewStateRef.current;
             const visibleCandles = candlesRef.current.slice(
                 currentView.startIndex,
-                currentView.endIndex
+                currentView.endIndex,
             );
             const chartWidth = rect.width - (isMobile ? 60 : 80);
             const candleSpacing = chartWidth / visibleCandles.length;
@@ -1405,7 +1407,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const newStart = Math.max(0, currentView.startIndex - candleShift);
             const newEnd = Math.min(
                 candlesRef.current.length,
-                currentView.endIndex - candleShift
+                currentView.endIndex - candleShift,
             );
 
             if (newEnd - newStart > 10 && newStart !== currentView.startIndex) {
@@ -1427,7 +1429,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const currentView = viewStateRef.current;
             const visibleCandles = candlesRef.current.slice(
                 currentView.startIndex,
-                currentView.endIndex
+                currentView.endIndex,
             );
             const chartWidth = rect.width - 80;
             const candleSpacing = chartWidth / visibleCandles.length;
@@ -1475,7 +1477,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const chartWidth = rect.width - (isMobile ? 60 : 80);
             const mouseRatio = Math.max(
                 0,
-                Math.min(1, (mouseX - (isMobile ? 30 : 40)) / chartWidth)
+                Math.min(1, (mouseX - (isMobile ? 30 : 40)) / chartWidth),
             );
 
             const delta = e.deltaY > 0 ? 1.15 : 0.87;
@@ -1485,8 +1487,8 @@ const BondingCurveChart = ({ mintAddress }) => {
                 10,
                 Math.min(
                     candlesRef.current.length,
-                    Math.round(currentRange * delta)
-                )
+                    Math.round(currentRange * delta),
+                ),
             );
 
             const mouseCandleIndex =
@@ -1586,7 +1588,7 @@ const BondingCurveChart = ({ mintAddress }) => {
 
         const visibleCandles = candles.slice(
             viewState.startIndex,
-            viewState.endIndex
+            viewState.endIndex,
         );
         if (visibleCandles.length === 0) return;
 
@@ -1638,7 +1640,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             ctx.fillText(
                 formatPrice(price),
                 padding.left + chartWidth + (isMobile ? 3 : 5),
-                y + 3
+                y + 3,
             );
         }
 
@@ -1648,7 +1650,7 @@ const BondingCurveChart = ({ mintAddress }) => {
         const maxLabels = Math.floor(chartWidth / minLabelSpacing);
         const labelInterval = Math.max(
             1,
-            Math.floor(visibleCandles.length / maxLabels)
+            Math.floor(visibleCandles.length / maxLabels),
         );
 
         ctx.fillStyle = "#666";
@@ -1695,11 +1697,11 @@ const BondingCurveChart = ({ mintAddress }) => {
 
         // 🔥 GMGN.AI STYLE: Determine if we should show line or candles
         const hasSignificantTrades = visibleCandles.filter(
-            (c) => c.hasRealData && c.volume > 0
+            (c) => c.hasRealData && c.volume > 0,
         ).length;
         const totalVolume = visibleCandles.reduce(
             (sum, c) => sum + c.volume,
-            0
+            0,
         );
         const shouldShowLine =
             chartType === "line" ||
@@ -1736,7 +1738,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             ctx.beginPath();
             ctx.moveTo(
                 padding.left + 0.5 * totalCandleSpace,
-                priceToY(visibleCandles[0].close)
+                priceToY(visibleCandles[0].close),
             );
 
             visibleCandles.forEach((candle, i) => {
@@ -1748,11 +1750,11 @@ const BondingCurveChart = ({ mintAddress }) => {
             // Complete the fill area
             ctx.lineTo(
                 padding.left + (visibleCandles.length - 0.5) * totalCandleSpace,
-                padding.top + chartHeight
+                padding.top + chartHeight,
             );
             ctx.lineTo(
                 padding.left + 0.5 * totalCandleSpace,
-                padding.top + chartHeight
+                padding.top + chartHeight,
             );
             ctx.closePath();
 
@@ -1760,7 +1762,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                 0,
                 padding.top,
                 0,
-                padding.top + chartHeight
+                padding.top + chartHeight,
             );
             fillGradient.addColorStop(0, "rgba(139, 123, 255, 0.2)");
             fillGradient.addColorStop(1, "rgba(139, 123, 255, 0)");
@@ -1791,7 +1793,7 @@ const BondingCurveChart = ({ mintAddress }) => {
             const maxCandleWidth = isMobile ? 12 : 20;
             const candleWidth = Math.max(
                 2,
-                Math.min(totalCandleSpace * 0.7, maxCandleWidth)
+                Math.min(totalCandleSpace * 0.7, maxCandleWidth),
             );
             const wickWidth = Math.max(1, candleWidth * 0.15);
 
@@ -1823,7 +1825,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     centerX - candleWidth / 2,
                     bodyTop,
                     candleWidth,
-                    bodyHeight
+                    bodyHeight,
                 );
             });
         }
@@ -1892,8 +1894,8 @@ const BondingCurveChart = ({ mintAddress }) => {
                         ? 70
                         : 80
                     : isMobile
-                    ? 110
-                    : 120;
+                      ? 110
+                      : 120;
                 const tooltipX =
                     mousePos.x < width / 2
                         ? mousePos.x + 15
@@ -1902,15 +1904,15 @@ const BondingCurveChart = ({ mintAddress }) => {
                     10,
                     Math.min(
                         height - tooltipHeight - 10,
-                        mousePos.y - tooltipHeight / 2
-                    )
+                        mousePos.y - tooltipHeight / 2,
+                    ),
                 );
 
                 const tooltipGradient = ctx.createLinearGradient(
                     tooltipX,
                     tooltipY,
                     tooltipX,
-                    tooltipY + tooltipHeight
+                    tooltipY + tooltipHeight,
                 );
                 tooltipGradient.addColorStop(0, "rgba(25, 25, 25, 0.98)");
                 tooltipGradient.addColorStop(1, "rgba(15, 15, 15, 0.98)");
@@ -1927,31 +1929,31 @@ const BondingCurveChart = ({ mintAddress }) => {
                     tooltipX + tooltipWidth,
                     tooltipY,
                     tooltipX + tooltipWidth,
-                    tooltipY + radius
+                    tooltipY + radius,
                 );
                 ctx.lineTo(
                     tooltipX + tooltipWidth,
-                    tooltipY + tooltipHeight - radius
+                    tooltipY + tooltipHeight - radius,
                 );
                 ctx.quadraticCurveTo(
                     tooltipX + tooltipWidth,
                     tooltipY + tooltipHeight,
                     tooltipX + tooltipWidth - radius,
-                    tooltipY + tooltipHeight
+                    tooltipY + tooltipHeight,
                 );
                 ctx.lineTo(tooltipX + radius, tooltipY + tooltipHeight);
                 ctx.quadraticCurveTo(
                     tooltipX,
                     tooltipY + tooltipHeight,
                     tooltipX,
-                    tooltipY + tooltipHeight - radius
+                    tooltipY + tooltipHeight - radius,
                 );
                 ctx.lineTo(tooltipX, tooltipY + radius);
                 ctx.quadraticCurveTo(
                     tooltipX,
                     tooltipY,
                     tooltipX + radius,
-                    tooltipY
+                    tooltipY,
                 );
                 ctx.closePath();
                 ctx.fill();
@@ -1971,7 +1973,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
-                              }
+                              },
                           )}`,
                           `Price: ${formatPrice(hoveredCandle.close)}`,
                           `Vol: ${hoveredCandle.volume.toFixed(4)} SOL`,
@@ -1984,7 +1986,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                                   day: "numeric",
                                   hour: "2-digit",
                                   minute: "2-digit",
-                              }
+                              },
                           )}`,
                           `O: ${formatPrice(hoveredCandle.open)}`,
                           `H: ${formatPrice(hoveredCandle.high)}`,
@@ -1997,7 +1999,7 @@ const BondingCurveChart = ({ mintAddress }) => {
                     ctx.fillText(
                         line,
                         tooltipX + 10,
-                        tooltipY + 20 + i * lineHeight
+                        tooltipY + 20 + i * lineHeight,
                     );
                 });
             }

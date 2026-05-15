@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createTokenWithMetadata } from "../utils/tokenCreator";
 import { getUserStakes } from "../hooks/frontend-functions";
@@ -6,1292 +6,1210 @@ import { useGlobalState } from "../hooks/useGlobalState";
 import constants from "../constants";
 import axios from "axios";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
+import { useTranslation } from "react-i18next";
+import { motion, AnimatePresence } from "framer-motion";
+import { useVanityMint } from "../hooks/useVanityMint";
+import {
+    Shield,
+    Info,
+    Globe,
+    Twitter,
+    Send,
+    Tags,
+    CheckCircle2,
+    ArrowRight,
+    ArrowLeft,
+    Upload,
+    Coins,
+    Lock,
+    Eye,
+    AlertCircle,
+} from "lucide-react";
+import { toast } from "react-toastify";
+
+const StepIndicator = ({ currentStep }) => {
+    const steps = [
+        { id: 1, name: "Token Info", icon: <Info size={16} /> },
+        { id: 2, name: "Security", icon: <Shield size={16} /> },
+        { id: 3, name: "Review", icon: <Eye size={16} /> },
+    ];
+
+    return (
+        <div className="flex items-center justify-between w-full max-w-2xl mx-auto mb-12 relative">
+            {/* Background Line */}
+            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-800 -translate-y-1/2 z-0" />
+
+            {/* Active Line */}
+            <motion.div
+                className="absolute top-1/2 left-0 h-0.5 bg-gradient-to-r from-cyan-500 to-purple-500 -translate-y-1/2 z-0"
+                initial={{ width: "0%" }}
+                animate={{ width: `${(currentStep - 1) * 50}%` }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+            />
+
+            {steps.map((step) => (
+                <div
+                    key={step.id}
+                    className="relative z-10 flex flex-col items-center"
+                >
+                    <motion.div
+                        initial={false}
+                        animate={{
+                            backgroundColor:
+                                currentStep >= step.id
+                                    ? "rgba(0, 242, 255, 1)"
+                                    : "rgba(31, 41, 55, 1)",
+                            scale: currentStep === step.id ? 1.2 : 1,
+                            boxShadow:
+                                currentStep === step.id
+                                    ? "0 0 20px rgba(0, 242, 255, 0.5)"
+                                    : "none",
+                        }}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-white border-2 ${
+                            currentStep >= step.id
+                                ? "border-cyan-400"
+                                : "border-gray-700"
+                        }`}
+                    >
+                        {currentStep > step.id ? (
+                            <CheckCircle2
+                                size={20}
+                                className="text-[#0A151E]"
+                            />
+                        ) : (
+                            <span
+                                className={`font-bold ${currentStep >= step.id ? "text-[#0A151E]" : "text-gray-400"}`}
+                            >
+                                {step.id}
+                            </span>
+                        )}
+                    </motion.div>
+                    <span
+                        className={`mt-2 text-xs font-medium uppercase tracking-wider ${
+                            currentStep >= step.id
+                                ? "text-cyan-400"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {step.id}. {step.name}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const CreateCoin = () => {
-  const wallet = useUnifiedWallet();
-  const { globalState } = useGlobalState();
+    const { t } = useTranslation();
+    const wallet = useUnifiedWallet();
+    const { globalState } = useGlobalState();
 
-  // Commission settings state
-  const [commissionSettings, setCommissionSettings] = useState(null); // başta null
-  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+    const [step, setStep] = useState(1);
+    const [commissionSettings, setCommissionSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+    const [hasStakedNFT, setHasStakedNFT] = useState(false);
+    const [isCheckingStake, setIsCheckingStake] = useState(true);
+    const [isCreating, setIsCreating] = useState(false);
+    const [creationResult, setCreationResult] = useState(null);
+    const [mediaPreview, setMediaPreview] = useState(null);
+    const [vanitySuffix, setVanitySuffix] = useState("NTL");
 
-  const [formData, setFormData] = useState({
-    coinName: "",
-    ticker: "",
-    description: "",
-    website: "",
-    twitter: "",
-    telegram: "",
-    coinMedia: null,
-    banner: null,
-    initialSupply: 100000000,
-  });
+    const {
+        findVanityMint,
+        isSearching,
+        attempts: vanityAttempts,
+    } = useVanityMint();
 
-  const [errors, setErrors] = useState({});
-  const [mediaPreview, setMediaPreview] = useState(null);
-  const [bannerPreview, setBannerPreview] = useState(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [creationResult, setCreationResult] = useState(null);
-  const [hasStakedNFT, setHasStakedNFT] = useState(false);
-  const [isCheckingStake, setIsCheckingStake] = useState(true);
-  const [stakeError, setStakeError] = useState(null);
+    const [formData, setFormData] = useState({
+        coinName: "",
+        ticker: "",
+        decimals: 9,
+        totalSupply: 1000000,
+        description: "",
+        website: "",
+        twitter: "",
+        telegram: "",
+        tags: "",
+        coinMedia: null,
+        revokeMint: false,
+        revokeFreeze: false,
+        revokeUpdate: false,
+    });
 
-  // Legal agreement checkboxes
-  const [agreements, setAgreements] = useState({
-    generalStatement: false,
-    legalAdvice: false,
-    privacyPolicy: false,
-    euToken: false,
-  });
+    const [errors, setErrors] = useState({});
 
-  // Load commission settings from backend
-  useEffect(() => {
-    const loadCommissionSettings = async () => {
-      try {
-        setIsLoadingSettings(true);
-        console.log("🔍 Loading commission settings from backend...");
+    // Cost calculation
+    const totalCost = useMemo(() => {
+        if (!commissionSettings) return 0;
+        let cost = hasStakedNFT
+            ? 0
+            : parseFloat(commissionSettings.token_creation_fee || 0.05);
+        if (formData.revokeMint) cost += 0.05;
+        if (formData.revokeFreeze) cost += 0.05;
+        if (formData.revokeUpdate) cost += 0.05;
+        return parseFloat(cost.toFixed(2));
+    }, [
+        commissionSettings,
+        hasStakedNFT,
+        formData.revokeMint,
+        formData.revokeFreeze,
+        formData.revokeUpdate,
+    ]);
 
-        const response = await axios.get(
-          `${constants.backend_url}/items/settings`
-        );
-        setCommissionSettings({
-          treasury_wallet: response.data.data.treasury_wallet,
-          token_creation_fee: response.data.data.token_creation_fee, // direkt kullan
-        });
-        console.log(response);
-      } catch (error) {
-        console.error("❌ Error loading commission settings:", error);
-        // Keep default values
-      } finally {
-        setIsLoadingSettings(false);
-      }
-    };
-
-    loadCommissionSettings();
-  }, [globalState.authToken]);
-
-  // Kullanıcının stake edilmiş NFT'si var mı kontrol et
-  useEffect(() => {
-    const checkStakedNFTs = async () => {
-      if (!wallet.connected || !wallet.publicKey) {
-        setHasStakedNFT(false);
-        setIsCheckingStake(false);
-        return;
-      }
-
-      try {
-        setIsCheckingStake(true);
-        setStakeError(null);
-
-        console.log("🔍 Checking staked NFTs for user...");
-        const stakes = await getUserStakes(wallet);
-
-        console.log("📊 Stake results:", stakes);
-
-        // Stake edilmiş NFT var mı kontrol et - doğru field'ı kullan
-        const hasStaked = stakes && stakes.stakes && stakes.stakes.length > 0;
-        setHasStakedNFT(hasStaked);
-
-        console.log("✅ Has staked NFT:", hasStaked);
-        console.log("📊 Stakes count:", stakes?.stakes?.length || 0);
-      } catch (error) {
-        console.error("❌ Error checking staked NFTs:", error);
-        setStakeError("Failed to check staked NFTs. Please try again.");
-        setHasStakedNFT(false);
-      } finally {
-        setIsCheckingStake(false);
-      }
-    };
-
-    checkStakedNFTs();
-  }, [wallet.connected, wallet.publicKey]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const validateFile = (file, type) => {
-    const errors = [];
-
-    if (type === "coin") {
-      const isImage = file.type.startsWith("image/");
-      const isVideo = file.type.startsWith("video/");
-
-      if (isImage) {
-        if (file.size > 15 * 1024 * 1024) {
-          errors.push("Image must be under 15MB");
-        }
-        if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
-          errors.push("Image must be .jpg, .png, or .gif");
-        }
-      } else if (isVideo) {
-        if (file.size > 30 * 1024 * 1024) {
-          errors.push("Video must be under 30MB");
-        }
-        if (file.type !== "video/mp4") {
-          errors.push("Video must be .mp4");
-        }
-      } else {
-        errors.push("File must be an image or video");
-      }
-    } else if (type === "banner") {
-      if (file.size > 4.3 * 1024 * 1024) {
-        errors.push("Banner must be under 4.3MB");
-      }
-      if (!["image/jpeg", "image/png", "image/gif"].includes(file.type)) {
-        errors.push("Banner must be .jpg, .png, or .gif");
-      }
-    }
-
-    return errors;
-  };
-
-  const createPreview = (file, type) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (type === "coin") {
-        setMediaPreview(e.target.result);
-      } else {
-        setBannerPreview(e.target.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleFileChange = (e, type) => {
-    const file = e.target.files[0];
-    if (file) {
-      const fileErrors = validateFile(file, type);
-      if (fileErrors.length > 0) {
-        setErrors((prev) => ({
-          ...prev,
-          [type]: fileErrors,
-        }));
-        return;
-      }
-
-      setFormData((prev) => ({
-        ...prev,
-        [type === "coin" ? "coinMedia" : "banner"]: file,
-      }));
-
-      setErrors((prev) => ({
-        ...prev,
-        [type]: [],
-      }));
-
-      createPreview(file, type);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Wallet bağlantı kontrolü
-    if (!wallet.connected) {
-      return;
-    }
-
-    // Validation
-    const newErrors = {};
-    if (!formData.coinName.trim()) newErrors.coinName = "Coin name is required";
-    if (!formData.ticker.trim()) newErrors.ticker = "Ticker is required";
-    if (!formData.coinMedia)
-      newErrors.coinMedia = "Coin image or video is required";
-
-    // Legal agreement validations
-    if (!agreements.generalStatement) {
-      newErrors.generalStatement = "You must accept the General Statement";
-    }
-    if (!agreements.legalAdvice) {
-      newErrors.legalAdvice = "You must accept the Legal Advice";
-    }
-    if (!agreements.privacyPolicy) {
-      newErrors.privacyPolicy = "You must accept the Privacy Policy";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    try {
-      setIsCreating(true);
-
-      let imageUrl = null;
-      if (formData.coinMedia) {
-        console.log("Uploading image to Pinata...");
-        
-        const pinataFormData = new FormData();
-        pinataFormData.append('file', formData.coinMedia);
-        
-        const pinataResponse = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-          method: 'POST',
-          headers: {
-            'pinata_api_key': import.meta.env.VITE_PINATA_API_KEY,
-            'pinata_secret_api_key': import.meta.env.VITE_PINATA_SECRET_KEY,
-          },
-          body: pinataFormData,
-        });
-    
-        if (!pinataResponse.ok) {
-          throw new Error(`Pinata upload failed: ${pinataResponse.status}`);
-        }
-    
-        const pinataData = await pinataResponse.json();
-        imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataData.IpfsHash}`;
-        console.log("Image uploaded to Pinata:", imageUrl);
-      }
-
-      // TokenCreator'a uygun format için form data'yı düzenle
-      const tokenFormData = {
-        coinName: formData.coinName.trim(),
-        ticker: formData.ticker.trim().toUpperCase(),
-        description: formData.description.trim(),
-        website: formData.website.trim(),
-        twitter: formData.twitter.trim(),
-        telegram: formData.telegram.trim(),
-        initialSupply: formData.initialSupply,
-        imageUrl: imageUrl,
-        // Legal agreements
-        agreements: {
-          generalStatement: agreements.generalStatement,
-          legalAdvice: agreements.legalAdvice,
-          privacyPolicy: agreements.privacyPolicy,
-          euToken: agreements.euToken,
-          acceptedAt: new Date().toISOString(),
-        },
-      };
-
-      console.log("Creating token with data:", tokenFormData);
-      console.log("Commission settings:", commissionSettings);
-
-      // Token oluştur - komisyon bilgisini de gönder
-      const commissionData = !hasStakedNFT
-        ? {
-            amount: commissionSettings.token_creation_fee,
-            walletAddress: commissionSettings.treasury_wallet,
-          }
-        : null;
-
-      const result = await createTokenWithMetadata(
-        tokenFormData,
-        wallet,
-        commissionData
-      );
-
-      console.log("Token creation result:", result);
-
-      setCreationResult(result);
-
-      // Directus'a token bilgilerini kaydet
-      try {
-        console.log("Saving token to Directus...");
-
-        let logoFileId = null;
-        let bannerFileId = null;
-
-        // Önce logo'yu yükle
-        if (formData.coinMedia) {
-          try {
-            const logoFormData = new FormData();
-            logoFormData.append("file", formData.coinMedia);
-
-            const logoResponse = await fetch(`${constants.backend_url}/files`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${globalState.authToken}`,
-              },
-              body: logoFormData,
-            });
-
-            if (logoResponse.ok) {
-              const logoResult = await logoResponse.json();
-              logoFileId = logoResult.data.id;
-              console.log("Logo uploaded successfully:", logoFileId);
-            } else {
-              console.warn("Failed to upload logo:", logoResponse.status);
+    // Load commission settings
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                setIsLoadingSettings(true);
+                const response = await axios.get(
+                    `${constants.backend_url}/items/settings`,
+                );
+                setCommissionSettings({
+                    treasury_wallet: response.data.data.treasury_wallet,
+                    token_creation_fee: response.data.data.token_creation_fee,
+                });
+            } catch (error) {
+                console.error("Error loading settings:", error);
+            } finally {
+                setIsLoadingSettings(false);
             }
-          } catch (logoError) {
-            console.error("Error uploading logo:", logoError);
-          }
+        };
+        loadSettings();
+    }, []);
+
+    // Check staked NFTs
+    useEffect(() => {
+        const checkStakes = async () => {
+            if (!wallet.connected || !wallet.publicKey) {
+                setHasStakedNFT(false);
+                setIsCheckingStake(false);
+                return;
+            }
+            try {
+                setIsCheckingStake(true);
+                const stakes = await getUserStakes(wallet);
+                setHasStakedNFT(
+                    stakes && stakes.stakes && stakes.stakes.length > 0,
+                );
+            } catch (error) {
+                console.error("Error checking stakes:", error);
+            } finally {
+                setIsCheckingStake(false);
+            }
+        };
+        checkStakes();
+    }, [wallet.connected, wallet.publicKey]);
+
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value,
+        }));
+        // Clear error when user types
+        if (errors[name]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error("File size too large (max 5MB)");
+                return;
+            }
+            setFormData((prev) => ({ ...prev, coinMedia: file }));
+            const reader = new FileReader();
+            reader.onload = (e) => setMediaPreview(e.target.result);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const validateStep = (currentStep) => {
+        const newErrors = {};
+        if (currentStep === 1) {
+            if (!formData.coinName.trim())
+                newErrors.coinName = "Token name is required";
+            if (!formData.ticker.trim())
+                newErrors.ticker = "Ticker is required";
+            if (!formData.totalSupply || formData.totalSupply <= 0)
+                newErrors.totalSupply = "Invalid supply";
+            if (!formData.coinMedia)
+                newErrors.coinMedia = "Token icon is required";
+        }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const nextStep = () => {
+        if (validateStep(step)) {
+            setStep((prev) => prev + 1);
+            window.scrollTo(0, 0);
+        }
+    };
+
+    const prevStep = () => {
+        setStep((prev) => prev - 1);
+        window.scrollTo(0, 0);
+    };
+
+    const handleDeploy = async () => {
+        if (!wallet.connected) {
+            toast.error("Please connect your wallet");
+            return;
         }
 
-        // Sonra banner'ı yükle
-        if (formData.banner) {
-          try {
-            const bannerFormData = new FormData();
-            bannerFormData.append("file", formData.banner);
+        try {
+            setIsCreating(true);
 
-            const bannerResponse = await fetch(
-              `${constants.backend_url}/files`,
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${globalState.authToken}`,
+            // 1. Upload to Pinata
+            const pinataFormData = new FormData();
+            pinataFormData.append("file", formData.coinMedia);
+
+            const pinataResponse = await fetch(
+                "https://api.pinata.cloud/pinning/pinFileToIPFS",
+                {
+                    method: "POST",
+                    headers: {
+                        pinata_api_key: import.meta.env.VITE_PINATA_API_KEY,
+                        pinata_secret_api_key: import.meta.env
+                            .VITE_PINATA_SECRET_KEY,
+                    },
+                    body: pinataFormData,
                 },
-                body: bannerFormData,
-              }
             );
 
-            if (bannerResponse.ok) {
-              const bannerResult = await bannerResponse.json();
-              bannerFileId = bannerResult.data.id;
-              console.log("Banner uploaded successfully:", bannerFileId);
-            } else {
-              console.warn("Failed to upload banner:", bannerResponse.status);
-            }
-          } catch (bannerError) {
-            console.error("Error uploading banner:", bannerError);
-          }
+            if (!pinataResponse.ok) throw new Error("Pinata upload failed");
+            const pinataData = await pinataResponse.json();
+            const imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataData.IpfsHash}`;
+
+            // 2. Prepare Token Data
+            const tokenData = {
+                ...formData,
+                imageUrl,
+                ticker: formData.ticker.toUpperCase(),
+            };
+
+            const commissionData =
+                totalCost > 0
+                    ? {
+                          amount: totalCost,
+                          walletAddress: commissionSettings.treasury_wallet,
+                      }
+                    : null;
+
+            // 3. Find Vanity Address (New Step)
+            const cleanSuffix =
+                vanitySuffix
+                    .trim()
+                    .toUpperCase()
+                    .replace(/[^1-9A-HJ-NP-Za-km-z]/g, "")
+                    .slice(0, 3) || "NTL";
+            toast.info(`Generating vanity address... (${cleanSuffix})`);
+            const vanityMint = await findVanityMint(cleanSuffix);
+
+            // 4. Create Token (Now passing the generated mint)
+            const result = await createTokenWithMetadata(
+                tokenData,
+                wallet,
+                vanityMint,
+                commissionData,
+            );
+            setCreationResult(result);
+            toast.success("Token created successfully!");
+
+            // 4. Save to Backend (Directus)
+            await saveToBackend(result, imageUrl);
+        } catch (error) {
+            console.error("Deployment failed:", error);
+            toast.error(error.message || "Deployment failed");
+        } finally {
+            setIsCreating(false);
         }
+    };
 
-        // Son olarak project'i kaydet
-        const projectData = {
-          name: tokenFormData.coinName,
-          symbol: tokenFormData.ticker,
-          contract_address: result.mintAddress,
-          description: tokenFormData.description || null,
-          launch_tx: result.signature,
-          chain: "solana",
-          user: globalState.user?.id || wallet.publicKey.toString(),
-          twitter: tokenFormData.twitter || null,
-          telegram: tokenFormData.telegram || null,
-          website: tokenFormData.website || null,
-          featured: false,
-          status: "published",
-          logo: logoFileId, // File ID'si
-          banner_image: bannerFileId, // File ID'si
-        };
+    const saveToBackend = async (result, imageUrl) => {
+        try {
+            // First upload file to Directus to get ID
+            const fileFormData = new FormData();
+            fileFormData.append("file", formData.coinMedia);
 
-        const response = await fetch(
-          `${constants.backend_url}/items/projects`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${globalState.authToken}`,
-            },
-            body: JSON.stringify(projectData),
-          }
-        );
+            const fileResponse = await axios.post(
+                `${constants.backend_url}/files`,
+                fileFormData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${globalState.authToken}`,
+                    },
+                },
+            );
 
-        if (response.ok) {
-          const savedProject = await response.json();
-          console.log("Token saved to Directus successfully:", savedProject);
-        } else {
-          console.warn(
-            "Failed to save token to Directus:",
-            response.status,
-            response.statusText
-          );
-          // Directus kaydetme hatası, fakat token oluşturma başarılı
+            const logoId = fileResponse.data.data.id;
+
+            const projectData = {
+                name: formData.coinName,
+                symbol: formData.ticker.toUpperCase(),
+                contract_address: result.mintAddress,
+                description: formData.description,
+                launch_tx: result.signature,
+                chain: "solana",
+                user: globalState.user?.id || wallet.publicKey.toString(),
+                twitter: formData.twitter,
+                telegram: formData.telegram,
+                website: formData.website,
+                status: "published",
+                logo: logoId,
+                tags: formData.tags,
+            };
+
+            await axios.post(
+                `${constants.backend_url}/items/projects`,
+                projectData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${globalState.authToken}`,
+                    },
+                },
+            );
+        } catch (err) {
+            console.error("Error saving to backend:", err);
         }
-      } catch (directusError) {
-        console.error("Error saving to Directus:", directusError);
-        // Directus kaydetme hatası, fakat token oluşturma başarılı
-      }
+    };
 
-      // Success message
-      console.log(
-        `Token created successfully!\n\nMint Address: ${
-          result.mintAddress
-        }\nTransaction: ${result.signature}\n\nNetwork: Solana ${
-          constants.network.type === "mainnet-beta"
-            ? "Mainnet"
-            : constants.network.type.charAt(0).toUpperCase() +
-              constants.network.type.slice(1)
-        }`
-      );
-    } catch (error) {
-      console.error("Token creation failed:", error);
-
-      // Detaylı hata mesajı
-      let errorMessage = "Token creation failed";
-      if (error.message) {
-        errorMessage += `: ${error.message}`;
-      }
-      if (error.response?.data?.message) {
-        errorMessage += ` (${error.response.data.message})`;
-      }
-
-      console.error(errorMessage);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#0A151E] py-8 px-4 pt-28">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Form Section */}
-          <div className="bg-[#192630] rounded-2xl shadow-2xl p-8 border border-gray-700">
-            <h1 className="text-3xl font-bold text-white mb-8 text-center">
-              Create New Coin
-            </h1>
-
-            {/* Commission Settings Loading */}
-            {isLoadingSettings ? (
-              <div className="mb-6 p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-                  <p className="text-blue-300">
-                    Loading commission settings...
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Stake Requirement Info */}
-            {isCheckingStake ? (
-              <div className="mb-6 p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-                  <p className="text-blue-300">Checking your staked NFTs...</p>
-                </div>
-              </div>
-            ) : stakeError ? (
-              <div className="mb-6 p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
-                <p className="text-red-300">{stakeError}</p>
-              </div>
-            ) : !wallet.connected ? (
-              <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
-                <h3 className="text-yellow-300 font-semibold mb-2">
-                  🔗 Wallet Required
-                </h3>
-                <p className="text-yellow-200 text-sm">
-                  Please connect your wallet to check your eligibility for token
-                  creation.
-                </p>
-              </div>
-            ) : !hasStakedNFT ? (
-              <div className="mb-6 p-4 bg-orange-900/30 border border-orange-600/50 rounded-lg">
-                <h3 className="text-orange-300 font-semibold mb-2">
-                  � Token Creation Options
-                </h3>
-                <p className="text-orange-200 text-sm mb-3">
-                  You don't have staked NFTs, but you can still create tokens by
-                  paying a {commissionSettings?.token_creation_fee} SOL
-                  commission.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <a
-                    href="/nft-staking"
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+    const renderStep = () => {
+        switch (step) {
+            case 1:
+                return (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-6"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
-                    Stake NFT (Free)
-                  </a>
-                  <div className="inline-flex items-center gap-2 bg-orange-600/20 border border-orange-500/30 text-orange-300 px-4 py-2 rounded-lg text-sm font-medium">
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                      />
-                    </svg>
-                    Pay {commissionSettings?.token_creation_fee} SOL Commission
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="mb-6 p-4 bg-green-900/30 border border-green-600/50 rounded-lg">
-                <h3 className="text-green-300 font-semibold mb-2">
-                  ✅ Eligible for Token Creation
-                </h3>
-                <p className="text-green-200 text-sm">
-                  You have staked NFTs! You can now create your own token with
-                  metadata.
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Basic Info */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white border-b border-gray-600 pb-2">
-                  Basic Information
-                </h2>
-
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="coinName"
-                      className="block text-sm font-medium text-gray-300 mb-2"
-                    >
-                      Coin Name * (Max 32 characters)
-                    </label>
-                    <input
-                      type="text"
-                      id="coinName"
-                      name="coinName"
-                      value={formData.coinName}
-                      onChange={handleInputChange}
-                      maxLength="32"
-                      className={`w-full px-4 py-3 bg-gray-800/50 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-white placeholder-gray-400 ${
-                        errors.coinName
-                          ? "border-red-500 bg-red-900/20"
-                          : "border-gray-600"
-                      }`}
-                      placeholder="Enter coin name"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formData.coinName.length}/32 characters
-                    </p>
-                    {errors.coinName && (
-                      <p className="mt-2 text-sm text-red-400">
-                        {errors.coinName}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="ticker"
-                      className="block text-sm font-medium text-gray-300 mb-2"
-                    >
-                      Ticker * (Max 10 characters)
-                    </label>
-                    <input
-                      type="text"
-                      id="ticker"
-                      name="ticker"
-                      value={formData.ticker}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 bg-gray-800/50 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-white placeholder-gray-400 ${
-                        errors.ticker
-                          ? "border-red-500 bg-red-900/20"
-                          : "border-gray-600"
-                      }`}
-                      placeholder="Enter ticker symbol"
-                      maxLength="10"
-                      style={{ textTransform: "uppercase" }}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formData.ticker.length}/10 characters
-                    </p>
-                    {errors.ticker && (
-                      <p className="mt-2 text-sm text-red-400">
-                        {errors.ticker}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="description"
-                      className="block text-sm font-medium text-gray-300 mb-2"
-                    >
-                      Description (Optional)
-                    </label>
-                    <textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none text-white placeholder-gray-400"
-                      placeholder="Enter coin description"
-                      rows="4"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Social Links */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white border-b border-gray-600 pb-2">
-                  Social Links (Optional)
-                </h2>
-
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="website"
-                      className="block text-sm font-medium text-gray-300 mb-2"
-                    >
-                      Website
-                    </label>
-                    <input
-                      type="url"
-                      id="website"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-white placeholder-gray-400"
-                      placeholder="https://example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="twitter"
-                      className="block text-sm font-medium text-gray-300 mb-2"
-                    >
-                      X (Twitter)
-                    </label>
-                    <input
-                      type="url"
-                      id="twitter"
-                      name="twitter"
-                      value={formData.twitter}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-white placeholder-gray-400"
-                      placeholder="https://x.com/username"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="telegram"
-                      className="block text-sm font-medium text-gray-300 mb-2"
-                    >
-                      Telegram
-                    </label>
-                    <input
-                      type="url"
-                      id="telegram"
-                      name="telegram"
-                      value={formData.telegram}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-white placeholder-gray-400"
-                      placeholder="https://t.me/username"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Token Supply */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white border-b border-gray-600 pb-2">
-                  Token Supply
-                </h2>
-
-                <div>
-                  <label
-                    htmlFor="initialSupply"
-                    className="block text-sm font-medium text-gray-300 mb-2"
-                  >
-                    Initial Supply (Tokens to mint)
-                  </label>
-                  <input
-                    type="number"
-                    id="initialSupply"
-                    name="initialSupply"
-                    value={formData.initialSupply}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-white placeholder-gray-400"
-                    placeholder="1000000"
-                    min="0"
-                    step="1"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Number of tokens to mint to your wallet (with 9 decimals)
-                  </p>
-                </div>
-              </div>
-
-              {/* Coin Media */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white border-b border-gray-600 pb-2">
-                  Coin Image/Video *
-                </h2>
-
-                <div className="bg-blue-900/30 border border-blue-600/50 rounded-lg p-4">
-                  <div className="text-sm text-blue-300 space-y-1">
-                    <p>
-                      <strong>Image:</strong> Max 15MB, .jpg/.gif/.png
-                      recommended
-                    </p>
-                    <p>
-                      <strong>Video:</strong> Max 30MB, .mp4 recommended
-                    </p>
-                    <p>
-                      <strong>Resolution:</strong> Min. 1000x1000px, 1:1 square
-                      recommended for images
-                    </p>
-                    <p>
-                      <strong>Video:</strong> 16:9 or 9:16, 1080p+ recommended
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="coinMedia" className="block">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 hover:bg-gray-800/30 transition-colors cursor-pointer">
-                      <div className="space-y-2">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="text-gray-300">
-                          <p className="font-medium">Select Image or Video</p>
-                          <p className="text-sm text-gray-400">
-                            Click to browse files
-                          </p>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-cyan-500/10 rounded-lg">
+                                <Coins className="text-cyan-400" size={24} />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white">
+                                Asset Information
+                            </h2>
                         </div>
-                      </div>
-                    </div>
-                    <input
-                      type="file"
-                      id="coinMedia"
-                      accept="image/*,video/mp4"
-                      onChange={(e) => handleFileChange(e, "coin")}
-                      className="hidden"
-                    />
-                  </label>
 
-                  {formData.coinMedia && (
-                    <div className="mt-3 p-3 bg-green-900/30 border border-green-600/50 rounded-lg">
-                      <p className="text-sm text-green-300">
-                        <strong>Selected:</strong> {formData.coinMedia.name}
-                      </p>
-                    </div>
-                  )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-400">
+                                    Token Name*
+                                </label>
+                                <input
+                                    type="text"
+                                    name="coinName"
+                                    value={formData.coinName}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g. Daily Solana"
+                                    className={`w-full bg-[#111C26] border ${errors.coinName ? "border-red-500" : "border-gray-800"} focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all`}
+                                />
+                                <p className="text-xs text-gray-500">
+                                    The full name of your cryptocurrency.
+                                </p>
+                                {errors.coinName && (
+                                    <p className="text-xs text-red-500">
+                                        {errors.coinName}
+                                    </p>
+                                )}
+                            </div>
 
-                  {errors.coinMedia && typeof errors.coinMedia === "string" && (
-                    <p className="mt-2 text-sm text-red-400">
-                      {errors.coinMedia}
-                    </p>
-                  )}
-                  {errors.coin &&
-                    errors.coin.map((error, index) => (
-                      <p key={index} className="mt-2 text-sm text-red-400">
-                        {error}
-                      </p>
-                    ))}
-                </div>
-              </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-400">
+                                    Ticker Symbol*
+                                </label>
+                                <input
+                                    type="text"
+                                    name="ticker"
+                                    value={formData.ticker}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g. GOLD"
+                                    className={`w-full bg-[#111C26] border ${errors.ticker ? "border-red-500" : "border-gray-800"} focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all uppercase`}
+                                />
+                                <p className="text-xs text-gray-500">
+                                    Short identifier (e.g. SOL, BTC).
+                                </p>
+                                {errors.ticker && (
+                                    <p className="text-xs text-red-500">
+                                        {errors.ticker}
+                                    </p>
+                                )}
+                            </div>
 
-              {/* Banner */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white border-b border-gray-600 pb-2">
-                  Upload Banner (Optional)
-                </h2>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-400">
+                                    Decimals
+                                </label>
+                                <input
+                                    type="number"
+                                    name="decimals"
+                                    value={formData.decimals}
+                                    onChange={handleInputChange}
+                                    className="w-full bg-[#111C26] border border-gray-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all"
+                                />
+                                <p className="text-xs text-gray-500">
+                                    Standard is 9 for Solana tokens.
+                                </p>
+                            </div>
 
-                <div className="bg-amber-900/30 border border-amber-600/50 rounded-lg p-4">
-                  <div className="text-sm text-amber-300 space-y-1">
-                    <p>
-                      This will be shown on the coin page in addition to the
-                      coin image.
-                    </p>
-                    <p>
-                      <strong>File:</strong> Max 4.3MB, .jpg/.gif/.png
-                      recommended
-                    </p>
-                    <p>
-                      <strong>Resolution:</strong> 3:1 aspect ratio, 1500x500px
-                      recommended
-                    </p>
-                    <p>
-                      <strong>Note:</strong> You can only do this when creating
-                      the coin, and it cannot be changed later.
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="banner" className="block">
-                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 hover:bg-gray-800/30 transition-colors cursor-pointer">
-                      <div className="space-y-2">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                        >
-                          <path
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h36v16a2 2 0 01-2 2H8a2 2 0 01-2-2V20zM6 12a2 2 0 002-2h32a2 2 0 012 2v8H6V12z"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="text-gray-300">
-                          <p className="font-medium">Select Banner Image</p>
-                          <p className="text-sm text-gray-400">
-                            Click to browse files
-                          </p>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-400">
+                                    Total Supply*
+                                </label>
+                                <input
+                                    type="number"
+                                    name="totalSupply"
+                                    value={formData.totalSupply}
+                                    onChange={handleInputChange}
+                                    className={`w-full bg-[#111C26] border ${errors.totalSupply ? "border-red-500" : "border-gray-800"} focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all`}
+                                />
+                                <p className="text-xs text-gray-500">
+                                    Total amount of tokens that will ever exist.
+                                </p>
+                                {errors.totalSupply && (
+                                    <p className="text-xs text-red-500">
+                                        {errors.totalSupply}
+                                    </p>
+                                )}
+                            </div>
                         </div>
-                      </div>
-                    </div>
-                    <input
-                      type="file"
-                      id="banner"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, "banner")}
-                      className="hidden"
-                    />
-                  </label>
 
-                  {formData.banner && (
-                    <div className="mt-3 p-3 bg-green-900/30 border border-green-600/50 rounded-lg">
-                      <p className="text-sm text-green-300">
-                        <strong>Selected:</strong> {formData.banner.name}
-                      </p>
-                    </div>
-                  )}
-
-                  {errors.banner &&
-                    errors.banner.map((error, index) => (
-                      <p key={index} className="mt-2 text-sm text-red-400">
-                        {error}
-                      </p>
-                    ))}
-                </div>
-              </div>
-
-              {/* Legal Agreements & Compliance Section */}
-              <div className="bg-gradient-to-br from-[#1e2832] to-[#1a2430] border border-gray-700/50 rounded-xl p-6">
-                <h3 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
-                  <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  Legal Agreements & Compliance
-                </h3>
-
-                <div className="space-y-4">
-                  {/* General Statement */}
-                  <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-                    <input
-                      type="checkbox"
-                      id="generalStatement"
-                      checked={agreements.generalStatement}
-                      onChange={(e) =>
-                        setAgreements((prev) => ({
-                          ...prev,
-                          generalStatement: e.target.checked,
-                        }))
-                      }
-                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <label
-                      htmlFor="generalStatement"
-                      className="text-gray-300 text-sm leading-relaxed"
-                    >
-                      I have read and accept the{" "}
-                      <a
-                        href="/general-statement"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                      >
-                        General Statement
-                      </a>{" "}
-                      regarding token creation and platform usage.
-                    </label>
-                  </div>
-                  {errors.generalStatement && (
-                    <p className="text-red-400 text-sm ml-7">
-                      {errors.generalStatement}
-                    </p>
-                  )}
-
-                  {/* Legal Advice */}
-                  <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-                    <input
-                      type="checkbox"
-                      id="legalAdvice"
-                      checked={agreements.legalAdvice}
-                      onChange={(e) =>
-                        setAgreements((prev) => ({
-                          ...prev,
-                          legalAdvice: e.target.checked,
-                        }))
-                      }
-                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <label
-                      htmlFor="legalAdvice"
-                      className="text-gray-300 text-sm leading-relaxed"
-                    >
-                      I have read and understand the{" "}
-                      <a
-                        href="/legal-advice"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                      >
-                        Legal Advice
-                      </a>{" "}
-                      and acknowledge the legal implications of token creation.
-                    </label>
-                  </div>
-                  {errors.legalAdvice && (
-                    <p className="text-red-400 text-sm ml-7">
-                      {errors.legalAdvice}
-                    </p>
-                  )}
-
-                  {/* Privacy Policy */}
-                  <div className="flex items-start gap-3 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-                    <input
-                      type="checkbox"
-                      id="privacyPolicy"
-                      checked={agreements.privacyPolicy}
-                      onChange={(e) =>
-                        setAgreements((prev) => ({
-                          ...prev,
-                          privacyPolicy: e.target.checked,
-                        }))
-                      }
-                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <label
-                      htmlFor="privacyPolicy"
-                      className="text-gray-300 text-sm leading-relaxed"
-                    >
-                      I have read and accept the{" "}
-                      <a
-                        href="/privacy-policy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                      >
-                        Privacy Policy
-                      </a>{" "}
-                      regarding data collection and usage.
-                    </label>
-                  </div>
-                  {errors.privacyPolicy && (
-                    <p className="text-red-400 text-sm ml-7">
-                      {errors.privacyPolicy}
-                    </p>
-                  )}
-
-                  {/* EU Token Checkbox */}
-                  <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-blue-800/20 to-purple-800/20 rounded-xl border border-blue-500/30">
-                    <input
-                      type="checkbox"
-                      id="euToken"
-                      checked={agreements.euToken}
-                      onChange={(e) =>
-                        setAgreements((prev) => ({
-                          ...prev,
-                          euToken: e.target.checked,
-                        }))
-                      }
-                      className="mt-1 w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <label
-                      htmlFor="euToken"
-                      className="text-gray-300 text-sm leading-relaxed"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-blue-300 font-medium">
-                          EU Token Declaration
-                        </span>
-                        <div className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
-                          Optional
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">
+                                Description
+                            </label>
+                            <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="Describe the utility or theme of your token..."
+                                className="w-full bg-[#111C26] border border-gray-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all resize-none"
+                            />
+                            <p className="text-xs text-gray-500">
+                                Appears on explorers and in wallets.
+                            </p>
                         </div>
-                      </div>
-                      This token will be created and operated in accordance with
-                      European Union regulations and guidelines.
-                    </label>
-                  </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-400">
+                                Token Icon*
+                            </label>
+                            <div
+                                onClick={() =>
+                                    document
+                                        .getElementById("icon-upload")
+                                        .click()
+                                }
+                                className={`w-full h-40 bg-[#111C26] border-2 border-dashed ${errors.coinMedia ? "border-red-500/50" : "border-gray-800"} hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden`}
+                            >
+                                {mediaPreview ? (
+                                    <img
+                                        src={mediaPreview}
+                                        className="absolute inset-0 w-full h-full object-contain p-4"
+                                        alt="Icon Preview"
+                                    />
+                                ) : (
+                                    <>
+                                        <Upload
+                                            className="text-gray-600 mb-2"
+                                            size={32}
+                                        />
+                                        <span className="text-gray-400 font-medium">
+                                            Click to Upload Image
+                                        </span>
+                                        <span className="text-gray-600 text-xs mt-1">
+                                            Square PNG/JPG, max 1MB
+                                        </span>
+                                    </>
+                                )}
+                                <input
+                                    id="icon-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                />
+                            </div>
+                            {errors.coinMedia && (
+                                <p className="text-xs text-red-500">
+                                    {errors.coinMedia}
+                                </p>
+                            )}
+                        </div>
+                    </motion.div>
+                );
+            case 2:
+                return (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-8"
+                    >
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <Lock
+                                        className="text-purple-400"
+                                        size={24}
+                                    />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white">
+                                    Security & Permissions
+                                </h2>
+                            </div>
+
+                            <div className="space-y-4 bg-[#111C26] p-6 rounded-2xl border border-gray-800">
+                                <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl border border-gray-800 hover:border-cyan-500/30 transition-all">
+                                    <div>
+                                        <h4 className="text-white font-bold">
+                                            Revoke Minting Power
+                                        </h4>
+                                        <p className="text-xs text-gray-500">
+                                            Guarantees a fixed supply. Essential
+                                            for meme coins.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-green-400 text-sm font-bold">
+                                            +0.05 SOL
+                                        </span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="revokeMint"
+                                                checked={formData.revokeMint}
+                                                onChange={handleInputChange}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl border border-gray-800 hover:border-cyan-500/30 transition-all">
+                                    <div>
+                                        <h4 className="text-white font-bold">
+                                            Revoke Freeze Power
+                                        </h4>
+                                        <p className="text-xs text-gray-500">
+                                            Ensures you cannot lock user
+                                            accounts. Required for DEXs.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-green-400 text-sm font-bold">
+                                            +0.05 SOL
+                                        </span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="revokeFreeze"
+                                                checked={formData.revokeFreeze}
+                                                onChange={handleInputChange}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl border border-gray-800 hover:border-cyan-500/30 transition-all">
+                                    <div>
+                                        <h4 className="text-white font-bold">
+                                            Revoke Update Power
+                                        </h4>
+                                        <p className="text-xs text-gray-500">
+                                            Makes your logo and name permanent.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-green-400 text-sm font-bold">
+                                            +0.05 SOL
+                                        </span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="revokeUpdate"
+                                                checked={formData.revokeUpdate}
+                                                onChange={handleInputChange}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-cyan-500/10 rounded-lg">
+                                    <Globe
+                                        className="text-cyan-400"
+                                        size={24}
+                                    />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white">
+                                    Community Connections
+                                </h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                                        <Globe size={14} /> Official Website
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="website"
+                                        value={formData.website}
+                                        onChange={handleInputChange}
+                                        placeholder="https://yourproject.com"
+                                        className="w-full bg-[#111C26] border border-gray-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                                        <Twitter size={14} /> X (Twitter)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="twitter"
+                                        value={formData.twitter}
+                                        onChange={handleInputChange}
+                                        placeholder="https://x.com/yourproject"
+                                        className="w-full bg-[#111C26] border border-gray-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                                        <Send size={14} /> Telegram Group
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="telegram"
+                                        value={formData.telegram}
+                                        onChange={handleInputChange}
+                                        placeholder="https://t.me/yourproject"
+                                        className="w-full bg-[#111C26] border border-gray-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                                        <Tags size={14} /> Project Tags
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="tags"
+                                        value={formData.tags}
+                                        onChange={handleInputChange}
+                                        placeholder="Meme, DAO, DeFi"
+                                        className="w-full bg-[#111C26] border border-gray-800 focus:border-cyan-500 rounded-xl px-4 py-3 text-white outline-none transition-all"
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                        Helps with discovery on explorers.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 p-6 rounded-2xl">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-white font-bold">
+                                    Deployment Fee:
+                                </span>
+                                <span className="text-cyan-400 font-bold text-lg">
+                                    {totalCost} SOL
+                                </span>
+                            </div>
+                            <p className="text-xs text-gray-500 flex items-start gap-2">
+                                <AlertCircle
+                                    size={14}
+                                    className="mt-0.5 shrink-0"
+                                />
+                                Note: New tokens may appear as 'Unknown' in
+                                Phantom during signing. This is normal until the
+                                first block is confirmed.
+                            </p>
+                        </div>
+                    </motion.div>
+                );
+            case 3:
+                return (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-8"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-green-500/10 rounded-lg">
+                                <CheckCircle2
+                                    className="text-green-400"
+                                    size={24}
+                                />
+                            </div>
+                            <h2 className="text-2xl font-bold text-white">
+                                Review & Confirm
+                            </h2>
+                        </div>
+
+                        <div className="bg-[#111C26] rounded-2xl border border-gray-800 overflow-hidden">
+                            <div className="p-6 border-b border-gray-800 flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+                                    <img
+                                        src={mediaPreview}
+                                        className="w-full h-full object-cover"
+                                        alt="Icon"
+                                    />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">
+                                        {formData.coinName}
+                                    </h3>
+                                    <p className="text-cyan-400 font-medium">
+                                        ${formData.ticker.toUpperCase()}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-6">
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Supply
+                                    </p>
+                                    <p className="text-white font-medium">
+                                        {formData.totalSupply.toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Decimals
+                                    </p>
+                                    <p className="text-white font-medium">
+                                        {formData.decimals}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Mint Revoked
+                                    </p>
+                                    <p
+                                        className={
+                                            formData.revokeMint
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                        }
+                                    >
+                                        {formData.revokeMint ? "YES" : "NO"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Freeze Revoked
+                                    </p>
+                                    <p
+                                        className={
+                                            formData.revokeFreeze
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                        }
+                                    >
+                                        {formData.revokeFreeze ? "YES" : "NO"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Update Revoked
+                                    </p>
+                                    <p
+                                        className={
+                                            formData.revokeUpdate
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                        }
+                                    >
+                                        {formData.revokeUpdate ? "YES" : "NO"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Total Fee
+                                    </p>
+                                    <p className="text-cyan-400 font-bold">
+                                        {totalCost} SOL
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-gray-800 bg-cyan-500/5">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400 shrink-0 mt-0.5">
+                                        <Tags size={16} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-xs text-cyan-400 font-bold uppercase tracking-wider mb-2">
+                                            Custom Mint Address
+                                        </p>
+                                        <p className="text-gray-400 text-xs mb-3">
+                                            Your token will end with a vanity
+                                            suffix. Edit below to customize (3–5
+                                            Base58 chars).
+                                        </p>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-gray-500 text-xs font-mono">
+                                                ...ends with
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={vanitySuffix}
+                                                onChange={(e) =>
+                                                    setVanitySuffix(
+                                                        e.target.value
+                                                            .toUpperCase()
+                                                            .replace(
+                                                                /[^1-9A-HJ-NP-Za-km-zA-Z]/g,
+                                                                "",
+                                                            )
+                                                            .slice(0, 3),
+                                                    )
+                                                }
+                                                placeholder="NTL"
+                                                className="w-28 bg-[#0A151E] border border-cyan-500/40 focus:border-cyan-400 rounded-lg px-3 py-1.5 text-white font-mono font-bold text-sm outline-none transition-all text-center tracking-widest uppercase"
+                                            />
+                                            <span className="text-gray-600 text-xs">
+                                                (default: NTL)
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {formData.description && (
+                                <div className="p-6 border-t border-gray-800">
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">
+                                        Description
+                                    </p>
+                                    <p className="text-gray-300 text-sm leading-relaxed">
+                                        {formData.description}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {creationResult && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-green-500/10 border border-green-500/30 p-6 rounded-2xl"
+                            >
+                                <h4 className="text-green-400 font-bold mb-4 flex items-center gap-2">
+                                    <CheckCircle2 size={18} /> Success! Token
+                                    Deployed
+                                </h4>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-400">
+                                            Mint Address:
+                                        </span>
+                                        <span className="text-white font-mono text-xs">
+                                            {creationResult.mintAddress.slice(
+                                                0,
+                                                8,
+                                            )}
+                                            ...
+                                            {creationResult.mintAddress.slice(
+                                                -8,
+                                            )}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-gray-400">
+                                            Transaction:
+                                        </span>
+                                        <span className="text-white font-mono text-xs">
+                                            {creationResult.signature.slice(
+                                                0,
+                                                8,
+                                            )}
+                                            ...
+                                            {creationResult.signature.slice(-8)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="mt-6 grid grid-cols-2 gap-3">
+                                    <a
+                                        href={`https://solscan.io/token/${creationResult.mintAddress}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-2 py-3 bg-[#111C26] hover:bg-[#1a2535] border border-gray-700 hover:border-cyan-500/50 text-white font-bold rounded-xl transition-all text-sm"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                                                stroke="#22d3ee"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                        Solscan
+                                    </a>
+                                    <a
+                                        href={`https://explorer.solana.com/address/${creationResult.mintAddress}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center gap-2 py-3 bg-[#111C26] hover:bg-[#1a2535] border border-gray-700 hover:border-purple-500/50 text-white font-bold rounded-xl transition-all text-sm"
+                                    >
+                                        <svg
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <circle
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="#a855f7"
+                                                strokeWidth="2"
+                                            />
+                                            <path
+                                                d="M12 8v4l3 3"
+                                                stroke="#a855f7"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                        Explorer
+                                    </a>
+                                </div>
+                            </motion.div>
+                        )}
+                    </motion.div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[#0A151E] pt-32 pb-20 px-4">
+            {/* Background Glow */}
+            <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-purple-600/10 blur-[120px] pointer-events-none" />
+            <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-cyan-600/10 blur-[120px] pointer-events-none" />
+
+            <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-12">
+                    <motion.h1
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-white to-purple-400 bg-clip-text text-transparent"
+                    >
+                        Launch Dashboard
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-gray-400"
+                    >
+                        Create and deploy your custom Solana token in seconds.
+                    </motion.p>
                 </div>
 
-                <div className="mt-6 p-4 bg-yellow-600/10 border border-yellow-500/30 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <svg
-                      className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <div>
-                      <p className="text-yellow-200 text-sm font-medium mb-1">
-                        Important Notice
-                      </p>
-                      <p className="text-yellow-100 text-xs leading-relaxed">
-                        By proceeding with token creation, you acknowledge that
-                        you have read and understood all legal documents. Token
-                        creation involves financial and legal responsibilities.
-                        Please ensure compliance with your local jurisdiction.
-                      </p>
+                <StepIndicator currentStep={step} />
+
+                <div className="bg-[#192630]/80 backdrop-blur-xl border border-gray-800 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    {/* Subtle Scanline Effect */}
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_2px,3px_100%] pointer-events-none opacity-20" />
+
+                    {/* Stake Status Banner */}
+                    <div className="relative z-10">
+                        {isCheckingStake ? (
+                            <div className="mb-8 p-4 bg-cyan-900/10 border border-cyan-500/20 rounded-2xl flex items-center gap-3">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+                                <p className="text-cyan-400/80 text-sm">
+                                    Checking stake eligibility...
+                                </p>
+                            </div>
+                        ) : wallet.connected && hasStakedNFT ? (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-8 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-start gap-3"
+                            >
+                                <CheckCircle2
+                                    className="text-green-400 shrink-0 mt-0.5"
+                                    size={18}
+                                />
+                                <div>
+                                    <p className="text-green-200 text-sm font-bold">
+                                        NFT Stake Benefit Active
+                                    </p>
+                                    <p className="text-green-400/60 text-xs">
+                                        Your base deployment fee has been
+                                        waived. You only pay for additional
+                                        security features.
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-8 p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-start justify-between gap-4"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <Shield
+                                        className="text-purple-400 shrink-0 mt-0.5"
+                                        size={18}
+                                    />
+                                    <div>
+                                        <p className="text-purple-200 text-sm font-bold">
+                                            Stake NFT for Free Launch
+                                        </p>
+                                        <p className="text-purple-400/60 text-xs">
+                                            Stake a Noottools NFT to waive the{" "}
+                                            {commissionSettings?.token_creation_fee ||
+                                                0.1}{" "}
+                                            SOL platform fee.
+                                        </p>
+                                    </div>
+                                </div>
+                                <a
+                                    href="/nft-staking"
+                                    className="px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 border border-purple-500/30 text-purple-200 text-xs font-bold rounded-xl transition-all shrink-0 flex items-center gap-2"
+                                >
+                                    Stake Now <ArrowRight size={14} />
+                                </a>
+                            </motion.div>
+                        )}
                     </div>
-                  </div>
+
+                    <AnimatePresence mode="wait">
+                        {renderStep()}
+                    </AnimatePresence>
+
+                    <div className="mt-12 pt-8 border-t border-gray-800 flex items-center justify-between gap-4">
+                        {step > 1 ? (
+                            <button
+                                onClick={prevStep}
+                                disabled={isCreating}
+                                className="flex items-center gap-2 px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-2xl transition-all disabled:opacity-50"
+                            >
+                                <ArrowLeft size={18} /> Back
+                            </button>
+                        ) : (
+                            <div />
+                        )}
+
+                        {step < 3 ? (
+                            <button
+                                onClick={nextStep}
+                                className="flex items-center gap-2 px-12 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-cyan-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                Continue <ArrowRight size={18} />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleDeploy}
+                                disabled={isCreating || isSearching}
+                                className="flex items-center justify-center gap-3 px-12 py-4 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white font-black text-lg rounded-2xl shadow-xl shadow-purple-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group relative overflow-hidden"
+                            >
+                                {isSearching ? (
+                                    <div className="flex flex-col items-center">
+                                        <div className="flex items-center gap-2">
+                                            <motion.div
+                                                animate={{ rotate: 360 }}
+                                                transition={{
+                                                    repeat: Infinity,
+                                                    duration: 1,
+                                                    ease: "linear",
+                                                }}
+                                                className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                                            />
+                                            <span>
+                                                Generating Vanity (
+                                                {vanityAttempts.toLocaleString()}
+                                                )...
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : isCreating ? (
+                                    <>
+                                        <motion.div
+                                            animate={{ rotate: 360 }}
+                                            transition={{
+                                                repeat: Infinity,
+                                                duration: 1,
+                                                ease: "linear",
+                                            }}
+                                            className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full"
+                                        />
+                                        Deploying...
+                                    </>
+                                ) : (
+                                    <>
+                                        Deploy to Mainnet
+                                        <motion.div
+                                            className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"
+                                            style={{ skewX: "-20deg" }}
+                                        />
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={
-                  isCreating ||
-                  isLoadingSettings ||
-                  !wallet.connected ||
-                  isCheckingStake ||
-                  !agreements.generalStatement ||
-                  !agreements.legalAdvice ||
-                  !agreements.privacyPolicy
-                }
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-all hover:transform hover:scale-105 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#192630] disabled:transform-none disabled:cursor-not-allowed"
-              >
-                {isCreating
-                  ? "Creating Token..."
-                  : isLoadingSettings
-                  ? "Loading..."
-                  : hasStakedNFT
-                  ? "Create Token (Free)"
-                  : commissionSettings
-                  ? `Create Token (${commissionSettings.token_creation_fee} SOL)`
-                  : "Loading..."}
-              </button>
-
-              {!wallet.connected && (
-                <p className="text-yellow-400 text-sm text-center">
-                  Please connect your wallet to create a token
-                </p>
-              )}
-
-              {wallet.connected &&
-                !hasStakedNFT &&
-                !isCheckingStake &&
-                commissionSettings && (
-                  <p className="text-orange-400 text-sm text-center">
-                    You can create a token by paying{" "}
-                    {commissionSettings.token_creation_fee} SOL commission
-                  </p>
-                )}
-            </form>
-
-            {/* Creation Result */}
-            {creationResult && (
-              <div className="mt-6 p-4 bg-green-900/30 border border-green-600/50 rounded-lg">
-                <h3 className="text-green-300 font-semibold mb-2">
-                  Token Created Successfully!
-                </h3>
-                <div className="text-sm text-green-200 space-y-1">
-                  <p>
-                    <strong>Mint Address:</strong> {creationResult.mintAddress}
-                  </p>
-                  {creationResult.metadataAddress && (
-                    <p>
-                      <strong>Metadata Address:</strong>{" "}
-                      {creationResult.metadataAddress}
-                    </p>
-                  )}
-
-                  <p>
-                    <strong>Network:</strong> Solana{" "}
-                    {constants.network.type === "mainnet-beta"
-                      ? "Mainnet"
-                      : constants.network.type.charAt(0).toUpperCase() +
-                        constants.network.type.slice(1)}
-                  </p>
-                  {creationResult.initialSupply && (
-                    <p>
-                      <strong>Initial Supply:</strong>{" "}
-                      {creationResult.initialSupply} tokens
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Preview Section */}
-          <div className="bg-[#192630] rounded-2xl shadow-2xl p-8 border border-gray-700 sticky top-28 h-fit">
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
-              Preview
-            </h2>
-
-            {/* Banner Preview */}
-            {bannerPreview && (
-              <div className="mb-6">
-                <div className="w-full h-32 bg-gray-800 rounded-lg overflow-hidden">
-                  <img
-                    src={bannerPreview}
-                    alt="Banner preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Coin Card Preview */}
-            <div className="bg-[#243340] rounded-xl p-6 border border-gray-600">
-              {/* Coin Media */}
-              <div className="mb-4">
-                {mediaPreview ? (
-                  <div className="w-24 h-24 mx-auto bg-gray-800 rounded-full overflow-hidden">
-                    {formData.coinMedia?.type?.startsWith("video/") ? (
-                      <video
-                        src={mediaPreview}
-                        className="w-full h-full object-cover"
-                        muted
-                        loop
-                        autoPlay
-                      />
-                    ) : (
-                      <img
-                        src={mediaPreview}
-                        alt="Coin preview"
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-24 h-24 mx-auto bg-gray-700 rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-gray-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                {/* Info Banner */}
+                {step === 1 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-8 flex items-start gap-4 bg-cyan-500/5 border border-cyan-500/20 p-4 rounded-2xl"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h36v16a2 2 0 01-2 2H8a2 2 0 01-2-2V20zM6 12a2 2 0 002-2h32a2 2 0 012 2v8H6V12z"
-                      />
-                    </svg>
-                  </div>
+                        <Info
+                            className="text-cyan-400 shrink-0 mt-0.5"
+                            size={20}
+                        />
+                        <p className="text-sm text-gray-400">
+                            Need help? Join our{" "}
+                            <a
+                                href="#"
+                                className="text-cyan-400 hover:underline"
+                            >
+                                Telegram
+                            </a>{" "}
+                            for support. Token creation fees are non-refundable.
+                        </p>
+                    </motion.div>
                 )}
-              </div>
-
-              {/* Coin Info */}
-              <div className="text-center">
-                <h3 className="text-xl font-bold text-white mb-1">
-                  {formData.coinName || "Coin Name"}
-                </h3>
-                <p className="text-gray-400 text-sm mb-3">
-                  {formData.ticker
-                    ? `$${formData.ticker.toUpperCase()}`
-                    : "$TICKER"}
-                </p>
-
-                {formData.description && (
-                  <p className="text-gray-300 text-sm mb-4 leading-relaxed">
-                    {formData.description}
-                  </p>
-                )}
-
-                {/* Token Supply Info */}
-                {formData.initialSupply > 0 && (
-                  <div className="bg-gray-800/50 rounded-lg p-3 mb-4">
-                    <p className="text-gray-400 text-xs">Initial Supply</p>
-                    <p className="text-white font-bold">
-                      {parseInt(formData.initialSupply).toLocaleString()} tokens
-                    </p>
-                  </div>
-                )}
-
-                {/* Social Links */}
-                {(formData.website ||
-                  formData.twitter ||
-                  formData.telegram) && (
-                  <div className="flex justify-center space-x-3 mb-4">
-                    {formData.website && (
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 009 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                    {formData.twitter && (
-                      <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                        </svg>
-                      </div>
-                    )}
-                    {formData.telegram && (
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Mock Stats */}
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">Market Cap</p>
-                    <p className="text-white font-bold">$0</p>
-                  </div>
-                  <div className="bg-gray-800/50 rounded-lg p-3">
-                    <p className="text-gray-400 text-xs">24h Volume</p>
-                    <p className="text-white font-bold">$0</p>
-                  </div>
-                </div>
-              </div>
             </div>
-
-            {!formData.coinName && !formData.ticker && !mediaPreview && (
-              <div className="text-center text-gray-400 mt-6">
-                <p className="text-sm">Fill in the form to see preview</p>
-              </div>
-            )}
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default CreateCoin;

@@ -35,7 +35,7 @@ import { toast } from 'react-toastify';
 // Constants
 const BONDING_CURVE_PROGRAM_ID = new PublicKey("CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT");
 const PLATFORM_AUTHORITY = new PublicKey("9CgjeM8CfEXXBVMvTfPjbB2iLPNHFCVGgdYRZw9FdjRk")
-const RPC_URL = "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm";
+const RPC_URL = import.meta.env.VITE_RPC_URL;
 
 const BONDING_CURVE_CONFIG = {
     TOTAL_SUPPLY: 1_000_000_000,
@@ -989,12 +989,12 @@ export const useBondingCurveFlow = () => {
             const price = await (
                 await fetch(
                     'https://api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112',
-                {
-                  headers: {
-                    'x-api-key': '60012c1b-4bd1-4e6f-a6a3-eb991ed23e95',
-                  },
-                }
-              )
+                    {
+                        headers: {
+                            'x-api-key': '60012c1b-4bd1-4e6f-a6a3-eb991ed23e95',
+                        },
+                    }
+                )
             ).json();
             return price['So11111111111111111111111111111111111111112'].usdPrice;
         } catch (error) {
@@ -1163,7 +1163,7 @@ function calculatePriceImpact(amountIn, reservesIn, reservesOut, isBuy) {
 
         // Spot price = current reserves ratio
         const spotPrice = reservesInBN.mul(ONE_E9).div(reservesOutBN);
-        
+
         // Effective price = actual price paid in this trade
         const effectivePrice = amountInBN.mul(ONE_E9).div(amountOut);
 
@@ -1172,11 +1172,11 @@ function calculatePriceImpact(amountIn, reservesIn, reservesOut, isBuy) {
         const impact = priceDiff.mul(new BN(10000)).div(spotPrice);
 
         const impactPercent = Math.abs(parseFloat(impact.toString()) / 100);
-        
+
         // Debug log (remove after testing)
         console.log('💰 Price Impact:', {
             input: amountInBN.toString(),
-            output: amountOut.toString(), 
+            output: amountOut.toString(),
             spot: spotPrice.toString(),
             effective: effectivePrice.toString(),
             impact: impactPercent.toFixed(4) + '%'

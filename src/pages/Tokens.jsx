@@ -6,20 +6,22 @@ import constants from "../constants";
 import bondingCurveIDL from "../hooks/bonding_curve.json";
 
 const BONDING_CURVE_PROGRAM_ID = new PublicKey(
-    "CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT"
+    "CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT",
 );
-const RPC_URL = "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm";
+const RPC_URL = import.meta.env.VITE_RPC_URL;
 
 const fetchSolPrice = async () => {
     try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const response = await fetch(
+            "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+        );
         const data = await response.json();
         return data.solana.usd;
     } catch (error) {
-        console.error('Error fetching SOL price:', error);
+        console.error("Error fetching SOL price:", error);
         return 186.14; // fallback price
     }
-}
+};
 
 const TokensPage = () => {
     const navigate = useNavigate();
@@ -43,7 +45,7 @@ const TokensPage = () => {
         try {
             setIsLoading(true);
             const response = await fetch(
-                `${constants.backend_url}/items/projects?sort=-date_created`
+                `${constants.backend_url}/items/projects?sort=-date_created`,
             );
             const data = await response.json();
 
@@ -62,59 +64,93 @@ const TokensPage = () => {
             const connection = new Connection(RPC_URL);
             const provider = new AnchorProvider(connection, {}, {});
             const program = new Program(bondingCurveIDL, provider);
-    
+
             const curveDataMap = {};
-    
+
             for (const token of tokens) {
                 try {
                     const [bondingCurve] = PublicKey.findProgramAddressSync(
-                        [Buffer.from("bonding_curve"), new PublicKey(token.contract_address).toBuffer()],
-                        BONDING_CURVE_PROGRAM_ID
+                        [
+                            Buffer.from("bonding_curve"),
+                            new PublicKey(token.contract_address).toBuffer(),
+                        ],
+                        BONDING_CURVE_PROGRAM_ID,
                     );
-    
-                    const curveData = await program.account.bondingCurve.fetch(bondingCurve);
-    
+
+                    const curveData =
+                        await program.account.bondingCurve.fetch(bondingCurve);
+
                     // Convert BN values to numbers with proper decimal handling
                     const bnToNumber = (bn, decimals = 9) => {
-                        const value = parseFloat(bn.toString()) / Math.pow(10, decimals);
+                        const value =
+                            parseFloat(bn.toString()) / Math.pow(10, decimals);
                         return value;
                     };
-    
-                    const virtualSolReserves = new BN(curveData.virtualSolReserves);
+
+                    const virtualSolReserves = new BN(
+                        curveData.virtualSolReserves,
+                    );
                     const realSolReserves = new BN(curveData.realSolReserves);
-                    const virtualTokenReserves = new BN(curveData.virtualTokenReserves);
-                    const realTokenReserves = new BN(curveData.realTokenReserves);
+                    const virtualTokenReserves = new BN(
+                        curveData.virtualTokenReserves,
+                    );
+                    const realTokenReserves = new BN(
+                        curveData.realTokenReserves,
+                    );
                     const totalSupply = new BN(curveData.totalSupply);
-                    const migrationThreshold = new BN(curveData.migrationThreshold);
-                    
+                    const migrationThreshold = new BN(
+                        curveData.migrationThreshold,
+                    );
+
                     // SOL uses 9 decimals, tokens typically use 6 or 9 decimals
                     // Adjust based on your token's actual decimal places
                     const SOL_DECIMALS = 9;
-                    const TOKEN_DECIMALS = 9; 
-                    
-                    const totalSolReserves = virtualSolReserves.add(realSolReserves);
-                    const totalTokenReserves = virtualTokenReserves.add(realTokenReserves);
-                    
-                    const totalSolReservesNum = bnToNumber(totalSolReserves, SOL_DECIMALS);
-                    const totalTokenReservesNum = bnToNumber(totalTokenReserves, TOKEN_DECIMALS);
-                    const realSolReservesNum = bnToNumber(realSolReserves, SOL_DECIMALS);
-                    const migrationThresholdNum = bnToNumber(migrationThreshold, SOL_DECIMALS);
-                    const totalSupplyNum = bnToNumber(totalSupply, TOKEN_DECIMALS);
-                    
+                    const TOKEN_DECIMALS = 9;
+
+                    const totalSolReserves =
+                        virtualSolReserves.add(realSolReserves);
+                    const totalTokenReserves =
+                        virtualTokenReserves.add(realTokenReserves);
+
+                    const totalSolReservesNum = bnToNumber(
+                        totalSolReserves,
+                        SOL_DECIMALS,
+                    );
+                    const totalTokenReservesNum = bnToNumber(
+                        totalTokenReserves,
+                        TOKEN_DECIMALS,
+                    );
+                    const realSolReservesNum = bnToNumber(
+                        realSolReserves,
+                        SOL_DECIMALS,
+                    );
+                    const migrationThresholdNum = bnToNumber(
+                        migrationThreshold,
+                        SOL_DECIMALS,
+                    );
+                    const totalSupplyNum = bnToNumber(
+                        totalSupply,
+                        TOKEN_DECIMALS,
+                    );
+
                     // Calculate price per token in SOL
-                    const priceInSol = totalTokenReservesNum > 0 ? totalSolReservesNum / totalTokenReservesNum : 0;
-                    
+                    const priceInSol =
+                        totalTokenReservesNum > 0
+                            ? totalSolReservesNum / totalTokenReservesNum
+                            : 0;
+
                     // Convert SOL price to USD (you'll need to fetch current SOL price)
                     // For now, using a placeholder - you should fetch this from an API
                     const SOL_TO_USD = await fetchSolPrice(); // Replace with actual SOL price fetch
                     const priceInUsd = priceInSol * SOL_TO_USD;
-                    
+
                     const marketCap = priceInUsd * totalSupplyNum;
-                    
-                    const progress = migrationThresholdNum > 0 
-                        ? (realSolReservesNum / migrationThresholdNum) * 100 
-                        : 0;
-                    
+
+                    const progress =
+                        migrationThresholdNum > 0
+                            ? (realSolReservesNum / migrationThresholdNum) * 100
+                            : 0;
+
                     curveDataMap[token.contract_address] = {
                         price: priceInUsd,
                         marketCap,
@@ -126,15 +162,20 @@ const TokensPage = () => {
                         totalTokenReserves: totalTokenReservesNum,
                         priceInSol, // Keep this for reference
                     };
-                    
-                    console.log("Final curve data:", curveDataMap[token.contract_address]);
-                    
+
+                    console.log(
+                        "Final curve data:",
+                        curveDataMap[token.contract_address],
+                    );
                 } catch (error) {
-                    console.error(`Error fetching curve data for ${token.contract_address}:`, error);
+                    console.error(
+                        `Error fetching curve data for ${token.contract_address}:`,
+                        error,
+                    );
                     // Continue with next token instead of breaking
                 }
             }
-    
+
             setBondingCurveData(curveDataMap);
         } catch (error) {
             console.error("Error fetching bonding curve data:", error);
@@ -166,13 +207,13 @@ const TokensPage = () => {
             case "newest":
                 sorted.sort(
                     (a, b) =>
-                        new Date(b.date_created) - new Date(a.date_created)
+                        new Date(b.date_created) - new Date(a.date_created),
                 );
                 break;
             case "oldest":
                 sorted.sort(
                     (a, b) =>
-                        new Date(a.date_created) - new Date(b.date_created)
+                        new Date(a.date_created) - new Date(b.date_created),
                 );
                 break;
             case "name":
@@ -332,7 +373,7 @@ const TokensPage = () => {
                                 bondingCurveData[token.contract_address];
                             const isNew = () => {
                                 const createdDate = new Date(
-                                    token.date_created
+                                    token.date_created,
                                 );
                                 const hoursSinceCreation =
                                     (Date.now() - createdDate.getTime()) /
@@ -345,7 +386,7 @@ const TokensPage = () => {
                                     key={token.id}
                                     onClick={() =>
                                         navigate(
-                                            `/token/${token.contract_address}`
+                                            `/token/${token.contract_address}`,
                                         )
                                     }
                                     className="bg-[#192630] rounded-2xl border border-gray-700 hover:border-blue-500 transition-all cursor-pointer group overflow-hidden"
@@ -367,7 +408,7 @@ const TokensPage = () => {
                                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                                         <span className="text-white font-bold text-lg">
                                                             {token.symbol?.charAt(
-                                                                0
+                                                                0,
                                                             ) || "?"}
                                                         </span>
                                                     </div>
@@ -404,7 +445,7 @@ const TokensPage = () => {
                                                     </span>
                                                     <span className="text-white font-semibold">
                                                         {curveData.progress.toFixed(
-                                                            1
+                                                            1,
                                                         )}
                                                         %
                                                     </span>
@@ -420,13 +461,13 @@ const TokensPage = () => {
                                                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                                                     <span>
                                                         {curveData.realSolReserves.toFixed(
-                                                            2
+                                                            2,
                                                         )}{" "}
                                                         SOL
                                                     </span>
                                                     <span>
                                                         {curveData.migrationThreshold.toFixed(
-                                                            0
+                                                            0,
                                                         )}{" "}
                                                         SOL to migrate
                                                     </span>
@@ -435,34 +476,36 @@ const TokensPage = () => {
                                         )}
 
                                         {/* Price Info */}
-<div className="space-y-3 mb-4">
-    <div className="flex justify-between items-center">
-        <span className="text-gray-400 text-sm">
-            Current Price
-        </span>
-        <span className="text-white font-semibold">
-            {curveData?.price
-                ? curveData.price < 0.01 
-                    ? `$${curveData.price.toFixed(8)}`
-                    : `$${curveData.price.toFixed(4)}`
-                : "—"}
-        </span>
-    </div>
-    <div className="flex justify-between items-center">
-        <span className="text-gray-400 text-sm">
-            Market Cap
-        </span>
-        <span className="text-white font-semibold">
-            {curveData?.marketCap
-                ? curveData.marketCap >= 1e6
-                    ? `$${(curveData.marketCap / 1e6).toFixed(2)}M`
-                    : curveData.marketCap >= 1e3
-                    ? `$${(curveData.marketCap / 1e3).toFixed(2)}K`
-                    : `$${curveData.marketCap.toFixed(2)}`
-                : "—"}
-        </span>
-    </div>
-</div>
+                                        <div className="space-y-3 mb-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-400 text-sm">
+                                                    Current Price
+                                                </span>
+                                                <span className="text-white font-semibold">
+                                                    {curveData?.price
+                                                        ? curveData.price < 0.01
+                                                            ? `$${curveData.price.toFixed(8)}`
+                                                            : `$${curveData.price.toFixed(4)}`
+                                                        : "—"}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-400 text-sm">
+                                                    Market Cap
+                                                </span>
+                                                <span className="text-white font-semibold">
+                                                    {curveData?.marketCap
+                                                        ? curveData.marketCap >=
+                                                          1e6
+                                                            ? `$${(curveData.marketCap / 1e6).toFixed(2)}M`
+                                                            : curveData.marketCap >=
+                                                                1e3
+                                                              ? `$${(curveData.marketCap / 1e3).toFixed(2)}K`
+                                                              : `$${curveData.marketCap.toFixed(2)}`
+                                                        : "—"}
+                                                </span>
+                                            </div>
+                                        </div>
 
                                         {/* Description Preview */}
                                         {token.description && (
@@ -475,7 +518,7 @@ const TokensPage = () => {
                                         <div className="flex items-center justify-between pt-4 border-t border-gray-700">
                                             <span className="text-gray-500 text-xs">
                                                 {formatTimeAgo(
-                                                    token.date_created
+                                                    token.date_created,
                                                 )}
                                             </span>
                                             {curveData?.isMigrated && (

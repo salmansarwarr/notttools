@@ -42,6 +42,7 @@ import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import lpLockIDL from './lp_escrow.json' with { type: 'json' };
 import { DEVNET_PROGRAM_ID, getCpmmPdaAmmConfigId, Raydium, TxVersion } from "@raydium-io/raydium-sdk-v2";
 import { BN } from "bn.js";
+import constants from "../constants.jsx";
 
 // ---------- Constants ----------
 const tokenMetadata = {
@@ -80,8 +81,8 @@ export const userPayer = Keypair.fromSecretKey(
 export const platformAuthority = userPayer; // <-- change in prod to a dedicated platform keypair
 
 const mintAuthority = userPayer; // who mints tokens (still the user here)
-const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-const umi = createUmi("https://api.devnet.solana.com")
+const connection = new Connection(constants.network.endpoint, "confirmed");
+const umi = createUmi(constants.network.endpoint)
     .use(mplTokenMetadata())
     .use(mplToolbox());
 
@@ -89,7 +90,7 @@ const umi = createUmi("https://api.devnet.solana.com")
 umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(userPayer.secretKey)));
 
 function generateExplorerTxUrl(txId) {
-    return `https://explorer.solana.com/tx/${txId}?cluster=devnet`;
+    return constants.getExplorerUrl(txId);
 }
 
 // ---------- Step Functions ----------

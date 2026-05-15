@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 import constants from "../../constants";
 
 export const Footer = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState("");
     const [isSubscribed, setIsSubscribed] = useState(false);
     const [subscriptionError, setSubscriptionError] = useState(null);
@@ -38,7 +40,7 @@ export const Footer = () => {
                         headers: {
                             "Content-Type": "application/json",
                         },
-                    }
+                    },
                 );
 
                 console.log("✅ Social media accounts loaded:", response.data);
@@ -69,7 +71,7 @@ export const Footer = () => {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({ email }),
-                }
+                },
             );
 
             // Check if response is successful (including 204)
@@ -98,7 +100,7 @@ export const Footer = () => {
     const handleSubscription = (e) => {
         e.preventDefault();
         if (!email) {
-            setSubscriptionError("Please enter your email address");
+            setSubscriptionError(t("enter_email"));
             return;
         }
         setSubscriptionError(null);
@@ -107,45 +109,41 @@ export const Footer = () => {
 
     const quickLinks = [
         {
-            name: "Create Token",
+            name: t("token_creator"),
             href: "/create-coin",
             icon: <Coins size={16} />,
         },
         {
-            name: "NFT Minting",
+            name: t("nft_minting"),
             href: "/nft-minting",
             icon: <Shield size={16} />,
         },
-        { name: "NFT Staking", href: "/nft-staking", icon: <Zap size={16} /> },
+        {
+            name: t("nft_staking"),
+            href: "/nft-staking",
+            icon: <Zap size={16} />,
+        },
     ];
 
     const supportLinks = [
-        { name: "Contact Us", href: "/contact" },
-        { name: "Purpose", href: "/purpose" },
-        { name: "How We Do It", href: "/how-we-do-it" },
-        { name: "Noot Token", href: "/noot-token" },
+        { name: t("contact"), href: "/contact" },
+        { name: t("purpose"), href: "/purpose" },
+        { name: t("how_we_do_it"), href: "/how-we-do-it" },
+        { name: t("token_noot"), href: "/noot-token" },
     ];
 
     const legalLinks = [
         {
-            name: "Legal Disclaimer",
+            name: t("legal_disclaimer"),
             onClick: () => setOpenModal("disclaimer"),
         },
         {
-            name: "Privacy Policy",
+            name: t("privacy_policy"),
             onClick: () => setOpenModal("privacy"),
         },
         {
-            name: "Terms & Conditions",
+            name: t("terms_conditions"),
             onClick: () => setOpenModal("terms"),
-        },
-        {
-            name: constants.legal.generalStatement.title,
-            href: constants.legal.generalStatement.path,
-        },
-        {
-            name: constants.legal.legalAdvice.title,
-            href: constants.legal.legalAdvice.path,
         },
     ];
 
@@ -985,7 +983,7 @@ export const Footer = () => {
                         <div className="lg:col-span-1 md:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
                                 <img
-                                    src="/pengu.png"
+                                    src="/logo.jpeg"
                                     alt="Noottools Logo"
                                     className="w-12 h-12 rounded-lg"
                                 />
@@ -1007,11 +1005,11 @@ export const Footer = () => {
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-400">
                                     <Phone size={16} />
-                                    <span>24/7 Community Support</span>
+                                    <span>{t("community_support")}</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-gray-400">
                                     <MapPin size={16} />
-                                    <span>Global • Remote First</span>
+                                    <span>{t("global_remote")}</span>
                                 </div>
                             </div>
                         </div>
@@ -1021,7 +1019,7 @@ export const Footer = () => {
                             {/* Quick Links */}
                             <div>
                                 <h4 className="text-lg font-semibold text-white mb-6">
-                                    Platform
+                                    {t("platform")}
                                 </h4>
                                 <div className="space-y-3">
                                     {quickLinks.map((link, index) => (
@@ -1042,7 +1040,7 @@ export const Footer = () => {
                             {/* Support Links */}
                             <div>
                                 <h4 className="text-lg font-semibold text-white mb-6">
-                                    Support
+                                    {t("support")}
                                 </h4>
                                 <div className="space-y-3">
                                     {supportLinks.map((link, index) => (
@@ -1060,7 +1058,7 @@ export const Footer = () => {
                             {/* Legal Links */}
                             <div>
                                 <h4 className="text-lg font-semibold text-white mb-6">
-                                    Legal
+                                    {t("legal")}
                                 </h4>
                                 <div className="space-y-3">
                                     {legalLinks.map((link, index) =>
@@ -1080,7 +1078,7 @@ export const Footer = () => {
                                             >
                                                 {link.name}
                                             </button>
-                                        )
+                                        ),
                                     )}
                                 </div>
                             </div>
@@ -1089,11 +1087,10 @@ export const Footer = () => {
                         {/* Newsletter */}
                         <div>
                             <h4 className="text-lg font-semibold text-white mb-6">
-                                Stay Updated
+                                {t("stay_updated")}
                             </h4>
                             <p className="text-gray-400 mb-6">
-                                Subscribe to our newsletter for the latest
-                                updates and exclusive insights.
+                                {t("newsletter_desc")}
                             </p>
 
                             {!isSubscribed ? (
@@ -1108,7 +1105,7 @@ export const Footer = () => {
                                             onChange={(e) =>
                                                 setEmail(e.target.value)
                                             }
-                                            placeholder="Enter your email"
+                                            placeholder={t("enter_email")}
                                             className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition-colors"
                                             required
                                         />
@@ -1124,7 +1121,7 @@ export const Footer = () => {
                                             ) : (
                                                 <>
                                                     <Send size={16} />
-                                                    Subscribe
+                                                    {t("subscribe")}
                                                 </>
                                             )}
                                         </button>
@@ -1147,10 +1144,10 @@ export const Footer = () => {
                                         size={24}
                                     />
                                     <p className="text-green-300 text-sm font-medium">
-                                        🎉 Successfully subscribed!
+                                        🎉 {t("successfully_subscribed")}
                                     </p>
                                     <p className="text-green-400 text-xs mt-1">
-                                        Thank you for joining our community
+                                        {t("thanks_joining")}
                                     </p>
                                 </div>
                             )}
@@ -1164,8 +1161,7 @@ export const Footer = () => {
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             {/* Copyright */}
                             <div className="text-gray-400 text-sm">
-                                © 2024 Noottools. All rights reserved. Built
-                                with ❤️ for the Web3 community.
+                                {t("all_rights_reserved")}
                             </div>
 
                             {/* Social Links */}

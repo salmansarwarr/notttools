@@ -12,8 +12,10 @@ import {
 } from "lucide-react";
 import constants from "../constants";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 const NootToken = () => {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
@@ -96,7 +98,7 @@ const NootToken = () => {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl px-6 py-3 mb-6">
             <Coins className="w-5 h-5 text-purple-400 animate-pulse" />
-            <span className="text-purple-300 font-semibold">Utility Token</span>
+            <span className="text-purple-300 font-semibold">{t('utility_token')}</span>
           </div>
 
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
@@ -106,9 +108,7 @@ const NootToken = () => {
           </h1>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            The utility token designed to be used solely within the NOOTTOOLS
-            ecosystem and, in particular, as an internal currency in the
-            NOOTBATTLE video game.
+            {t('noot_token_desc')}
           </p>
 
           {/* Token Actions */}
@@ -126,7 +126,7 @@ const NootToken = () => {
                   className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  View on Solana Explorer
+                  {t('view_explorer')}
                 </a>
               )}
 
@@ -139,7 +139,7 @@ const NootToken = () => {
                   className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105"
                 >
                   <FileText className="w-4 h-4" />
-                  Download Whitepaper
+                  {t('download_whitepaper')}
                 </a>
               )}
             </div>
@@ -170,7 +170,7 @@ const NootToken = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white">About NOOT Token</h2>
+            <h2 className="text-2xl font-bold text-white">{t('about_noot_token')}</h2>
           </div>
 
           <div className="prose prose-invert max-w-none">
@@ -193,7 +193,7 @@ const NootToken = () => {
                 <Shield className="w-6 h-6 text-red-400 mt-1 flex-shrink-0" />
                 <div>
                   <h3 className="text-red-300 font-semibold mb-2">
-                    Important Warning
+                    {t('important_warning')}
                   </h3>
                   <p className="text-red-200 text-sm leading-relaxed">
                     The NOOT token does not constitute a financial instrument.
@@ -214,7 +214,7 @@ const NootToken = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">
               Token{" "}
-              <span className="text-purple-400">Planned Functionalities</span>
+              <span className="text-purple-400">{t('planned_functionalities')}</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
               Discover all the planned ways you can use NOOT tokens within the
@@ -250,11 +250,11 @@ const NootToken = () => {
             <div className="inline-flex items-center gap-3 bg-purple-600/20 border border-purple-500/30 rounded-xl px-4 py-2 mb-4">
               <Gamepad2 className="w-5 h-5 text-purple-400" />
               <span className="text-purple-300 text-sm font-semibold">
-                NootBattle Ecosystem
+                {t('noot_battle_eco')}
               </span>
             </div>
             <h2 className="text-3xl font-bold text-white mb-4">
-              NOOTTOOLS Ecosystem Integration
+              {t('noot_eco_integration')}
             </h2>
             <p className="text-gray-300 text-lg max-w-3xl mx-auto">
               NOOT tokens are designed to be integrated seamlessly into the
@@ -270,7 +270,7 @@ const NootToken = () => {
                 <Gamepad2 className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">
-                Internal Currency
+                {t('internal_currency')}
               </h3>
               <p className="text-gray-400 text-sm">
                 Used for improvements, skills and characters within NOOTBATTLE
@@ -282,7 +282,7 @@ const NootToken = () => {
                 <Trophy className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">
-                Competitive Features
+                {t('competitive_features')}
               </h3>
               <p className="text-gray-400 text-sm">
                 Access tournaments and improve rankings in competitive mode
@@ -294,7 +294,7 @@ const NootToken = () => {
                 <Zap className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">
-                Premium Access
+                {t('premium_access_nav')}
               </h3>
               <p className="text-gray-400 text-sm">
                 Unlock advanced features in NOOTTOOLS and special benefits
@@ -310,7 +310,7 @@ const NootToken = () => {
               <Users className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white">
-              Developed by NOOTTOOLS, SL
+              {t('developed_by')}
             </h2>
           </div>
 

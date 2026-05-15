@@ -11,7 +11,7 @@ import "./TradingPage.css";
 const PROGRAM_ID = "CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT";
 
 function TradingPage({ tokenMint }) {
-    const connection = new Connection("https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm");
+    const connection = new Connection(import.meta.env.VITE_RPC_URL);
 
     const [bondingCurve, setBondingCurve] = useState(null);
     const [stats, setStats] = useState(null);
@@ -28,7 +28,7 @@ function TradingPage({ tokenMint }) {
             (updatedCurve) => {
                 setBondingCurve(updatedCurve);
                 updateStats(updatedCurve);
-            }
+            },
         );
 
         return () => unsubscribe();
@@ -42,7 +42,7 @@ function TradingPage({ tokenMint }) {
             const curve = await fetchBondingCurve(
                 connection,
                 new PublicKey(PROGRAM_ID),
-                new PublicKey(tokenMint)
+                new PublicKey(tokenMint),
             );
             setBondingCurve(curve);
 
@@ -50,7 +50,7 @@ function TradingPage({ tokenMint }) {
             const tradingStats = await getTradingStats(
                 connection,
                 new PublicKey(PROGRAM_ID),
-                new PublicKey(tokenMint)
+                new PublicKey(tokenMint),
             );
             setStats(tradingStats);
 
@@ -65,7 +65,7 @@ function TradingPage({ tokenMint }) {
         const tradingStats = await getTradingStats(
             connection,
             new PublicKey(PROGRAM_ID),
-            new PublicKey(tokenMint)
+            new PublicKey(tokenMint),
         );
         setStats(tradingStats);
     };

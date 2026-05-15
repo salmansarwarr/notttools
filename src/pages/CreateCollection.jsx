@@ -1,69 +1,65 @@
-import { useState } from 'react';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { 
+import { useState } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import {
     createNft,
-    mplTokenMetadata 
-} from '@metaplex-foundation/mpl-token-metadata';
-import { 
-    generateSigner, 
-    percentAmount,
-} from '@metaplex-foundation/umi';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import '@solana/wallet-adapter-react-ui/styles.css';
+    mplTokenMetadata,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import "@solana/wallet-adapter-react-ui/styles.css";
+import constants from "../constants";
 
 // Configuration
-const CLUSTER = "mainnet-beta";
+const CLUSTER = constants.network.type;
 
 function CreateCollection() {
     const { connection } = useConnection();
     const wallet = useWallet();
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState('');
-    const [txSignature, setTxSignature] = useState('');
-    const [collectionAddress, setCollectionAddress] = useState('');
-    
+    const [status, setStatus] = useState("");
+    const [txSignature, setTxSignature] = useState("");
+    const [collectionAddress, setCollectionAddress] = useState("");
+
     // Form state
     const [formData, setFormData] = useState({
-        name: 'NOOT Genesis Collection',
-        symbol: 'NOOT',
-        uri: 'https://metadata.noottools.io/metadata/2.json',
+        name: "NOOT Genesis Collection",
+        symbol: "NOOT",
+        uri: "https://metadata.noottools.io/metadata/2.json",
         royaltyBasisPoints: 0,
     });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [name]: value
+            [name]: value,
         }));
     };
 
     const handleCreateCollection = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus('❌ Please connect your wallet first');
+            setStatus("❌ Please connect your wallet first");
             return;
         }
 
         setLoading(true);
-        setStatus('🔄 Creating collection NFT...');
-        setTxSignature('');
-        setCollectionAddress('');
+        setStatus("🔄 Creating collection NFT...");
+        setTxSignature("");
+        setCollectionAddress("");
 
         try {
             // Initialize UMI
-            const endpoint = CLUSTER === "mainnet-beta" 
-                ? "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm"
-                : "https://api.devnet.solana.com";
-                
+            const endpoint = constants.network.endpoint;
+
             const umi = createUmi(endpoint)
                 .use(mplTokenMetadata())
                 .use(walletAdapterIdentity(wallet));
 
             // Generate mint address for the collection
             const collectionMint = generateSigner(umi);
-            
+
             console.log("🎨 Creating Collection NFT...");
             console.log("Collection Address:", collectionMint.publicKey);
 
@@ -73,7 +69,9 @@ function CreateCollection() {
                 name: formData.name,
                 symbol: formData.symbol,
                 uri: formData.uri,
-                sellerFeeBasisPoints: percentAmount(parseFloat(formData.royaltyBasisPoints)),
+                sellerFeeBasisPoints: percentAmount(
+                    parseFloat(formData.royaltyBasisPoints),
+                ),
                 isCollection: true, // This makes it a collection!
                 creators: [
                     {
@@ -84,18 +82,18 @@ function CreateCollection() {
                 ],
             }).sendAndConfirm(umi);
 
-            const signature = Buffer.from(result.signature).toString('base64');
+            const signature = Buffer.from(result.signature).toString("base64");
             const collectionAddr = collectionMint.publicKey.toString();
-            
+
             setTxSignature(signature);
             setCollectionAddress(collectionAddr);
-            setStatus('✅ Collection NFT created successfully!');
-            
-            console.log('✅ Collection Created!');
-            console.log('   Address:', collectionAddr);
-            console.log('   Transaction:', signature);
+            setStatus("✅ Collection NFT created successfully!");
+
+            console.log("✅ Collection Created!");
+            console.log("   Address:", collectionAddr);
+            console.log("   Transaction:", signature);
         } catch (error) {
-            console.error('Error:', error);
+            console.error("Error:", error);
             setStatus(`❌ Error: ${error.message}`);
         } finally {
             setLoading(false);
@@ -126,10 +124,14 @@ function CreateCollection() {
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-gray-400">Network:</span>
-                                <span className="text-white font-mono">{CLUSTER}</span>
+                                <span className="text-white font-mono">
+                                    {CLUSTER}
+                                </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Your Wallet:</span>
+                                <span className="text-gray-400">
+                                    Your Wallet:
+                                </span>
                                 <span className="text-white font-mono text-xs">
                                     {wallet.publicKey.toString().slice(0, 8)}...
                                     {wallet.publicKey.toString().slice(-8)}
@@ -145,7 +147,7 @@ function CreateCollection() {
                         <h3 className="text-xl font-semibold text-white mb-4">
                             Collection Details
                         </h3>
-                        
+
                         <div className="space-y-4">
                             {/* Name */}
                             <div>
@@ -191,7 +193,8 @@ function CreateCollection() {
                                     placeholder="https://..."
                                 />
                                 <p className="text-gray-400 text-xs mt-1">
-                                    Upload your metadata JSON file to a service like Arweave or IPFS
+                                    Upload your metadata JSON file to a service
+                                    like Arweave or IPFS
                                 </p>
                             </div>
 
@@ -211,7 +214,8 @@ function CreateCollection() {
                                     placeholder="500"
                                 />
                                 <p className="text-gray-400 text-xs mt-1">
-                                    100 basis points = 1% (e.g., 500 = 5% royalty)
+                                    100 basis points = 1% (e.g., 500 = 5%
+                                    royalty)
                                 </p>
                             </div>
                         </div>
@@ -224,14 +228,29 @@ function CreateCollection() {
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center">
-                                    <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    <svg
+                                        className="animate-spin h-5 w-5 mr-3"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                            fill="none"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
                                     </svg>
                                     Creating Collection...
                                 </span>
                             ) : (
-                                '🎨 Create Collection NFT'
+                                "🎨 Create Collection NFT"
                             )}
                         </button>
                     </div>
@@ -239,22 +258,28 @@ function CreateCollection() {
 
                 {/* Status Display */}
                 {status && (
-                    <div className={`rounded-lg p-4 mb-4 border ${
-                        status.includes('✅') 
-                            ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-                            : status.includes('❌')
-                            ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                            : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                    }`}>
+                    <div
+                        className={`rounded-lg p-4 mb-4 border ${
+                            status.includes("✅")
+                                ? "bg-green-500/10 border-green-500/30 text-green-400"
+                                : status.includes("❌")
+                                  ? "bg-red-500/10 border-red-500/30 text-red-400"
+                                  : "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                        }`}
+                    >
                         <p className="font-medium">{status}</p>
                         {collectionAddress && (
                             <div className="mt-3 space-y-2">
                                 <div className="bg-black/20 rounded p-2">
-                                    <p className="text-xs text-gray-400 mb-1">Collection Address:</p>
-                                    <p className="font-mono text-sm break-all">{collectionAddress}</p>
+                                    <p className="text-xs text-gray-400 mb-1">
+                                        Collection Address:
+                                    </p>
+                                    <p className="font-mono text-sm break-all">
+                                        {collectionAddress}
+                                    </p>
                                 </div>
                                 <a
-                                    href={`https://solscan.io/token/${collectionAddress}${CLUSTER !== 'mainnet-beta' ? '?cluster=devnet' : ''}`}
+                                    href={`https://solscan.io/token/${collectionAddress}${CLUSTER !== "mainnet-beta" ? "?cluster=devnet" : ""}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-sm underline block hover:text-white transition-colors"
@@ -265,12 +290,12 @@ function CreateCollection() {
                         )}
                         {txSignature && !collectionAddress && (
                             <a
-                                href={`https://solscan.io/tx/${txSignature}${CLUSTER !== 'mainnet-beta' ? '?cluster=devnet' : ''}`}
+                                href={constants.getExplorerUrl(txSignature)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm underline mt-2 block hover:text-white transition-colors"
                             >
-                                View Transaction on Solscan →
+                                View Transaction on Explorer →
                             </a>
                         )}
                     </div>
@@ -284,7 +309,9 @@ function CreateCollection() {
                         <li>Fill in your collection details</li>
                         <li>Upload metadata JSON to Arweave/IPFS first</li>
                         <li>Click "Create Collection NFT"</li>
-                        <li>Use the collection address in your minting program</li>
+                        <li>
+                            Use the collection address in your minting program
+                        </li>
                     </ol>
                 </div>
             </div>

@@ -1,61 +1,161 @@
+/* ─── Google Fonts ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design Tokens ─── */
 :root {
-  --black: #222222;
+  /* Brand backgrounds */
+  --bg-deep:    #020408;
+  --bg-base:    #05080f;
+  --bg-surface: #0a0f1d;
+  --bg-card:    #0d1425;
+  --bg-elevated:#151c32;
+
+  /* Neon accent palette (Solantify style) */
+  --neon-purple: #d946ef;
+  --neon-pink:   #ec4899;
+  --neon-blue:   #3b82f6;
+  --neon-cyan:   #06b6d4;
+  --neon-green:  #22c55e;
+  --neon-gold:   #f59e0b;
+
+  /* Borders */
+  --border-neon: rgba(217, 70, 239, 0.4);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+
+  /* Text */
+  --text-primary:   #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+
+  /* Legacy */
+  --black: #000000;
   --white: #ffffff;
-  --darkgray: #373737;
-  --gray: #494949;
-  --silver: #bab9ba;
-  --lightgray: #f0eeef;
-  --green: #277e61;
-  --red: #a13a41;
+  --green: #22c55e;
+  --red: #ef4444;
+
+  /* Light/dark compat */
+  --foreground: 255 255 255;
+  --background: 2 4 8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #fff;
-    --background: #000;
-    --light: 212, 89%, 57%;
-  }
-}
-
+/* ─── Base body ─── */
 body {
-  color: rgb(var(--foreground));
-  background-color: rgb(var(--background));
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  background-color: var(--bg-deep);
+  background-image: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 100, 0.06));
+  background-size: 100% 4px, 3px 100%;
+  font-family: 'Inter', 'Space Grotesk', system-ui, Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.swiper-pagination-bullet-active {
-  opacity: var(--swiper-pagination-bullet-opacity, 1);
-  background: #9353d3;
+/* ─── Solantify Background Effect ─── */
+.bg-scanlines {
+  position: relative;
+}
+.bg-scanlines::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
 }
 
-/* Featured Slider Styles - Sadece pagination */
-.featured-slider .swiper-pagination-bullet {
-  background: #374151;
-  opacity: 1;
+/* ─── Custom Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-purple), var(--neon-cyan));
+  border-radius: 3px;
 }
 
-.featured-slider .swiper-pagination-bullet-active {
-  background: #3b82f6;
+/* ─── Glassmorphism ─── */
+.glass {
+  background: rgba(5, 8, 15, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.featured-slider .swiper-pagination {
-  margin-top: 20px;
+.card-neon {
+  background: #0a0f1d;
+  border: 1px solid rgba(217, 70, 239, 0.3);
+  box-shadow: 0 0 15px rgba(217, 70, 239, 0.1);
+  transition: all 0.3s ease;
+}
+.card-neon:hover {
+  border-color: rgba(217, 70, 239, 0.6);
+  box-shadow: 0 0 30px rgba(217, 70, 239, 0.2);
+  transform: translateY(-5px);
 }
 
-/* TradingView Custom Styles */
-.tv-header {
-  background: #192630 !important;
-  border-bottom: 1px solid #374151 !important;
+/* ─── Gradient Button ─── */
+.btn-solantify {
+  background: linear-gradient(90deg, #d946ef 0%, #06b6d4 100%);
+  color: white;
+  font-weight: 700;
+  border-radius: 9999px;
+  padding: 0.75rem 2rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(217, 70, 239, 0.4);
+}
+.btn-solantify:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 40px rgba(217, 70, 239, 0.6);
+  transform: scale(1.02);
 }
 
-.tv-chart-container {
-  background: #192630 !important;
+/* ─── Headline Gradients ─── */
+.text-sol-gradient {
+  background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 50%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.tv-toolbar {
-  background: #192630 !important;
+/* ─── Badges ─── */
+.badge-sol {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ─── Grid Overlay ─── */
+.grid-bg {
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.glow-spot {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 1;
+  pointer-events: none;
+  animation: pulse-glow 4s ease-in-out infinite;
 }

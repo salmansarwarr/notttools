@@ -1,4 +1,3 @@
-// createToken.js
 import axios from "axios";
 import constants from "../constants";
 import {
@@ -17,30 +16,23 @@ import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
   createMintToInstruction,
+  createSetAuthorityInstruction,
+  AuthorityType,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { Buffer } from "buffer";
 
-// Hard-coded Token Metadata Program ID for future use
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );
-
-// -----------------------------------------------------------------------------
-// Config
-// -----------------------------------------------------------------------------
 
 const getConnection = () =>
   new Connection(constants.network.endpoint, {
     commitment: constants.solana.commitment,
   });
 
-// PDA: ['metadata', metadata_program_id, mint] - Manual creation for reliability
 const getMetadataAddress = (mint) => {
-  if (!mint) {
-    throw new Error("Invalid mint");
-  }
-
+  if (!mint) throw new Error("Invalid mint");
   const [pda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("metadata"),
@@ -52,86 +44,75 @@ const getMetadataAddress = (mint) => {
   return pda;
 };
 
-// 9 ondalık için güvenli amount (bigint)
 const toMintAmount = (n) => {
   const x = typeof n === "string" ? Number(n) : n ?? 0;
   if (!Number.isFinite(x) || x <= 0) return 0n;
   return BigInt(Math.floor(x * 1e9));
 };
 
-// -----------------------------------------------------------------------------
-// Public API
-// -----------------------------------------------------------------------------
 async function uploadToPinata(formData) {
   const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY;
   const PINATA_SECRET_KEY = import.meta.env.VITE_PINATA_SECRET_KEY;
 
   const metadata = {
-      name: formData.coinName,
-      symbol: formData.ticker,
-      description: formData.description,
-      image: formData.imageUrl,
-      external_url: formData.website || "",
-      social: {
-          twitter: formData.twitter || "",
-          telegram: formData.telegram || "",
-      }
+    name: formData.coinName,
+    symbol: formData.ticker,
+    description: formData.description,
+    image: formData.imageUrl,
+    external_url: formData.website || "",
+    social: {
+      twitter: formData.twitter || "",
+      telegram: formData.telegram || "",
+    },
   };
 
-  const metadataResponse = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
-      method: 'POST',
+  const metadataResponse = await fetch(
+    "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+    {
+      method: "POST",
       headers: {
-          'Content-Type': 'application/json',
-          'pinata_api_key': PINATA_API_KEY,
-          'pinata_secret_api_key': PINATA_SECRET_KEY,
+        "Content-Type": "application/json",
+        pinata_api_key: PINATA_API_KEY,
+        pinata_secret_api_key: PINATA_SECRET_KEY,
       },
       body: JSON.stringify(metadata),
-  });
+    }
+  );
 
   const metadataData = await metadataResponse.json();
-  const metadataUri = `https://gateway.pinata.cloud/ipfs/${metadataData.IpfsHash}`;
-
-  return metadataUri
+  return `https://gateway.pinata.cloud/ipfs/${metadataData.IpfsHash}`;
 }
 
+// -----------------------------------------------------------------------------
+// mint is now passed in — found externally via useVanityMint hook
+// -----------------------------------------------------------------------------
 export const createTokenWithMetadata = async (
   formData,
   wallet,
+  mint,           // ← Keypair from useVanityMint
   commissionData = null
 ) => {
   try {
     if (!wallet || !wallet.publicKey || !wallet.signTransaction) {
       throw new Error("Wallet not connected");
     }
+    if (!mint) {
+      throw new Error("Mint keypair not provided");
+    }
 
     const connection = getConnection();
     const walletPublicKey = wallet.publicKey;
 
     console.log("Creating token with wallet:", walletPublicKey.toBase58());
+    console.log("Using mint:", mint.publicKey.toBase58());
 
-    // --- Create Mint Account ---
-    const mint = Keypair.generate();
     const rentExemption = await getMinimumBalanceForRentExemptMint(connection);
-
-    console.log("Generated mint address:", mint.publicKey.toBase58());
-
-    // Create Legacy Transaction (Phantom's recommended approach)
     const transaction = new Transaction();
 
-    // --- Commission Payment FIRST (if required) - Anti-spam strategy ---
-    if (
-      commissionData &&
-      commissionData.amount &&
-      commissionData.walletAddress
-    ) {
-      console.log(
-        "Adding commission payment FIRST (Legacy Transaction):",
-        commissionData
-      );
-
+    // --- Commission Payment FIRST ---
+    if (commissionData?.amount && commissionData?.walletAddress) {
       const commissionLamports = Math.floor(commissionData.amount * 1e9);
       const commissionWallet = new PublicKey(commissionData.walletAddress);
-
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: walletPublicKey,
@@ -139,13 +120,9 @@ export const createTokenWithMetadata = async (
           lamports: commissionLamports,
         })
       );
-
-      console.log(
-        `Commission instruction added FIRST: ${commissionData.amount} SOL to ${commissionData.walletAddress}`
-      );
     }
 
-    // Add token creation instructions
+    // --- Mint account + initialize ---
     transaction.add(
       SystemProgram.createAccount({
         fromPubkey: walletPublicKey,
@@ -156,7 +133,7 @@ export const createTokenWithMetadata = async (
       }),
       createInitializeMintInstruction(
         mint.publicKey,
-        9,
+        formData?.decimals || 9,
         walletPublicKey,
         walletPublicKey,
         TOKEN_PROGRAM_ID
@@ -164,13 +141,10 @@ export const createTokenWithMetadata = async (
     );
 
     // --- Optional initial supply ---
-    const initialAmount = toMintAmount(formData?.initialSupply);
-    let ata;
-
-    console.log("Initial amount:", initialAmount.toString());
+    const initialAmount = toMintAmount(formData?.totalSupply || 0);
 
     if (initialAmount > 0n) {
-      ata = await getAssociatedTokenAddress(
+      const ata = await getAssociatedTokenAddress(
         mint.publicKey,
         walletPublicKey,
         false,
@@ -178,111 +152,22 @@ export const createTokenWithMetadata = async (
         ASSOCIATED_TOKEN_PROGRAM_ID
       );
 
-      console.log("ATA address:", ata.toBase58());
-
       transaction.add(
         createAssociatedTokenAccountInstruction(
-          walletPublicKey, // payer
-          ata, // ATA
-          walletPublicKey, // owner
-          mint.publicKey, // mint
+          walletPublicKey,
+          ata,
+          walletPublicKey,
+          mint.publicKey,
           TOKEN_PROGRAM_ID,
           ASSOCIATED_TOKEN_PROGRAM_ID
         ),
-        createMintToInstruction(
-          mint.publicKey,
-          ata,
-          walletPublicKey,
-          initialAmount
-        )
+        createMintToInstruction(mint.publicKey, ata, walletPublicKey, initialAmount)
       );
     }
 
-    // --- Enhanced Metadata for staked NFT holders ---
-    console.log("Mint object:", mint);
-    console.log("Mint public key:", mint.publicKey?.toBase58());
-    console.log(
-      "TOKEN_METADATA_PROGRAM_ID:",
-      TOKEN_METADATA_PROGRAM_ID.toBase58()
-    );
 
-    if (!mint?.publicKey) {
-      throw new Error("Mint public key is undefined");
-    }
-
-    if (!TOKEN_METADATA_PROGRAM_ID) {
-      throw new Error("TOKEN_METADATA_PROGRAM_ID is undefined");
-    }
-
-    // Temporarily comment out metadata PDA creation
+    // --- Metadata ---
     const metadataPda = getMetadataAddress(mint.publicKey);
-    console.log("Metadata PDA:", metadataPda.toBase58());
-
-    // console.log("Skipping metadata PDA creation for testing");
-
-    // Form'dan metadata JSON oluştur - Staked NFT holders için özel
-    const metadataJson = {
-      name: formData?.coinName || "",
-      symbol: formData?.ticker?.toUpperCase() || "",
-      description: formData?.description || "",
-      image: formData?.imageUrl,
-      external_url: formData?.website || "",
-      properties: {
-        category: "Token",
-        files: [
-          {
-            uri: `https://via.placeholder.com/400x400.png?text=${encodeURIComponent(
-              formData?.coinName || "TOKEN"
-            )}`,
-            type: "image/png",
-          },
-        ],
-        creators: [
-          {
-            address: walletPublicKey.toBase58(), // Bu JSON için string olmalı
-            verified: true,
-            share: 100,
-          },
-        ],
-      },
-      attributes: [
-        {
-          trait_type: "Network",
-          value: "Solana " + constants.SOLANA_NETWORK,
-        },
-        {
-          trait_type: "Creator Type",
-          value: "Staked NFT Holder",
-        },
-        {
-          trait_type: "Creation Platform",
-          value: "Noottools",
-        },
-        {
-          trait_type: "Token Standard",
-          value: "SPL-Token",
-        },
-        {
-          trait_type: "Decimals",
-          value: "9",
-        },
-        ...(formData?.website
-          ? [{ trait_type: "Website", value: formData.website }]
-          : []),
-        ...(formData?.twitter
-          ? [{ trait_type: "Twitter", value: formData.twitter }]
-          : []),
-        ...(formData?.telegram
-          ? [{ trait_type: "Telegram", value: formData.telegram }]
-          : []),
-      ],
-      collection: {
-        name: "Noottools Created Tokens",
-        family: "Noottools",
-      },
-    };
-
-    // Enhanced metadata URI with base64 encoding
     const metadataUri = await uploadToPinata({
       coinName: formData?.coinName,
       ticker: formData?.ticker?.toUpperCase(),
@@ -290,169 +175,107 @@ export const createTokenWithMetadata = async (
       imageUrl: formData?.imageUrl,
       website: formData?.website,
       twitter: formData?.twitter,
-      telegram: formData?.telegram
+      telegram: formData?.telegram,
     });
 
     const name = (formData?.coinName || "").substring(0, 32);
     const symbol = (formData?.ticker?.toUpperCase() || "").substring(0, 10);
 
-    console.log("Enhanced metadata data:", {
-      name,
-      symbol,
-      uri: metadataUri.slice(0, 50) + "...",
-      metadata: metadataJson,
-    });
-
-    // For now, skip metadata creation to test basic token functionality
-    console.log("Creating metadata with v2 instruction");
-
-    // Doğru Borsh serialization ile metadata instruction oluştur
-    console.log("Creating metadata with correct Borsh serialization");
-
     try {
-      // CreateMetadataAccountV3 için doğru data format
       const nameBytes = Buffer.from(name, "utf8");
       const symbolBytes = Buffer.from(symbol, "utf8");
       const uriBytes = Buffer.from(metadataUri, "utf8");
 
-      // Borsh serialization for CreateMetadataAccountV3
-      const data = Buffer.alloc(1000); // Yeterince büyük buffer
+      const data = Buffer.alloc(1000);
       let offset = 0;
 
-      // Instruction discriminator (33 = CreateMetadataAccountV3)
-      data.writeUInt8(33, offset);
-      offset += 1;
+      data.writeUInt8(33, offset); offset += 1;
 
-      // DataV2 struct
-      // Name (String)
-      data.writeUInt32LE(nameBytes.length, offset);
-      offset += 4;
-      nameBytes.copy(data, offset);
-      offset += nameBytes.length;
+      data.writeUInt32LE(nameBytes.length, offset); offset += 4;
+      nameBytes.copy(data, offset); offset += nameBytes.length;
 
-      // Symbol (String)
-      data.writeUInt32LE(symbolBytes.length, offset);
-      offset += 4;
-      symbolBytes.copy(data, offset);
-      offset += symbolBytes.length;
+      data.writeUInt32LE(symbolBytes.length, offset); offset += 4;
+      symbolBytes.copy(data, offset); offset += symbolBytes.length;
 
-      // URI (String)
-      data.writeUInt32LE(uriBytes.length, offset);
-      offset += 4;
-      uriBytes.copy(data, offset);
-      offset += uriBytes.length;
+      data.writeUInt32LE(uriBytes.length, offset); offset += 4;
+      uriBytes.copy(data, offset); offset += uriBytes.length;
 
-      // Seller fee basis points (u16)
-      data.writeUInt16LE(0, offset);
-      offset += 2;
+      data.writeUInt16LE(0, offset); offset += 2;
 
-      // Creators (Option<Vec<Creator>>)
-      data.writeUInt8(1, offset); // Some
-      offset += 1;
-      data.writeUInt32LE(1, offset); // Vec length = 1
-      offset += 4;
+      data.writeUInt8(1, offset); offset += 1;
+      data.writeUInt32LE(1, offset); offset += 4;
+      walletPublicKey.toBuffer().copy(data, offset); offset += 32;
+      data.writeUInt8(1, offset); offset += 1;
+      data.writeUInt8(100, offset); offset += 1;
 
-      // Creator struct
-      walletPublicKey.toBuffer().copy(data, offset); // address (32 bytes)
-      offset += 32;
-      data.writeUInt8(1, offset); // verified = true
-      offset += 1;
-      data.writeUInt8(100, offset); // share = 100
-      offset += 1;
-
-      // Collection (Option<Collection>) - None
-      data.writeUInt8(0, offset);
-      offset += 1;
-
-      // Uses (Option<Uses>) - None
-      data.writeUInt8(0, offset);
-      offset += 1;
-
-      // IsMutable (bool)
-      data.writeUInt8(1, offset);
-      offset += 1;
-
-      // CollectionDetails (Option<CollectionDetails>) - None
-      data.writeUInt8(0, offset);
-      offset += 1;
+      data.writeUInt8(0, offset); offset += 1;
+      data.writeUInt8(0, offset); offset += 1;
+      data.writeUInt8(formData?.revokeUpdate ? 0 : 1, offset); offset += 1;
+      data.writeUInt8(0, offset); offset += 1;
 
       const finalData = data.slice(0, offset);
 
-      const metaIx = new TransactionInstruction({
-        keys: [
-          { pubkey: metadataPda, isSigner: false, isWritable: true },
-          { pubkey: mint.publicKey, isSigner: false, isWritable: false },
-          { pubkey: walletPublicKey, isSigner: true, isWritable: false },
-          { pubkey: walletPublicKey, isSigner: true, isWritable: true },
-          { pubkey: walletPublicKey, isSigner: false, isWritable: false },
-          {
-            pubkey: SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
-          },
-        ],
-        programId: TOKEN_METADATA_PROGRAM_ID,
-        data: finalData,
-      });
-
-      console.log(
-        "Correct Borsh metadata instruction created, data length:",
-        finalData.length
+      transaction.add(
+        new TransactionInstruction({
+          keys: [
+            { pubkey: metadataPda, isSigner: false, isWritable: true },
+            { pubkey: mint.publicKey, isSigner: false, isWritable: false },
+            { pubkey: walletPublicKey, isSigner: true, isWritable: false },
+            { pubkey: walletPublicKey, isSigner: true, isWritable: true },
+            { pubkey: walletPublicKey, isSigner: false, isWritable: false },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          ],
+          programId: TOKEN_METADATA_PROGRAM_ID,
+          data: finalData,
+        })
       );
-      transaction.add(metaIx);
     } catch (metaError) {
       console.error("Metadata instruction creation failed:", metaError);
-      console.log("Continuing without metadata...");
     }
 
-    // --- Set transaction properties ---
+    // --- Revoke authorities (Moved to end) ---
+    if (formData?.revokeMint) {
+      transaction.add(
+        createSetAuthorityInstruction(
+          mint.publicKey,
+          walletPublicKey,
+          AuthorityType.MintTokens,
+          null
+        )
+      );
+    }
+
+    if (formData?.revokeFreeze) {
+      transaction.add(
+        createSetAuthorityInstruction(
+          mint.publicKey,
+          walletPublicKey,
+          AuthorityType.FreezeAccount,
+          null
+        )
+      );
+    }
+
+    // --- Sign & send ---
     const { blockhash } = await connection.getLatestBlockhash();
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = walletPublicKey;
 
-    console.log(
-      "Using Phantom's EXACT recommended signing pattern from support response..."
-    );
-
-    // Phantom's EXACT recommended approach from their support response:
-    // "Phantom wallet signs first"
     let signedTx = await wallet.signTransaction(transaction);
-
-    // "Additional signers sign afterward"
     signedTx.partialSign(mint);
 
-    console.log("Transaction signed following Phantom's exact pattern");
+    const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: "processed",
+    });
 
-    // 3. Send the signed transaction manually
-    const signature = await connection.sendRawTransaction(
-      signedTx.serialize(),
-      {
-        skipPreflight: false,
-        preflightCommitment: "processed",
-      }
-    );
-
-    console.log(
-      "Transaction sent with manual sendRawTransaction, signature:",
-      signature
-    );
-
-    // Transaction confirmation bekle
-    const confirmation = await connection.confirmTransaction(
-      signature,
-      "confirmed"
-    );
-
-    console.log("Transaction confirmed:", confirmation);
+    const confirmation = await connection.confirmTransaction(signature, "confirmed");
 
     if (confirmation.value.err) {
-      throw new Error(
-        `Transaction failed: ${JSON.stringify(confirmation.value.err)}`
-      );
+      throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
     }
 
-    // Başarılı response döndür
-    const result = {
+    return {
       success: true,
       signature,
       mintAddress: mint.publicKey.toBase58(),
@@ -467,13 +290,10 @@ export const createTokenWithMetadata = async (
         mintAddress: mint.publicKey.toBase58(),
         metadataAddress: metadataPda.toBase58(),
         metadataUri,
-        initialSupply: initialAmount.toString(),
-        decimals: 9,
+        totalSupply: initialAmount.toString(),
+        decimals: formData?.decimals || 9,
       },
     };
-
-    console.log("Token created successfully:", result);
-    return result;
   } catch (error) {
     console.error("TokenCreator error:", error);
     throw error;

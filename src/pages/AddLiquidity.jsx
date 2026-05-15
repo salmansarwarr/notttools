@@ -15,8 +15,10 @@ import {
   DollarSign,
   BarChart3,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const AddLiquidity = () => {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(1);
   const [copiedText, setCopiedText] = useState(null);
 
@@ -109,18 +111,17 @@ const AddLiquidity = () => {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl px-6 py-3 mb-6">
             <Droplets className="w-5 h-5 text-blue-400 animate-pulse" />
-            <span className="text-blue-300 font-semibold">Liquidity Guide</span>
+            <span className="text-blue-300 font-semibold">{t('liquidity_guide')}</span>
           </div>
 
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              How to Add Liquidity on Raydium?
+              {t('how_to_add_liquidity')}
             </span>
           </h1>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Provide liquidity on Raydium, Solana's most popular AMM platform, to
-            earn trading fees and additional rewards through yield farming.
+            {t('liquidity_desc')}
           </p>
 
           {/* Page Address Display */}
@@ -129,7 +130,7 @@ const AddLiquidity = () => {
               <div className="flex items-center gap-3 mb-4">
                 <ExternalLink className="w-5 h-5 text-blue-400" />
                 <span className="text-blue-300 font-semibold">
-                  Page Address
+                  {t('page_address')}
                 </span>
               </div>
               <div className="flex items-center gap-3 bg-gray-800/50 rounded-xl p-4">
@@ -151,7 +152,7 @@ const AddLiquidity = () => {
                 </button>
               </div>
               <p className="text-gray-400 text-sm mt-3">
-                Direct link to this comprehensive liquidity guide
+                {t('direct_link_guide')}
               </p>
             </div>
           </div>
@@ -164,7 +165,7 @@ const AddLiquidity = () => {
               className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
             >
               <ExternalLink className="w-5 h-5" />
-              Visit Raydium
+              {t('visit_raydium')}
             </a>
           </div>
         </div>
@@ -172,7 +173,7 @@ const AddLiquidity = () => {
         {/* Step by Step Guide */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">
-            Step by Step Guide
+            {t('step_by_step_guide')}
           </h2>
 
           {/* Step Navigation */}
@@ -365,7 +366,7 @@ const AddLiquidity = () => {
                             onClick={() => setActiveStep(step.id - 1)}
                             className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
                           >
-                            Previous
+                            {t('previous')}
                           </button>
                         )}
                         {step.id < steps.length && (
@@ -373,7 +374,7 @@ const AddLiquidity = () => {
                             onClick={() => setActiveStep(step.id + 1)}
                             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
                           >
-                            Next
+                            {t('next')}
                             <ArrowRight className="w-4 h-4" />
                           </button>
                         )}
@@ -404,7 +405,7 @@ const AddLiquidity = () => {
         {/* Risks Section */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">
-            Risks to Consider
+            {t('risks_to_consider')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {risks.map((risk, index) => (
@@ -433,7 +434,7 @@ const AddLiquidity = () => {
         {/* Quick Links */}
         <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">
-            Useful Links
+            {t('useful_links')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <a
@@ -443,7 +444,7 @@ const AddLiquidity = () => {
               className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-4 rounded-lg transition-all duration-300 text-white hover:text-blue-400"
             >
               <ExternalLink className="w-5 h-5" />
-              <span>Raydium Homepage</span>
+              <span>{t('raydium_homepage')}</span>
             </a>
             <a
               href="https://docs.raydium.io"
@@ -452,7 +453,7 @@ const AddLiquidity = () => {
               className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-4 rounded-lg transition-all duration-300 text-white hover:text-blue-400"
             >
               <ExternalLink className="w-5 h-5" />
-              <span>Raydium Docs</span>
+              <span>{t('raydium_docs')}</span>
             </a>
             <a
               href="https://raydium.io/farms"
@@ -461,7 +462,7 @@ const AddLiquidity = () => {
               className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-4 rounded-lg transition-all duration-300 text-white hover:text-blue-400"
             >
               <ExternalLink className="w-5 h-5" />
-              <span>Yield Farms</span>
+              <span>{t('yield_farms')}</span>
             </a>
             <a
               href="https://raydium.io/pools"
@@ -470,7 +471,7 @@ const AddLiquidity = () => {
               className="flex items-center gap-3 bg-gray-800/50 hover:bg-gray-700/50 p-4 rounded-lg transition-all duration-300 text-white hover:text-blue-400"
             >
               <ExternalLink className="w-5 h-5" />
-              <span>Liquidity Pools</span>
+              <span>{t('liquidity_pools')}</span>
             </a>
           </div>
         </div>

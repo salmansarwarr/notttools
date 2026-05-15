@@ -12,16 +12,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import { clusterApiUrl } from "@solana/web3.js";
 import {
-  ConnectionProvider,
-  WalletProvider,
+    ConnectionProvider,
+    WalletProvider,
 } from "@solana/wallet-adapter-react";
 import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TorusWalletAdapter,
-  LedgerWalletAdapter,
+    PhantomWalletAdapter,
+    SolflareWalletAdapter,
+    TorusWalletAdapter,
+    LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { ReownProvider } from "./providers/Reown"; 
+import { ReownProvider } from "./providers/Reown";
+import constants from "./constants";
 
 // CSS imports
 import "swiper/css";
@@ -29,70 +30,69 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-const network = WalletAdapterNetwork.Mainnet;
 const queryClient = new QueryClient();
 
 function App() {
-  const [theme, setTheme] = useState("light");
+    const [theme, setTheme] = useState("light");
 
-  const endpoint = useMemo(() => network == WalletAdapterNetwork.Mainnet ? 'https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm' : clusterApiUrl(network), []);
+    const endpoint = useMemo(() => constants.network.endpoint, []);
 
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new TorusWalletAdapter(),
-      new LedgerWalletAdapter(),
-    ],
-    []
-  );
+    const wallets = useMemo(
+        () => [
+            new PhantomWalletAdapter(),
+            new SolflareWalletAdapter(),
+            new TorusWalletAdapter(),
+            new LedgerWalletAdapter(),
+        ],
+        [],
+    );
 
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else {
-      const prefersDarkMode =
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const systemTheme = prefersDarkMode ? "dark" : "light";
-      setTheme(systemTheme);
-      localStorage.setItem("theme", systemTheme);
-    }
-  }, []);
+    useEffect(() => {
+        const storedTheme = localStorage.getItem("theme");
+        if (storedTheme) {
+            setTheme(storedTheme);
+        } else {
+            const prefersDarkMode =
+                window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const systemTheme = prefersDarkMode ? "dark" : "light";
+            setTheme(systemTheme);
+            localStorage.setItem("theme", systemTheme);
+        }
+    }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(theme);
-  }, [theme]);
+    useEffect(() => {
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(theme);
+    }, [theme]);
 
-  return (
-    <GlobalStateProvider>
-      <HeroUIProvider>
-        <QueryClientProvider client={queryClient}>
-          <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider
-              wallets={wallets}
-              autoConnect
-              localStorageKey="walletAdapter"
-              onError={(error) => {
-                console.log("Wallet error:", error);
-              }}
-            >
-              <ReownProvider>
-                <WalletModalProvider>
-                  <Router>
-                    <ToastContainer />
-                    <AppRoutes />
-                  </Router>
-                </WalletModalProvider>
-              </ReownProvider>
-            </WalletProvider>
-          </ConnectionProvider>
-        </QueryClientProvider>
-      </HeroUIProvider>
-    </GlobalStateProvider>
-  );
+    return (
+        <GlobalStateProvider>
+            <HeroUIProvider>
+                <QueryClientProvider client={queryClient}>
+                    <ConnectionProvider endpoint={endpoint}>
+                        <WalletProvider
+                            wallets={wallets}
+                            autoConnect
+                            localStorageKey="walletAdapter"
+                            onError={(error) => {
+                                console.log("Wallet error:", error);
+                            }}
+                        >
+                            <ReownProvider>
+                                <WalletModalProvider>
+                                    <Router>
+                                        <ToastContainer />
+                                        <AppRoutes />
+                                    </Router>
+                                </WalletModalProvider>
+                            </ReownProvider>
+                        </WalletProvider>
+                    </ConnectionProvider>
+                </QueryClientProvider>
+            </HeroUIProvider>
+        </GlobalStateProvider>
+    );
 }
 
 export default App;

@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+    useState,
+    useEffect,
+    useRef,
+    useMemo,
+    useCallback,
+} from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
@@ -23,11 +29,10 @@ const TradingDashboard = ({ mintAddress }) => {
 
     const BONDING_CURVE_PROGRAM_ID = useMemo(
         () => new PublicKey("CPMWvEXzNTnrksm1PPXQzp2UUTXWxCKQaw9HhvDdf3nT"),
-        []
+        [],
     );
 
-    const RPC_URL =
-        "https://solana-mainnet.api.syndica.io/api-key/21P91u6oC24BUjduDPBnPEdmPWWz7fmFp3jtMBY52Mgq5j1CE9sjKbUv1TzPZGan2pKeDg289fHqvdP6UK5cAHhyJmuHSLE2qm";
+    const RPC_URL = import.meta.env.VITE_RPC_URL;
 
     // Initialize connection and program once
     useEffect(() => {
@@ -43,7 +48,10 @@ const TradingDashboard = ({ mintAddress }) => {
         }
     }, []);
 
-    const sleep = useCallback((ms) => new Promise((resolve) => setTimeout(resolve, ms)), []);
+    const sleep = useCallback(
+        (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        [],
+    );
 
     const fetchWithRetry = useCallback(
         async (fetchFn, maxRetries = 3, initialDelay = 1000) => {
@@ -55,7 +63,10 @@ const TradingDashboard = ({ mintAddress }) => {
                 } catch (error) {
                     lastError = error;
 
-                    if (error?.message?.includes("429") || error?.code === 429) {
+                    if (
+                        error?.message?.includes("429") ||
+                        error?.code === 429
+                    ) {
                         const delay = initialDelay * Math.pow(2, i);
                         console.log(`⏳ Rate limited. Waiting ${delay}ms...`);
                         await sleep(delay);
@@ -67,7 +78,7 @@ const TradingDashboard = ({ mintAddress }) => {
 
             throw lastError;
         },
-        [sleep]
+        [sleep],
     );
 
     // Fetch SOL price
@@ -80,18 +91,21 @@ const TradingDashboard = ({ mintAddress }) => {
                         headers: {
                             "x-api-key": "60012c1b-4bd1-4e6f-a6a3-eb991ed23e95",
                         },
-                    }
+                    },
                 );
                 const price = await response.json();
                 const newSolPrice =
-                    price["So11111111111111111111111111111111111111112"].usdPrice;
+                    price["So11111111111111111111111111111111111111112"]
+                        .usdPrice;
 
                 if (currentSolPrice > 0 && bondingCurveInfo) {
                     const priceChange =
-                        Math.abs(newSolPrice - currentSolPrice) / currentSolPrice;
+                        Math.abs(newSolPrice - currentSolPrice) /
+                        currentSolPrice;
 
                     if (priceChange > 0.005) {
-                        const newTokenPriceUsd = bondingCurveInfo.priceInSol * newSolPrice;
+                        const newTokenPriceUsd =
+                            bondingCurveInfo.priceInSol * newSolPrice;
 
                         setPriceHistory((prev) => [
                             ...prev.slice(-500),
@@ -127,11 +141,15 @@ const TradingDashboard = ({ mintAddress }) => {
         const totalSolReserves = virtualSolReserves.add(realSolReserves);
         const totalTokenReserves = virtualTokenReserves.add(realTokenReserves);
 
-        const totalSolReservesNum = parseFloat(totalSolReserves.toString()) / 1e9;
-        const totalTokenReservesNum = parseFloat(totalTokenReserves.toString()) / 1e9;
+        const totalSolReservesNum =
+            parseFloat(totalSolReserves.toString()) / 1e9;
+        const totalTokenReservesNum =
+            parseFloat(totalTokenReserves.toString()) / 1e9;
 
         const priceInSol =
-            totalTokenReservesNum > 0 ? totalSolReservesNum / totalTokenReservesNum : 0;
+            totalTokenReservesNum > 0
+                ? totalSolReservesNum / totalTokenReservesNum
+                : 0;
         const priceInUsd = priceInSol * SOL_TO_USD;
 
         const totalSupply = parseFloat(curveData.totalSupply.toString()) / 1e9;
@@ -161,7 +179,8 @@ const TradingDashboard = ({ mintAddress }) => {
 
     // Main data fetching effect
     useEffect(() => {
-        if (!mintAddress || !connectionRef.current || !programRef.current) return;
+        if (!mintAddress || !connectionRef.current || !programRef.current)
+            return;
 
         let isMounted = true;
 
@@ -172,19 +191,23 @@ const TradingDashboard = ({ mintAddress }) => {
                 const mint = new PublicKey(mintAddress);
                 const [bondingCurve] = PublicKey.findProgramAddressSync(
                     [Buffer.from("bonding_curve"), mint.toBuffer()],
-                    BONDING_CURVE_PROGRAM_ID
+                    BONDING_CURVE_PROGRAM_ID,
                 );
 
                 console.log("📊 Fetching bonding curve data...");
 
                 const curveData = await fetchWithRetry(() =>
-                    programRef.current.account.bondingCurve.fetch(bondingCurve)
+                    programRef.current.account.bondingCurve.fetch(bondingCurve),
                 );
 
                 if (!isMounted) return;
 
-                const SOL_TO_USD = currentSolPrice > 0 ? currentSolPrice : 186.14;
-                const bondingCurveData = calculateBondingCurveData(curveData, SOL_TO_USD);
+                const SOL_TO_USD =
+                    currentSolPrice > 0 ? currentSolPrice : 186.14;
+                const bondingCurveData = calculateBondingCurveData(
+                    curveData,
+                    SOL_TO_USD,
+                );
 
                 setBondingCurveInfo(bondingCurveData);
                 prevBondingCurveRef.current = bondingCurveData;
@@ -197,101 +220,135 @@ const TradingDashboard = ({ mintAddress }) => {
                     bondingCurve,
                     bondingCurveData.priceInUsd,
                     SOL_TO_USD,
-                    bondingCurveData
+                    bondingCurveData,
                 );
 
                 // Setup WebSocket immediately without waiting for history
                 if (!bondingCurveData.isMigrated) {
-                    accountSubscriptionId.current = connectionRef.current.onAccountChange(
-                        bondingCurve,
-                        async (accountInfo) => {
-                            if (!isMounted) return;
+                    accountSubscriptionId.current =
+                        connectionRef.current.onAccountChange(
+                            bondingCurve,
+                            async (accountInfo) => {
+                                if (!isMounted) return;
 
-                            try {
-                                const newCurveData = programRef.current.coder.accounts.decode(
-                                    "BondingCurve",
-                                    accountInfo.data
-                                );
+                                try {
+                                    const newCurveData =
+                                        programRef.current.coder.accounts.decode(
+                                            "BondingCurve",
+                                            accountInfo.data,
+                                        );
 
-                                const newVirtualSol = new BN(
-                                    newCurveData.virtualSolReserves.toString()
-                                );
-                                const newRealSol = new BN(newCurveData.realSolReserves.toString());
-                                const newVirtualToken = new BN(
-                                    newCurveData.virtualTokenReserves.toString()
-                                );
-                                const newRealToken = new BN(
-                                    newCurveData.realTokenReserves.toString()
-                                );
+                                    const newVirtualSol = new BN(
+                                        newCurveData.virtualSolReserves.toString(),
+                                    );
+                                    const newRealSol = new BN(
+                                        newCurveData.realSolReserves.toString(),
+                                    );
+                                    const newVirtualToken = new BN(
+                                        newCurveData.virtualTokenReserves.toString(),
+                                    );
+                                    const newRealToken = new BN(
+                                        newCurveData.realTokenReserves.toString(),
+                                    );
 
-                                const newTotalSol = newVirtualSol.add(newRealSol);
-                                const newTotalToken = newVirtualToken.add(newRealToken);
+                                    const newTotalSol =
+                                        newVirtualSol.add(newRealSol);
+                                    const newTotalToken =
+                                        newVirtualToken.add(newRealToken);
 
-                                const newTotalSolNum = parseFloat(newTotalSol.toString()) / 1e9;
-                                const newTotalTokenNum =
-                                    parseFloat(newTotalToken.toString()) / 1e9;
-                                const newRealSolNum = parseFloat(newRealSol.toString()) / 1e9;
+                                    const newTotalSolNum =
+                                        parseFloat(newTotalSol.toString()) /
+                                        1e9;
+                                    const newTotalTokenNum =
+                                        parseFloat(newTotalToken.toString()) /
+                                        1e9;
+                                    const newRealSolNum =
+                                        parseFloat(newRealSol.toString()) / 1e9;
 
-                                const currentSOLPrice =
-                                    currentSolPrice > 0 ? currentSolPrice : SOL_TO_USD;
+                                    const currentSOLPrice =
+                                        currentSolPrice > 0
+                                            ? currentSolPrice
+                                            : SOL_TO_USD;
 
-                                const newPriceInSol =
-                                    newTotalTokenNum > 0
-                                        ? newTotalSolNum / newTotalTokenNum
-                                        : 0;
-                                const newPrice = newPriceInSol * currentSOLPrice;
-                                const newLiquidityUSD = newRealSolNum * currentSOLPrice;
+                                    const newPriceInSol =
+                                        newTotalTokenNum > 0
+                                            ? newTotalSolNum / newTotalTokenNum
+                                            : 0;
+                                    const newPrice =
+                                        newPriceInSol * currentSOLPrice;
+                                    const newLiquidityUSD =
+                                        newRealSolNum * currentSOLPrice;
 
-                                const prevRealSol =
-                                    prevBondingCurveRef.current?.realSolReserves || 0;
-                                const solDiff = Math.abs(newRealSolNum - prevRealSol);
+                                    const prevRealSol =
+                                        prevBondingCurveRef.current
+                                            ?.realSolReserves || 0;
+                                    const solDiff = Math.abs(
+                                        newRealSolNum - prevRealSol,
+                                    );
 
-                                if (solDiff > 0.0001) {
-                                    const tradeType = newRealSolNum > prevRealSol ? "buy" : "sell";
+                                    if (solDiff > 0.0001) {
+                                        const tradeType =
+                                            newRealSolNum > prevRealSol
+                                                ? "buy"
+                                                : "sell";
 
-                                    setPriceHistory((prev) => {
-                                        const newPoint = {
-                                            timestamp: Date.now(),
-                                            price: newPrice,
-                                            volume: solDiff,
-                                            type: tradeType,
-                                            solPrice: currentSOLPrice,
-                                            liquidityUSD: newLiquidityUSD,
-                                        };
-                                        return [...prev.slice(-500), newPoint];
-                                    });
+                                        setPriceHistory((prev) => {
+                                            const newPoint = {
+                                                timestamp: Date.now(),
+                                                price: newPrice,
+                                                volume: solDiff,
+                                                type: tradeType,
+                                                solPrice: currentSOLPrice,
+                                                liquidityUSD: newLiquidityUSD,
+                                            };
+                                            return [
+                                                ...prev.slice(-500),
+                                                newPoint,
+                                            ];
+                                        });
 
-                                    console.log("🔄 New trade detected, fetching latest trades...");
-                                    fetchLatestTrades(
-                                        connectionRef.current,
-                                        bondingCurve,
-                                        currentSOLPrice
+                                        console.log(
+                                            "🔄 New trade detected, fetching latest trades...",
+                                        );
+                                        fetchLatestTrades(
+                                            connectionRef.current,
+                                            bondingCurve,
+                                            currentSOLPrice,
+                                        );
+                                    }
+
+                                    const updatedInfo = {
+                                        realSolReserves: newRealSolNum,
+                                        realTokenReserves:
+                                            parseFloat(
+                                                newRealToken.toString(),
+                                            ) / 1e9,
+                                        totalSolReserves: newTotalSolNum,
+                                        totalTokenReserves: newTotalTokenNum,
+                                        priceInSol: newPriceInSol,
+                                        priceInUsd: newPrice,
+                                        marketCap:
+                                            newPrice *
+                                            bondingCurveData.totalSupply,
+                                        totalSupply:
+                                            bondingCurveData.totalSupply,
+                                        liquidityUSD: newLiquidityUSD,
+                                        solPriceUSD: currentSOLPrice,
+                                        isMigrated: newCurveData.isMigrated,
+                                        progress: bondingCurveData.progress,
+                                    };
+
+                                    setBondingCurveInfo(updatedInfo);
+                                    prevBondingCurveRef.current = updatedInfo;
+                                } catch (updateError) {
+                                    console.error(
+                                        "Error processing update:",
+                                        updateError,
                                     );
                                 }
-
-                                const updatedInfo = {
-                                    realSolReserves: newRealSolNum,
-                                    realTokenReserves: parseFloat(newRealToken.toString()) / 1e9,
-                                    totalSolReserves: newTotalSolNum,
-                                    totalTokenReserves: newTotalTokenNum,
-                                    priceInSol: newPriceInSol,
-                                    priceInUsd: newPrice,
-                                    marketCap: newPrice * bondingCurveData.totalSupply,
-                                    totalSupply: bondingCurveData.totalSupply,
-                                    liquidityUSD: newLiquidityUSD,
-                                    solPriceUSD: currentSOLPrice,
-                                    isMigrated: newCurveData.isMigrated,
-                                    progress: bondingCurveData.progress,
-                                };
-
-                                setBondingCurveInfo(updatedInfo);
-                                prevBondingCurveRef.current = updatedInfo;
-                            } catch (updateError) {
-                                console.error("Error processing update:", updateError);
-                            }
-                        },
-                        "confirmed"
-                    );
+                            },
+                            "confirmed",
+                        );
                 }
 
                 // Wait for history to complete
@@ -305,7 +362,9 @@ const TradingDashboard = ({ mintAddress }) => {
                 console.error("❌ Error fetching bonding curve data:", error);
                 if (isMounted) {
                     setIsLoading(false);
-                    setLoadingError(error.message || "Failed to load chart data");
+                    setLoadingError(
+                        error.message || "Failed to load chart data",
+                    );
                 }
             }
         };
@@ -320,20 +379,28 @@ const TradingDashboard = ({ mintAddress }) => {
                     .catch(() => {});
             }
         };
-    }, [mintAddress, currentSolPrice, BONDING_CURVE_PROGRAM_ID, fetchWithRetry, calculateBondingCurveData]);
+    }, [
+        mintAddress,
+        currentSolPrice,
+        BONDING_CURVE_PROGRAM_ID,
+        fetchWithRetry,
+        calculateBondingCurveData,
+    ]);
 
     const fetchTransactionHistory = async (
         connection,
         bondingCurve,
         currentPrice,
         initialSOLPrice,
-        bondingCurveData
+        bondingCurveData,
     ) => {
         try {
             console.log("📊 Fetching transaction history...");
 
             const signatures = await fetchWithRetry(() =>
-                connection.getSignaturesForAddress(bondingCurve, { limit: 200 })
+                connection.getSignaturesForAddress(bondingCurve, {
+                    limit: 200,
+                }),
             );
 
             console.log(`Found ${signatures.length} transactions`);
@@ -368,7 +435,7 @@ const TradingDashboard = ({ mintAddress }) => {
 
             const pricePoints = [];
             const parsedTrades = [];
-            
+
             // Increased parallel processing
             const BATCH_SIZE = 10; // Increased from 5
             const DELAY_BETWEEN_BATCHES = 250; // Reduced from 500ms
@@ -376,7 +443,7 @@ const TradingDashboard = ({ mintAddress }) => {
 
             // Process all batches in parallel with controlled concurrency
             const batchPromises = [];
-            
+
             for (let i = 0; i < signatures.length; i += BATCH_SIZE) {
                 const batch = signatures.slice(i, i + BATCH_SIZE);
 
@@ -391,7 +458,7 @@ const TradingDashboard = ({ mintAddress }) => {
                                 connection.getTransaction(sig.signature, {
                                     maxSupportedTransactionVersion: 0,
                                     commitment: "confirmed",
-                                })
+                                }),
                             );
 
                             if (tx) {
@@ -417,9 +484,9 @@ const TradingDashboard = ({ mintAddress }) => {
 
             // Wait for all batches to complete
             const allBatchResults = await Promise.all(batchPromises);
-            
+
             // Flatten results
-            allBatchResults.forEach(batchTxs => {
+            allBatchResults.forEach((batchTxs) => {
                 allTransactions.push(...batchTxs.filter((tx) => tx !== null));
             });
 
@@ -435,7 +502,8 @@ const TradingDashboard = ({ mintAddress }) => {
                 try {
                     const timestamp = tx.blockTime * 1000;
                     const logMessages = tx.meta.logMessages || [];
-                    const trader = tx.transaction.message.accountKeys[0]?.toBase58() || "";
+                    const trader =
+                        tx.transaction.message.accountKeys[0]?.toBase58() || "";
                     const signature = tx.transaction.signatures[0];
 
                     logMessages.forEach((log) => {
@@ -512,14 +580,17 @@ const TradingDashboard = ({ mintAddress }) => {
                         }
                     });
                 } catch (parseError) {
-                    console.warn("Error parsing transaction:", parseError.message);
+                    console.warn(
+                        "Error parsing transaction:",
+                        parseError.message,
+                    );
                 }
             });
 
             const filledPricePoints = fillHistoricalGaps(
                 pricePoints,
                 currentPrice,
-                initialSOLPrice
+                initialSOLPrice,
             );
 
             setPriceHistory(filledPricePoints);
@@ -552,7 +623,11 @@ const TradingDashboard = ({ mintAddress }) => {
         }
     };
 
-    const fetchLatestTrades = async (connection, bondingCurve, currentSOLPrice) => {
+    const fetchLatestTrades = async (
+        connection,
+        bondingCurve,
+        currentSOLPrice,
+    ) => {
         try {
             const latestSig = trades[0]?.signature;
 
@@ -560,7 +635,7 @@ const TradingDashboard = ({ mintAddress }) => {
                 connection.getSignaturesForAddress(bondingCurve, {
                     limit: 10,
                     until: latestSig,
-                })
+                }),
             );
 
             if (signatures.length === 0) return;
@@ -580,7 +655,7 @@ const TradingDashboard = ({ mintAddress }) => {
                         connection.getTransaction(sig.signature, {
                             maxSupportedTransactionVersion: 0,
                             commitment: "confirmed",
-                        })
+                        }),
                     );
 
                     if (!tx || !tx.blockTime || !tx.meta) return null;
@@ -600,7 +675,8 @@ const TradingDashboard = ({ mintAddress }) => {
 
                 const timestamp = tx.blockTime * 1000;
                 const logMessages = tx.meta.logMessages || [];
-                const trader = tx.transaction.message.accountKeys[0]?.toBase58() || "";
+                const trader =
+                    tx.transaction.message.accountKeys[0]?.toBase58() || "";
                 const signature = tx.transaction.signatures[0];
 
                 logMessages.forEach((log) => {
@@ -668,65 +744,68 @@ const TradingDashboard = ({ mintAddress }) => {
         }
     };
 
-    const fillHistoricalGaps = useCallback((pricePoints, currentPrice, currentSOLPrice) => {
-        if (pricePoints.length === 0) {
-            const now = Date.now();
-            return [
-                {
-                    timestamp: now - 3600000,
-                    price: currentPrice,
-                    volume: 0,
-                    type: "synthetic",
-                    solPrice: currentSOLPrice,
-                },
-                {
-                    timestamp: now,
-                    price: currentPrice,
-                    volume: 0,
-                    type: "current",
-                    solPrice: currentSOLPrice,
-                },
-            ];
-        }
-
-        const filled = [];
-        const MAX_GAP = 300000;
-
-        for (let i = 0; i < pricePoints.length - 1; i++) {
-            filled.push(pricePoints[i]);
-
-            const current = pricePoints[i];
-            const next = pricePoints[i + 1];
-            const gap = next.timestamp - current.timestamp;
-
-            if (gap > MAX_GAP) {
-                const numPoints = Math.min(10, Math.floor(gap / MAX_GAP));
-
-                for (let j = 1; j <= numPoints; j++) {
-                    const ratio = j / (numPoints + 1);
-                    filled.push({
-                        timestamp: current.timestamp + gap * ratio,
-                        price: current.price,
+    const fillHistoricalGaps = useCallback(
+        (pricePoints, currentPrice, currentSOLPrice) => {
+            if (pricePoints.length === 0) {
+                const now = Date.now();
+                return [
+                    {
+                        timestamp: now - 3600000,
+                        price: currentPrice,
                         volume: 0,
-                        type: "interpolated",
-                        solPrice: current.solPrice,
-                    });
+                        type: "synthetic",
+                        solPrice: currentSOLPrice,
+                    },
+                    {
+                        timestamp: now,
+                        price: currentPrice,
+                        volume: 0,
+                        type: "current",
+                        solPrice: currentSOLPrice,
+                    },
+                ];
+            }
+
+            const filled = [];
+            const MAX_GAP = 300000;
+
+            for (let i = 0; i < pricePoints.length - 1; i++) {
+                filled.push(pricePoints[i]);
+
+                const current = pricePoints[i];
+                const next = pricePoints[i + 1];
+                const gap = next.timestamp - current.timestamp;
+
+                if (gap > MAX_GAP) {
+                    const numPoints = Math.min(10, Math.floor(gap / MAX_GAP));
+
+                    for (let j = 1; j <= numPoints; j++) {
+                        const ratio = j / (numPoints + 1);
+                        filled.push({
+                            timestamp: current.timestamp + gap * ratio,
+                            price: current.price,
+                            volume: 0,
+                            type: "interpolated",
+                            solPrice: current.solPrice,
+                        });
+                    }
                 }
             }
-        }
 
-        filled.push(pricePoints[pricePoints.length - 1]);
+            filled.push(pricePoints[pricePoints.length - 1]);
 
-        filled.push({
-            timestamp: Date.now(),
-            price: currentPrice,
-            volume: 0,
-            type: "current",
-            solPrice: currentSOLPrice,
-        });
+            filled.push({
+                timestamp: Date.now(),
+                price: currentPrice,
+                volume: 0,
+                type: "current",
+                solPrice: currentSOLPrice,
+            });
 
-        return filled;
-    }, []);
+            return filled;
+        },
+        [],
+    );
 
     // Heartbeat updates
     useEffect(() => {

@@ -1,11 +1,11 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', 'Space Grotesk', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: dark;
+  color: #f0f6ff;
+  background-color: #080e18;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,11 +15,12 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #a855f7;
   text-decoration: inherit;
+  transition: color 0.2s ease;
 }
 a:hover {
-  color: #535bf2;
+  color: #c084fc;
 }
 
 body {
@@ -36,86 +37,96 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 10px;
+  border: 1px solid rgba(168, 85, 247, 0.25);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: rgba(17, 30, 46, 0.8);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
+  color: #f0f6ff;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.25);
+  transform: translateY(-1px);
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid rgba(168, 85, 247, 0.6);
+  outline-offset: 2px;
+}
+button:active {
+  transform: translateY(0);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-}
-
-/* React Toastify Custom Styles */
+/* ─── React Toastify Custom Styles ─── */
 .Toastify__toast {
-  background: #192630 !important;
-  border: 1px solid #374151 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  background: linear-gradient(135deg, #0d1825 0%, #111e2e 100%) !important;
+  border: 1px solid rgba(168, 85, 247, 0.2) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(168,85,247,0.08) !important;
+  backdrop-filter: blur(12px) !important;
 }
 
 .Toastify__toast-body {
-  color: #ffffff !important;
-  font-family: inherit !important;
-  padding: 8px !important;
+  color: #f0f6ff !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  font-size: 0.9rem !important;
+  padding: 8px 4px !important;
 }
 
 .Toastify__progress-bar--success {
   background: linear-gradient(to right, #10b981, #059669) !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5) !important;
 }
 
 .Toastify__progress-bar--error {
   background: linear-gradient(to right, #ef4444, #dc2626) !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
 }
 
 .Toastify__progress-bar--info {
-  background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+  background: linear-gradient(to right, #a855f7, #3b82f6) !important;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5) !important;
 }
 
 .Toastify__progress-bar--warning {
-  background: linear-gradient(to right, #f59e0b, #d97706) !important;
+  background: linear-gradient(to right, #f59e0b, #f97316) !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5) !important;
 }
 
 .Toastify__close-button {
-  color: #9ca3af !important;
+  color: #94a3b8 !important;
   opacity: 0.7 !important;
+  transition: opacity 0.2s, color 0.2s !important;
 }
-
 .Toastify__close-button:hover {
   opacity: 1 !important;
+  color: #f0f6ff !important;
 }
 
-/* Loading spinner animation */
+/* ─── Loading spinner ─── */
 @keyframes spin {
-  from {
-      transform: rotate(0deg);
-  }
-  to {
-      transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
+.animate-spin { animation: spin 1s linear infinite; }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
-} 
+/* ─── Neon gradient spinner ─── */
+@keyframes neonSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spinner-neon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #a855f7;
+  border-right-color: #3b82f6;
+  animation: neonSpin 0.8s linear infinite;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
