@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import { useBondingCurveFlow } from "../hooks/useSolanaTokenFlow";
 import { useGlobalState } from "../hooks/useGlobalState";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
@@ -153,6 +154,22 @@ const BondingCurveCreateCoin = () => {
             }));
             setErrors((prev) => ({ ...prev, [type]: [] }));
             createPreview(file, type);
+        }
+    };
+
+    const removeFile = (type) => {
+        setFormData((prev) => ({
+            ...prev,
+            [type === "coin" ? "coinMedia" : "banner"]: null,
+        }));
+        if (type === "coin") {
+            setMediaPreview(null);
+            const input = document.getElementById("coin-media-input");
+            if (input) input.value = "";
+        } else {
+            setBannerPreview(null);
+            const input = document.getElementById("banner-media-input");
+            if (input) input.value = "";
         }
     };
 
@@ -1116,6 +1133,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                                 </div>
                                             </div>
                                             <input
+                                                id="coin-media-input"
                                                 type="file"
                                                 accept="image/*,video/mp4"
                                                 onChange={(e) =>
@@ -1125,7 +1143,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             />
                                         </label>
                                         {mediaPreview && (
-                                            <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-600">
+                                            <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-600 relative group">
                                                 {formData.coinMedia?.type.startsWith(
                                                     "video"
                                                 ) ? (
@@ -1140,6 +1158,13 @@ const calculateEstimatedTokens = (solAmount) => {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile("coin")}
+                                                    className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full transition-colors z-10 shadow-md"
+                                                >
+                                                    <X size={12} />
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -1180,6 +1205,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                                 </div>
                                             </div>
                                             <input
+                                                id="banner-media-input"
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={(e) =>
@@ -1192,12 +1218,19 @@ const calculateEstimatedTokens = (solAmount) => {
                                             />
                                         </label>
                                         {bannerPreview && (
-                                            <div className="w-32 h-20 rounded-lg overflow-hidden border border-gray-600">
+                                            <div className="w-32 h-20 rounded-lg overflow-hidden border border-gray-600 relative group">
                                                 <img
                                                     src={bannerPreview}
                                                     alt="Banner Preview"
                                                     className="w-full h-full object-cover"
                                                 />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFile("banner")}
+                                                    className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-600 text-white rounded-full transition-colors z-10 shadow-md"
+                                                >
+                                                    <X size={12} />
+                                                </button>
                                             </div>
                                         )}
                                     </div>

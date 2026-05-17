@@ -117,7 +117,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         </div>
                         <div>
                             <h2 className="font-bold text-lg bg-gradient-to-r from-purple-300 via-blue-300 to-cyan-300 bg-clip-text text-transparent">
-                                Noottools
+                                NOOTTOOLS
                             </h2>
                             <p className="text-xs text-purple-400/70">
                                 Web3 Platform
@@ -152,22 +152,16 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         accent="purple"
                     />
                     <NavItem
-                        href="/nft-staking"
-                        icon={<Coins size={18} />}
-                        label={t("stake_nfts")}
-                        accent="gold"
-                    />
-                    <NavItem
-                        href="/add-liquidity"
+                        href="/token-tracker"
                         icon={<Droplets size={18} />}
-                        label={t("add_liquidity")}
+                        label={t("Noot_tracker")}
                         accent="blue"
                     />
                     <NavItem
-                        href="/nft-minting"
-                        icon={<Palette size={18} />}
-                        label={t("mint_nft")}
-                        accent="pink"
+                        href="/detox"
+                        icon={<Recycle size={18} />}
+                        label={t("detox_reclaim")}
+                        accent="blue"
                     />
                     <NavItem
                         href="/wallet"
@@ -176,16 +170,22 @@ export const Sidebar = ({ isOpen, onClose }) => {
                         accent="cyan"
                     />
                     <NavItem
+                        href="/nft-minting"
+                        icon={<Palette size={18} />}
+                        label={t("mint_nft")}
+                        accent="pink"
+                    />
+                    <NavItem
+                        href="/nft-staking"
+                        icon={<Coins size={18} />}
+                        label={t("stake_nfts")}
+                        accent="gold"
+                    />
+                    <NavItem
                         href="/noot-token"
                         icon={<Gamepad2 size={18} />}
                         label={t("token_noot")}
                         accent="green"
-                    />
-                    <NavItem
-                        href="/detox"
-                        icon={<Recycle size={18} />}
-                        label={t("detox_reclaim")}
-                        accent="blue"
                     />
 
                     {/* Information dropdown */}

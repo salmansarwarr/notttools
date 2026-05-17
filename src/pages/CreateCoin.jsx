@@ -24,6 +24,7 @@ import {
     Lock,
     Eye,
     AlertCircle,
+    X,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -134,6 +135,7 @@ const CreateCoin = () => {
         revokeMint: false,
         revokeFreeze: false,
         revokeUpdate: false,
+        useCustomSuffix: false,
     });
 
     const [errors, setErrors] = useState({});
@@ -147,6 +149,10 @@ const CreateCoin = () => {
         if (formData.revokeMint) cost += 0.05;
         if (formData.revokeFreeze) cost += 0.05;
         if (formData.revokeUpdate) cost += 0.05;
+        // Check custom suffix fee
+        if (formData.useCustomSuffix) {
+            cost += 0.01;
+        }
         return parseFloat(cost.toFixed(2));
     }, [
         commissionSettings,
@@ -154,6 +160,7 @@ const CreateCoin = () => {
         formData.revokeMint,
         formData.revokeFreeze,
         formData.revokeUpdate,
+        formData.useCustomSuffix,
     ]);
 
     // Load commission settings
@@ -230,6 +237,14 @@ const CreateCoin = () => {
         }
     };
 
+    const removeImage = (e) => {
+        e.stopPropagation();
+        setFormData((prev) => ({ ...prev, coinMedia: null }));
+        setMediaPreview(null);
+        const fileInput = document.getElementById("icon-upload");
+        if (fileInput) fileInput.value = "";
+    };
+
     const validateStep = (currentStep) => {
         const newErrors = {};
         if (currentStep === 1) {
@@ -304,20 +319,25 @@ const CreateCoin = () => {
                     : null;
 
             // 3. Find Vanity Address (New Step)
-            const cleanSuffix =
-                vanitySuffix
+            let finalMint;
+            if (formData.useCustomSuffix) {
+                const cleanSuffix = vanitySuffix
                     .trim()
                     .toUpperCase()
                     .replace(/[^1-9A-HJ-NP-Za-km-z]/g, "")
                     .slice(0, 3) || "NTL";
-            toast.info(`Generating vanity address... (${cleanSuffix})`);
-            const vanityMint = await findVanityMint(cleanSuffix);
+                toast.info(`Generating vanity address... (${cleanSuffix})`);
+                finalMint = await findVanityMint(cleanSuffix);
+            } else {
+                toast.info(`Generating default vanity address... (NTL)`);
+                finalMint = await findVanityMint("NTL");
+            }
 
             // 4. Create Token (Now passing the generated mint)
             const result = await createTokenWithMetadata(
                 tokenData,
                 wallet,
-                vanityMint,
+                finalMint,
                 commissionData,
             );
             setCreationResult(result);
@@ -513,11 +533,20 @@ const CreateCoin = () => {
                                 className={`w-full h-40 bg-[#111C26] border-2 border-dashed ${errors.coinMedia ? "border-red-500/50" : "border-gray-800"} hover:border-cyan-500/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all relative overflow-hidden`}
                             >
                                 {mediaPreview ? (
-                                    <img
-                                        src={mediaPreview}
-                                        className="absolute inset-0 w-full h-full object-contain p-4"
-                                        alt="Icon Preview"
-                                    />
+                                    <>
+                                        <img
+                                            src={mediaPreview}
+                                            className="absolute inset-0 w-full h-full object-contain p-4"
+                                            alt="Icon Preview"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full transition-colors z-20 shadow-lg"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </>
                                 ) : (
                                     <>
                                         <Upload
@@ -649,6 +678,79 @@ const CreateCoin = () => {
                                         </label>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-cyan-500/10 rounded-lg">
+                                    <Tags className="text-cyan-400" size={24} />
+                                </div>
+                                <h2 className="text-2xl font-bold text-white">
+                                    Custom Mint Address
+                                </h2>
+                            </div>
+
+                            <div className="bg-[#111C26] p-6 rounded-2xl border border-gray-800">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-white font-bold text-lg">
+                                            Enable Custom Suffix
+                                        </h3>
+                                        <p className="text-gray-400 text-sm">
+                                            By default, tokens end with 'NTL'. Enable this to choose your own 3-character suffix.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-green-400 text-sm font-bold">
+                                            +0.01 SOL
+                                        </span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="useCustomSuffix"
+                                                checked={formData.useCustomSuffix}
+                                                onChange={handleInputChange}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <AnimatePresence>
+                                    {formData.useCustomSuffix && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: "auto" }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="flex items-center gap-3 pt-4 border-t border-gray-800">
+                                                <span className="text-gray-500 text-sm font-mono">
+                                                    ...ends with
+                                                </span>
+                                                <input
+                                                    type="text"
+                                                    value={vanitySuffix}
+                                                    onChange={(e) =>
+                                                        setVanitySuffix(
+                                                            e.target.value
+                                                                .toUpperCase()
+                                                                .replace(
+                                                                    /[^1-9A-HJ-NP-Za-km-z]/g,
+                                                                    "",
+                                                                )
+                                                                .slice(0, 3),
+                                                        )
+                                                    }
+                                                    placeholder="NTL"
+                                                    className="w-32 bg-[#0A151E] border border-cyan-500/40 focus:border-cyan-400 rounded-xl px-4 py-2 text-white font-mono font-bold text-lg outline-none transition-all text-center tracking-widest uppercase"
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
 
@@ -848,54 +950,19 @@ const CreateCoin = () => {
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+                                        Custom Suffix
+                                    </p>
+                                    <p className="text-cyan-400 font-mono font-bold">
+                                        {formData.useCustomSuffix ? (vanitySuffix || "NTL") : "NTL"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
                                         Total Fee
                                     </p>
                                     <p className="text-cyan-400 font-bold">
                                         {totalCost} SOL
                                     </p>
-                                </div>
-                            </div>
-
-                            <div className="p-6 border-t border-gray-800 bg-cyan-500/5">
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400 shrink-0 mt-0.5">
-                                        <Tags size={16} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-xs text-cyan-400 font-bold uppercase tracking-wider mb-2">
-                                            Custom Mint Address
-                                        </p>
-                                        <p className="text-gray-400 text-xs mb-3">
-                                            Your token will end with a vanity
-                                            suffix. Edit below to customize (3–5
-                                            Base58 chars).
-                                        </p>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-gray-500 text-xs font-mono">
-                                                ...ends with
-                                            </span>
-                                            <input
-                                                type="text"
-                                                value={vanitySuffix}
-                                                onChange={(e) =>
-                                                    setVanitySuffix(
-                                                        e.target.value
-                                                            .toUpperCase()
-                                                            .replace(
-                                                                /[^1-9A-HJ-NP-Za-km-zA-Z]/g,
-                                                                "",
-                                                            )
-                                                            .slice(0, 3),
-                                                    )
-                                                }
-                                                placeholder="NTL"
-                                                className="w-28 bg-[#0A151E] border border-cyan-500/40 focus:border-cyan-400 rounded-lg px-3 py-1.5 text-white font-mono font-bold text-sm outline-none transition-all text-center tracking-widest uppercase"
-                                            />
-                                            <span className="text-gray-600 text-xs">
-                                                (default: NTL)
-                                            </span>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 

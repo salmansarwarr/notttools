@@ -29,6 +29,7 @@ import TokenDetail from "./pages/Tokenetail";
 import TokensPage from "./pages/Tokens";
 import CollectionSetup from "./pages/CollectionSetup";
 import CreateCollection from "./pages/CreateCollection";
+import TokenTracker from "./pages/TokenTracker";
 
 const AppRoutes = () => {
     const { globalState } = useGlobalState();
@@ -66,6 +67,7 @@ const AppRoutes = () => {
                 <Route path="/detox" element={<Detox />} />
                 <Route path="/setup" element={<CollectionSetup />} />
                 <Route path="/collection" element={<CreateCollection />} />
+                <Route path="/token-tracker" element={<TokenTracker />} />
             </Route>
 
             <Route path="*" element={<Notfound />} />

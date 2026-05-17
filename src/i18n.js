@@ -24,6 +24,7 @@ const commonKeys = {
   "mint_nft": "MINT NFT",
   "download_wallet": "DOWNLOAD WALLET",
   "token_noot": "TOKEN NOOT",
+  "token_tracker": "TOKEN TRACKER",
   "detox_reclaim": "DETOX & RECLAIM",
   "information": "INFORMATION",
   "purpose": "PURPOSE",
@@ -191,7 +192,8 @@ const commonKeys = {
   "available_nav": "Available",
   "mint_nfts_btn": "Mint NFTs",
   "mint_your_nfts_btn": "Mint {{count}} NFTs",
-  "mint_your_nft_btn": "Mint NFT"
+  "mint_your_nft_btn": "Mint NFT",
+  "Noot_tracker": "NOOT TRACKER"
 };
 
 const resources = {
@@ -220,6 +222,7 @@ const resources = {
       "mint_nft": "ЧЕКАНКА NFT",
       "download_wallet": "СКАЧАТЬ КОШЕЛЕК",
       "token_noot": "ТОКЕН NOOT",
+      "token_tracker": "ТОКЕН ТРЕКЕР",
       "detox_reclaim": "ДЕТОКС И ВОЗВРАТ",
       "information": "ИНФОРМАЦИЯ",
       "purpose": "ЦЕЛЬ",
@@ -413,6 +416,7 @@ const resources = {
       "mint_nft": "MINTEAR NFT",
       "download_wallet": "DESCARGAR BILLETERA",
       "token_noot": "TOKEN NOOT",
+      "token_tracker": "RASTREADOR DE TOKENS",
       "detox_reclaim": "DETOX Y RECLAMAR",
       "information": "INFORMACIÓN",
       "purpose": "PROPÓSITO",
@@ -606,6 +610,7 @@ const resources = {
       "mint_nft": "CRÉER UN NFT",
       "download_wallet": "TÉLÉCHARGER LE PORTEFEUILLE",
       "token_noot": "TOKEN NOOT",
+      "token_tracker": "TRACKER DE TOKEN",
       "detox_reclaim": "DÉTOX & RÉCUPÉRER",
       "information": "INFORMATION",
       "purpose": "OBJECTIF",
@@ -777,6 +782,7 @@ const resources = {
       "mint_nft": "NFT MINTEN",
       "download_wallet": "WALLET HERUNTERLADEN",
       "token_noot": "TOKEN NOOT",
+      "token_tracker": "TOKEN TRACKER",
       "detox_reclaim": "DETOX & ZURÜCKFORDERN",
       "information": "INFORMATION",
       "purpose": "ZWECK",
