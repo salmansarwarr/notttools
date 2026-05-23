@@ -13,6 +13,8 @@ const getNetworkFromUrl = (url) => {
 
 const NETWORK_TYPE = ENV_NETWORK || getNetworkFromUrl(ENV_RPC_URL);
 
+console.log("NETWORK_TYPE", NETWORK_TYPE);
+
 // 🌐 SOLANA NETWORK ENDPOINTS
 const SOLANA_NETWORKS = {
     devnet: "https://api.devnet.solana.com",
