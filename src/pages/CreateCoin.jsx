@@ -1939,20 +1939,6 @@ const CreateCoin = () => {
                     </div>
                 </div>
 
-                {step === 1 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-8 flex items-start gap-4 bg-cyan-500/5 border border-cyan-500/20 p-4 rounded-2xl"
-                    >
-                        <Info className="text-cyan-400 shrink-0 mt-0.5" size={20} />
-                        <p className="text-sm text-gray-400">
-                            Need help? Join our{" "}
-                            <a href="#" className="text-cyan-400 hover:underline">Telegram</a>{" "}
-                            for support. Token creation fees are non-refundable.
-                        </p>
-                    </motion.div>
-                )}
             </div>
 
             {/* Modals */}
