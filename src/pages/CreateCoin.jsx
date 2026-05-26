@@ -483,10 +483,11 @@ const CreateCoin = () => {
     // Constants
     const TAX_FEE_SOL = 0.1;
 
-    // Total cost calculation
     const totalCost = useMemo(() => {
         if (!commissionSettings) return 0;
-        let cost = hasStakedNFT ? 0 : parseFloat(commissionSettings.token_creation_fee || 0.05);
+        if (hasStakedNFT) return 0;
+    
+        let cost = parseFloat(commissionSettings.token_creation_fee || 0.05);
         if (formData.revokeMint) cost += 0.05;
         if (formData.revokeFreeze) cost += 0.05;
         if (formData.revokeUpdate) cost += 0.05;
@@ -494,7 +495,7 @@ const CreateCoin = () => {
         if (formData.isTaxToken) cost += TAX_FEE_SOL;
         return parseFloat(cost.toFixed(2));
     }, [commissionSettings, hasStakedNFT, formData.revokeMint, formData.revokeFreeze, formData.revokeUpdate, formData.useCustomSuffix, formData.isTaxToken]);
-
+    
     // Tax percent display
     const taxPercent = useMemo(() => {
         const bps = parseInt(formData.transferTaxBps, 10);
@@ -1869,7 +1870,7 @@ const CreateCoin = () => {
                                     <div>
                                         <p className="text-purple-200 text-sm font-bold">Stake NFT for Free Launch</p>
                                         <p className="text-purple-400/60 text-xs">
-                                            Stake a Noottools NFT to waive the {commissionSettings?.token_creation_fee || 0.1} SOL platform fee.
+                                            Stake a Noottools NFT to waive the platform fee.
                                         </p>
                                     </div>
                                 </div>

@@ -193,7 +193,7 @@ const commonKeys = {
   "mint_nfts_btn": "Mint NFTs",
   "mint_your_nfts_btn": "Mint {{count}} NFTs",
   "mint_your_nft_btn": "Mint NFT",
-  "Noot_tracker": "NOOT TRACKER"
+  "Noot_tracker": "NOOTTRACKER"
 };
 
 const resources = {

@@ -1015,7 +1015,7 @@ export const Footer = () => {
                         </div>
 
                         {/* Platform, Support and Legal - Mobile'da yan yana */}
-                        <div className="lg:col-span-3 md:col-span-2 grid grid-cols-3 gap-8">
+                        <div className="lg:col-span-3 md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-8">
                             {/* Quick Links */}
                             <div>
                                 <h4 className="text-lg font-semibold text-white mb-6">

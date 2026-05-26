@@ -381,7 +381,7 @@ const AddLiquidity = () => {
                       </div>
                     </div>
 
-                    <div className="lg:order-last">
+                    {/* <div className="lg:order-last">
                       <div className="bg-gray-800/30 rounded-xl p-4 border border-gray-600">
                         <div className="aspect-video bg-gray-900/50 rounded-lg flex items-center justify-center">
                           <div className="text-center">
@@ -395,7 +395,7 @@ const AddLiquidity = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 )
             )}

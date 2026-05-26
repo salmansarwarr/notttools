@@ -133,7 +133,7 @@ export default function WalletLogin() {
       <div className="relative">
         <button
           onClick={handleConnect}
-          className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 text-sm sm:text-base flex items-center gap-2"
+className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 text-sm flex items-center gap-1.5"
         >
           <Wallet size={16} />
           <span className="hidden sm:inline">{t('connect_wallet')}</span>
@@ -145,12 +145,12 @@ export default function WalletLogin() {
 
   if (walletConnected && !isLoggedIn) {
     // State 2: Wallet connected but not logged in - Login button
-    return (
+    return (  
       <div className="relative">
         <button
           onClick={login}
           disabled={loginMutation.isPending}
-          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
+className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-3 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm"
         >
           {loginMutation.isPending ? (
             <>
@@ -193,11 +193,11 @@ export default function WalletLogin() {
   // State 3: Wallet connected AND logged in - Show wallet address
   return (
     <button
-      onClick={handleConnect}
-      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base flex items-center gap-2"
+        onClick={handleConnect}
+        className="bg-white/10 hover:bg-white/15 border border-white/20 text-white px-3 py-2 rounded-xl font-semibold transition-all duration-300 text-xs sm:text-sm flex items-center gap-1.5 max-w-[140px] sm:max-w-none"
     >
-      <Wallet size={16} />
-      <span>{formatAddress(walletAddress)}</span>
+        <Wallet size={14} className="shrink-0 text-purple-400" />
+        <span className="truncate">{formatAddress(walletAddress)}</span>
     </button>
-  );
+);
 }
