@@ -58,34 +58,116 @@ const TokenTracker = () => {
                     isManual: false,
                     mint: data.mint || address,
                     score: data.score ?? 0,
-                    scoreNormalised: data.score_normalised ?? Math.min(100, Math.round((data.score ?? 0) / 10)),
+                    scoreNormalised:
+                        data.score_normalised ??
+                        Math.min(100, Math.round((data.score ?? 0) / 10)),
                     tokenMeta: data.tokenMeta || {
                         name: data.fileMeta?.name || "Unknown",
                         symbol: data.fileMeta?.symbol || "TOKEN",
                     },
-                    tokenImage: data.fileMeta?.image || data.tokenMeta?.image || null,
-                    uiSupply: data.token?.supply ? (Number(data.token.supply) / Math.pow(10, decimals)).toLocaleString() : "0",
-                    creator: data.creator ? data.creator.slice(0, 4) + "..." + data.creator.slice(-4) : "Unknown",
+                    tokenImage:
+                        data.fileMeta?.image || data.tokenMeta?.image || null,
+                    uiSupply: data.token?.supply
+                        ? (
+                              Number(data.token.supply) / Math.pow(10, decimals)
+                          ).toLocaleString()
+                        : "0",
+                    creator: data.creator
+                        ? data.creator.slice(0, 4) +
+                          "..." +
+                          data.creator.slice(-4)
+                        : "Unknown",
                     fullCreator: data.creator || address,
-                    uiCreatorBalance: data.creatorBalance != null ? (Number(data.creatorBalance) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "0",
-                    uiMarketCap: data.totalMarketLiquidity ? "$" + Number(data.totalMarketLiquidity).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "$0.00",
-                    uiTotalHolders: data.totalHolders ? Number(data.totalHolders).toLocaleString() : "1",
-                    mintAuthorityStatus: data.token?.mintAuthority != null ? "Enabled" : "Revoked",
-                    freezeAuthorityStatus: data.token?.freezeAuthority != null ? "Enabled" : "Revoked",
+                    uiCreatorBalance:
+                        data.creatorBalance != null
+                            ? (
+                                  Number(data.creatorBalance) /
+                                  Math.pow(10, decimals)
+                              ).toLocaleString(undefined, {
+                                  maximumFractionDigits: 2,
+                              })
+                            : "0",
+                    uiMarketCap: data.totalMarketLiquidity
+                        ? "$" +
+                          Number(data.totalMarketLiquidity).toLocaleString(
+                              undefined,
+                              { maximumFractionDigits: 2 },
+                          )
+                        : "$0.00",
+                    uiTotalHolders: data.totalHolders
+                        ? Number(data.totalHolders).toLocaleString()
+                        : "1",
+                    mintAuthorityStatus:
+                        data.token?.mintAuthority != null
+                            ? "Enabled"
+                            : "Revoked",
+                    freezeAuthorityStatus:
+                        data.token?.freezeAuthority != null
+                            ? "Enabled"
+                            : "Revoked",
                     risks: data.risks || [],
-                    markets: data.markets ? data.markets.map(m => ({
-                        name: m.marketType ? m.marketType.toUpperCase() : "DEX",
-                        status: m.rugged ? "Rugged" : "Active",
-                        liquidity: m.lp?.lpLockedUSD ? "$" + Number(m.lp.lpLockedUSD).toLocaleString(undefined, { maximumFractionDigits: 0 }) : (m.lp?.lpLockedPct ? `${m.lp.lpLockedPct}% Locked` : "Live")
-                    })) : null,
-                    topHolders: data.topHolders ? data.topHolders.map(h => ({
-                        address: h.address ? h.address.slice(0, 4) + "..." + h.address.slice(-4) : "Wallet",
-                        fullAddress: h.address || "",
-                        amount: h.uiAmountString ? Number(h.uiAmountString).toLocaleString(undefined, { maximumFractionDigits: 2 }) : (Number(h.amount) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }),
-                        pct: Number(h.pct || 0).toFixed(2) + "%",
-                        pctWidth: Math.min(100, Number(h.pct || 0)).toFixed(2) + "%",
-                        rawPct: Number(h.pct || 0)
-                    })) : []
+                    markets: data.markets
+                        ? data.markets.map((m) => ({
+                              name: m.marketType
+                                  ? m.marketType.toUpperCase()
+                                  : "DEX",
+                              status: m.rugged ? "Rugged" : "Active",
+                              liquidity: m.lp?.lpLockedUSD
+                                  ? "$" +
+                                    Number(m.lp.lpLockedUSD).toLocaleString(
+                                        undefined,
+                                        { maximumFractionDigits: 0 },
+                                    )
+                                  : m.lp?.lpLockedPct
+                                    ? `${m.lp.lpLockedPct}% Locked`
+                                    : "Live",
+                          }))
+                        : null,
+                    topHolders: data.topHolders
+                        ? data.topHolders.map((h) => ({
+                              address: h.address
+                                  ? h.address.slice(0, 4) +
+                                    "..." +
+                                    h.address.slice(-4)
+                                  : "Wallet",
+                              fullAddress: h.address || "",
+                              amount: h.uiAmountString
+                                  ? Number(h.uiAmountString).toLocaleString(
+                                        undefined,
+                                        { maximumFractionDigits: 2 },
+                                    )
+                                  : (
+                                        Number(h.amount) /
+                                        Math.pow(10, decimals)
+                                    ).toLocaleString(undefined, {
+                                        maximumFractionDigits: 2,
+                                    }),
+                              pct: Number(h.pct || 0).toFixed(2) + "%",
+                              pctWidth:
+                                  Math.min(100, Number(h.pct || 0)).toFixed(2) +
+                                  "%",
+                              rawPct: Number(h.pct || 0),
+                          }))
+                        : [],
+                    insiderNetworks: data.insiderNetworks
+                        ? data.insiderNetworks.map((n) => ({
+                              id: n.id,
+                              size: n.size,
+                              type: n.type,
+                              tokenAmount: (
+                                  Number(n.tokenAmount) / Math.pow(10, decimals)
+                              ).toLocaleString(undefined, {
+                                  maximumFractionDigits: 0,
+                              }),
+                              pct: (
+                                  (Number(n.tokenAmount) /
+                                      Number(data.token.supply)) *
+                                  100
+                              ).toFixed(2),
+                              activeAccounts: n.activeAccounts,
+                          }))
+                        : [],
+                    graphInsidersDetected: data.graphInsidersDetected ?? 0,
                 };
 
                 setReport(normalizedReport);
@@ -107,7 +189,8 @@ const TokenTracker = () => {
                 );
 
                 const mintInfo = await getMint(connection, mintPubkey);
-                const largestAccounts = await connection.getTokenLargestAccounts(mintPubkey);
+                const largestAccounts =
+                    await connection.getTokenLargestAccounts(mintPubkey);
 
                 const risks = [];
                 let score = 0;
@@ -116,14 +199,16 @@ const TokenTracker = () => {
                     risks.push({
                         name: "Mint Authority Enabled",
                         level: "danger",
-                        description: "The creator can mint unlimited tokens, which can lead to a rug pull.",
+                        description:
+                            "The creator can mint unlimited tokens, which can lead to a rug pull.",
                     });
                     score += 400;
                 } else {
                     risks.push({
                         name: "Mint Authority Revoked",
                         level: "safe",
-                        description: "The supply is fixed and cannot be increased.",
+                        description:
+                            "The supply is fixed and cannot be increased.",
                     });
                 }
 
@@ -131,27 +216,37 @@ const TokenTracker = () => {
                     risks.push({
                         name: "Freeze Authority Enabled",
                         level: "warning",
-                        description: "The creator can freeze user wallets, preventing them from selling.",
+                        description:
+                            "The creator can freeze user wallets, preventing them from selling.",
                     });
                     score += 200;
                 } else {
                     risks.push({
                         name: "Freeze Authority Revoked",
                         level: "safe",
-                        description: "Users have full control over their tokens.",
+                        description:
+                            "Users have full control over their tokens.",
                     });
                 }
 
                 const topHolders = largestAccounts.value.map((acc, idx) => {
-                    const rawPct = (Number(acc.amount) / Number(mintInfo.supply)) * 100;
+                    const rawPct =
+                        (Number(acc.amount) / Number(mintInfo.supply)) * 100;
                     const percentStr = rawPct.toFixed(2);
                     return {
-                        address: acc.address.toString().slice(0, 4) + "..." + acc.address.toString().slice(-4),
+                        address:
+                            acc.address.toString().slice(0, 4) +
+                            "..." +
+                            acc.address.toString().slice(-4),
                         fullAddress: acc.address.toString(),
-                        amount: (Number(acc.amount) / Math.pow(10, mintInfo.decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+                        amount: (
+                            Number(acc.amount) / Math.pow(10, mintInfo.decimals)
+                        ).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                        }),
                         pct: percentStr + "%",
                         pctWidth: Math.min(100, rawPct).toFixed(2) + "%",
-                        rawPct: rawPct
+                        rawPct: rawPct,
                     };
                 });
 
@@ -174,15 +269,24 @@ const TokenTracker = () => {
                         symbol: "TOKEN",
                     },
                     tokenImage: null,
-                    uiSupply: (Number(mintInfo.supply) / Math.pow(10, mintInfo.decimals)).toLocaleString(),
+                    uiSupply: (
+                        Number(mintInfo.supply) /
+                        Math.pow(10, mintInfo.decimals)
+                    ).toLocaleString(),
                     creator: "On-Chain Verify",
                     fullCreator: address,
                     uiCreatorBalance: "Unknown",
                     uiMarketCap: "Fetching...",
                     uiTotalHolders: "N/A",
-                    mintAuthorityStatus: mintInfo.mintAuthority ? "Enabled" : "Revoked",
-                    freezeAuthorityStatus: mintInfo.freezeAuthority ? "Enabled" : "Revoked",
-                    risks: risks.sort((a, b) => (a.level === "danger" ? -1 : 1)),
+                    mintAuthorityStatus: mintInfo.mintAuthority
+                        ? "Enabled"
+                        : "Revoked",
+                    freezeAuthorityStatus: mintInfo.freezeAuthority
+                        ? "Enabled"
+                        : "Revoked",
+                    risks: risks.sort((a, b) =>
+                        a.level === "danger" ? -1 : 1,
+                    ),
                     markets: [
                         {
                             name: "Verification",
@@ -254,33 +358,33 @@ const TokenTracker = () => {
                         malicious permissions instantly.
                     </p>
 
-{/* Search Bar */}
-<form
-    onSubmit={handleSearch}
-    className="max-w-3xl mx-auto"
->
-    <div className="flex items-center gap-2 bg-[#111C26] border-2 border-gray-800 focus-within:border-blue-500 rounded-2xl px-4 py-3 md:py-4 transition-all shadow-2xl">
-        <Search size={18} className="text-gray-500 shrink-0" />
-        <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Paste mint address..."
-            className="flex-1 bg-transparent text-white text-sm md:text-base outline-none placeholder-gray-600 min-w-0"
-        />
-        <button
-            type="submit"
-            disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white font-bold px-5 py-2 rounded-xl transition-all flex items-center gap-2 text-sm shrink-0"
-        >
-            {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-                "Analyze"
-            )}
-        </button>
-    </div>
-</form>
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
+                        <div className="flex items-center gap-2 bg-[#111C26] border-2 border-gray-800 focus-within:border-blue-500 rounded-2xl px-4 py-3 md:py-4 transition-all shadow-2xl">
+                            <Search
+                                size={18}
+                                className="text-gray-500 shrink-0"
+                            />
+                            <input
+                                type="text"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                                placeholder="Paste mint address..."
+                                className="flex-1 bg-transparent text-white text-sm md:text-base outline-none placeholder-gray-600 min-w-0"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white font-bold px-5 py-2 rounded-xl transition-all flex items-center gap-2 text-sm shrink-0"
+                            >
+                                {isLoading ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    "Analyze"
+                                )}
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 <AnimatePresence mode="wait">
@@ -300,16 +404,23 @@ const TokenTracker = () => {
                                                 src={report.tokenImage}
                                                 alt={report.tokenMeta.symbol}
                                                 onError={(e) => {
-                                                    e.currentTarget.onerror = null;
-                                                    e.currentTarget.style.display = "none";
-                                                    e.currentTarget.nextSibling.style.display = "flex";
+                                                    e.currentTarget.onerror =
+                                                        null;
+                                                    e.currentTarget.style.display =
+                                                        "none";
+                                                    e.currentTarget.nextSibling.style.display =
+                                                        "flex";
                                                 }}
                                                 className="w-14 h-14 md:w-16 md:h-16 rounded-2xl object-cover shadow-lg shrink-0"
                                             />
                                         ) : null}
                                         <div
                                             className="w-14 h-14 md:w-16 md:h-16 bg-blue-600 rounded-2xl items-center justify-center text-white font-black text-2xl shadow-lg shadow-blue-500/20 shrink-0"
-                                            style={{ display: report.tokenImage ? "none" : "flex" }}
+                                            style={{
+                                                display: report.tokenImage
+                                                    ? "none"
+                                                    : "flex",
+                                            }}
                                         >
                                             {report.tokenMeta.symbol.charAt(0)}
                                         </div>
@@ -337,7 +448,12 @@ const TokenTracker = () => {
                                                 <Wallet size={15} /> Creator
                                             </span>
                                             <span
-                                                onClick={() => window.open(`https://solscan.io/account/${report.fullCreator}`, '_blank')}
+                                                onClick={() =>
+                                                    window.open(
+                                                        `https://solscan.io/account/${report.fullCreator}`,
+                                                        "_blank",
+                                                    )
+                                                }
                                                 className="text-blue-400 font-mono text-xs md:text-sm hover:underline cursor-pointer flex items-center gap-1"
                                             >
                                                 {report.creator}{" "}
@@ -346,7 +462,8 @@ const TokenTracker = () => {
                                         </div>
                                         <div className="flex justify-between items-center pb-3 md:pb-4 border-b border-gray-800">
                                             <span className="text-gray-400 font-medium flex items-center gap-2 text-sm md:text-base">
-                                                <Lock size={15} /> Creator Balance
+                                                <Lock size={15} /> Creator
+                                                Balance
                                             </span>
                                             <span
                                                 className={`font-bold text-sm md:text-base ${report.uiCreatorBalance === "0" || report.uiCreatorBalance === "Unknown" ? "text-green-400" : "text-yellow-400"}`}
@@ -372,7 +489,8 @@ const TokenTracker = () => {
                                         </div>
                                         <div className="flex justify-between items-center pb-3 md:pb-4 border-b border-gray-800">
                                             <span className="text-gray-400 font-medium flex items-center gap-2 text-sm md:text-base">
-                                                <ShieldCheck size={15} /> Mint Authority
+                                                <ShieldCheck size={15} /> Mint
+                                                Authority
                                             </span>
                                             <span
                                                 className={`font-bold text-sm md:text-base ${report.mintAuthorityStatus === "Enabled" ? "text-red-400" : "text-green-400"}`}
@@ -382,7 +500,8 @@ const TokenTracker = () => {
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-gray-400 font-medium flex items-center gap-2 text-sm md:text-base">
-                                                <Lock size={15} /> Freeze Authority
+                                                <Lock size={15} /> Freeze
+                                                Authority
                                             </span>
                                             <span
                                                 className={`font-bold text-sm md:text-base ${report.freezeAuthorityStatus === "Enabled" ? "text-red-400" : "text-green-400"}`}
@@ -400,15 +519,78 @@ const TokenTracker = () => {
                                     <h3 className="text-white font-bold text-lg md:text-xl mb-4">
                                         Insider Networks
                                     </h3>
-                                    <div className="flex items-center gap-3 p-3 md:p-4 bg-green-500/5 border border-green-500/20 rounded-2xl">
-                                        <CheckCircle2
-                                            className="text-green-400 shrink-0"
-                                            size={22}
-                                        />
-                                        <p className="text-green-400 font-bold uppercase text-xs tracking-wider">
-                                            No insider networks detected
-                                        </p>
-                                    </div>
+
+                                    {report.insiderNetworks &&
+                                    report.insiderNetworks.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-2xl mb-4">
+                                                <AlertTriangle
+                                                    className="text-red-400 shrink-0"
+                                                    size={18}
+                                                />
+                                                <p className="text-red-400 font-bold text-xs uppercase tracking-wider">
+                                                    {
+                                                        report.graphInsidersDetected
+                                                    }{" "}
+                                                    insider wallets detected
+                                                </p>
+                                            </div>
+                                            {report.insiderNetworks.map(
+                                                (network, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="p-3 bg-gray-900/60 border border-gray-800 rounded-xl"
+                                                    >
+                                                        <div className="flex justify-between items-center mb-1">
+                                                            <span className="text-gray-300 font-mono text-xs truncate max-w-[60%]">
+                                                                {network.id}
+                                                            </span>
+                                                            <span className="text-red-400 font-bold text-xs">
+                                                                {network.pct}%
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex gap-3 text-[11px] text-gray-500 mt-1">
+                                                            <span>
+                                                                {
+                                                                    network.activeAccounts
+                                                                }{" "}
+                                                                wallets
+                                                            </span>
+                                                            <span>·</span>
+                                                            <span>
+                                                                {
+                                                                    network.tokenAmount
+                                                                }{" "}
+                                                                tokens
+                                                            </span>
+                                                            <span>·</span>
+                                                            <span className="capitalize">
+                                                                {network.type}
+                                                            </span>
+                                                        </div>
+                                                        <div className="w-full bg-gray-800 h-1 rounded-full mt-2 overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-red-500"
+                                                                style={{
+                                                                    width: `${Math.min(100, parseFloat(network.pct))}%`,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3 p-3 md:p-4 bg-green-500/5 border border-green-500/20 rounded-2xl">
+                                            <CheckCircle2
+                                                className="text-green-400 shrink-0"
+                                                size={22}
+                                            />
+                                            <p className="text-green-400 font-bold uppercase text-xs tracking-wider">
+                                                No insider networks detected
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -426,7 +608,8 @@ const TokenTracker = () => {
                                                 {report.scoreNormalised}
                                             </span>
                                             <span className="text-gray-500 font-bold">
-                                                {" "}/ 100
+                                                {" "}
+                                                / 100
                                             </span>
                                         </div>
                                     </div>
@@ -449,11 +632,17 @@ const TokenTracker = () => {
                                             >
                                                 <div className="shrink-0">
                                                     {risk.level === "danger" ? (
-                                                        <ShieldAlert size={16} />
-                                                    ) : risk.level === "warning" || risk.level === "warn" ? (
+                                                        <ShieldAlert
+                                                            size={16}
+                                                        />
+                                                    ) : risk.level ===
+                                                          "warning" ||
+                                                      risk.level === "warn" ? (
                                                         <Shield size={16} />
                                                     ) : (
-                                                        <ShieldCheck size={16} />
+                                                        <ShieldCheck
+                                                            size={16}
+                                                        />
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -483,99 +672,135 @@ const TokenTracker = () => {
                                     </h3>
                                     <div className="space-y-3 md:space-y-4">
                                         {report.markets &&
-                                            report.markets.map((market, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="flex items-center justify-between p-3 md:p-4 bg-gray-900/50 rounded-2xl border border-gray-800"
-                                                >
-                                                    <div>
-                                                        <p className="text-white font-bold text-sm md:text-base">
-                                                            {market.name}
-                                                        </p>
-                                                        <p
-                                                            className={`text-xs ${market.status === "Active" || market.status === "On-Chain" ? "text-green-400" : "text-gray-500"}`}
-                                                        >
-                                                            {market.status}
-                                                        </p>
+                                            report.markets.map(
+                                                (market, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="flex items-center justify-between p-3 md:p-4 bg-gray-900/50 rounded-2xl border border-gray-800"
+                                                    >
+                                                        <div>
+                                                            <p className="text-white font-bold text-sm md:text-base">
+                                                                {market.name}
+                                                            </p>
+                                                            <p
+                                                                className={`text-xs ${market.status === "Active" || market.status === "On-Chain" ? "text-green-400" : "text-gray-500"}`}
+                                                            >
+                                                                {market.status}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-white font-mono text-sm">
+                                                                {
+                                                                    market.liquidity
+                                                                }
+                                                            </p>
+                                                            <p className="text-gray-500 text-xs">
+                                                                Liquidity
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-white font-mono text-sm">
-                                                            {market.liquidity}
-                                                        </p>
-                                                        <p className="text-gray-500 text-xs">
-                                                            Liquidity
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ),
+                                            )}
                                     </div>
                                 </div>
                             </div>
 
-{/* Right Column - Top Holders */}
-<div className="lg:col-span-1 order-3">
-    <div className="bg-[#111C26] border border-gray-800 rounded-3xl p-4 md:p-6 h-full flex flex-col">
-        <div className="flex justify-between items-center mb-4 md:mb-6">
-            <h3 className="text-white font-bold text-lg md:text-xl">
-                Top Holders
-            </h3>
-            <span className="text-gray-500 text-xs md:text-sm font-bold">
-                TOP 5 SHOWN
-            </span>
-        </div>
+                            {/* Right Column - Top Holders */}
+                            <div className="lg:col-span-1 order-3">
+                                <div className="bg-[#111C26] border border-gray-800 rounded-3xl p-4 md:p-6 h-full flex flex-col">
+                                    <div className="flex justify-between items-center mb-4 md:mb-6">
+                                        <h3 className="text-white font-bold text-lg md:text-xl">
+                                            Top Holders
+                                        </h3>
+                                        <span className="text-gray-500 text-xs md:text-sm font-bold">
+                                            TOP 5 SHOWN
+                                        </span>
+                                    </div>
 
-        <div className="flex-1 space-y-3 md:space-y-4">
-            {/* Header row */}
-            <div className="grid grid-cols-12 gap-1 text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest pb-2 border-b border-gray-800">
-                <div className="col-span-5">Account</div>
-                <div className="col-span-4 text-right">Amount</div>
-                <div className="col-span-3 text-right">%</div>
-            </div>
+                                    <div className="flex-1 space-y-3 md:space-y-4">
+                                        {/* Header row */}
+                                        <div className="grid grid-cols-12 gap-1 text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest pb-2 border-b border-gray-800">
+                                            <div className="col-span-5">
+                                                Account
+                                            </div>
+                                            <div className="col-span-4 text-right">
+                                                Amount
+                                            </div>
+                                            <div className="col-span-3 text-right">
+                                                %
+                                            </div>
+                                        </div>
 
-            {report.topHolders.map((holder, idx) => (
-                <div
-                    key={idx}
-                    className="grid grid-cols-12 gap-1 items-center group"
-                >
-                    {/* Account */}
-                    <div className="col-span-5 flex items-center gap-1 min-w-0">
-                        <span
-                            onClick={() => window.open(`https://solscan.io/account/${holder.fullAddress}`, '_blank')}
-                            className="text-blue-400 font-mono text-xs group-hover:underline cursor-pointer truncate"
-                        >
-                            {holder.address}
-                        </span>
-                        <span className="bg-orange-500/20 text-orange-400 text-[7px] px-1 py-0.5 rounded font-black uppercase shrink-0 hidden sm:inline">
-                            TOP
-                        </span>
-                    </div>
+                                        {report.topHolders.map(
+                                            (holder, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="grid grid-cols-12 gap-1 items-center group"
+                                                >
+                                                    {/* Account */}
+                                                    <div className="col-span-5 flex items-center gap-1 min-w-0">
+                                                        <span
+                                                            onClick={() =>
+                                                                window.open(
+                                                                    `https://solscan.io/account/${holder.fullAddress}`,
+                                                                    "_blank",
+                                                                )
+                                                            }
+                                                            className="text-blue-400 font-mono text-xs group-hover:underline cursor-pointer truncate"
+                                                        >
+                                                            {holder.address}
+                                                        </span>
+                                                        <span className="bg-orange-500/20 text-orange-400 text-[7px] px-1 py-0.5 rounded font-black uppercase shrink-0 hidden sm:inline">
+                                                            TOP
+                                                        </span>
+                                                    </div>
 
-                    {/* Amount — truncated */}
-                    <div className="col-span-4 text-right text-gray-400 font-mono text-xs truncate">
-                        {Number(holder.amount.replace(/,/g, '')).toLocaleString(undefined, { notation: 'compact', maximumFractionDigits: 2 })}
-                    </div>
+                                                    {/* Amount — truncated */}
+                                                    <div className="col-span-4 text-right text-gray-400 font-mono text-xs truncate">
+                                                        {Number(
+                                                            holder.amount.replace(
+                                                                /,/g,
+                                                                "",
+                                                            ),
+                                                        ).toLocaleString(
+                                                            undefined,
+                                                            {
+                                                                notation:
+                                                                    "compact",
+                                                                maximumFractionDigits: 2,
+                                                            },
+                                                        )}
+                                                    </div>
 
-                    {/* Percentage + bar */}
-                    <div className="col-span-3 text-right">
-                        <div className="text-white font-bold font-mono text-xs">
-                            {holder.pct}
-                        </div>
-                        <div className="w-full bg-gray-800 h-1 rounded-full mt-1 overflow-hidden">
-                            <div
-                                className={`h-full ${holder.rawPct > 20 ? "bg-red-500" : "bg-blue-500"}`}
-                                style={{ width: holder.pctWidth }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            ))}
-        </div>
+                                                    {/* Percentage + bar */}
+                                                    <div className="col-span-3 text-right">
+                                                        <div className="text-white font-bold font-mono text-xs">
+                                                            {holder.pct}
+                                                        </div>
+                                                        <div className="w-full bg-gray-800 h-1 rounded-full mt-1 overflow-hidden">
+                                                            <div
+                                                                className={`h-full ${holder.rawPct > 20 ? "bg-red-500" : "bg-blue-500"}`}
+                                                                style={{
+                                                                    width: holder.pctWidth,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
 
-        <a target="_blank" href={`https://solscan.io/token/${report.mint}`} className="w-full mt-6 md:mt-8 py-3 md:py-4 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 text-sm">
-            View All Holders <ExternalLink size={13} />
-        </a>
-    </div>
-</div>
+                                    <a
+                                        target="_blank"
+                                        href={`https://solscan.io/token/${report.mint}`}
+                                        className="w-full mt-6 md:mt-8 py-3 md:py-4 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        View All Holders{" "}
+                                        <ExternalLink size={13} />
+                                    </a>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
