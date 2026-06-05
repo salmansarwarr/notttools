@@ -430,6 +430,33 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                                             </p>
                                         </div>
                                     </div>
+                                    <div className="flex items-start gap-3">
+                                        <div
+                                            className="w-5 h-5 rounded-full shrink-0 mt-0.5"
+                                            style={{
+                                                background: "#ec4899",
+                                                boxShadow: "0 0 8px #ec4899",
+                                            }}
+                                        />
+                                        <div>
+                                            <p className="text-white font-bold text-sm">
+                                                Insider
+                                            </p>
+                                            <p className="text-gray-500 text-xs">
+                                                Connected to few accounts, and
+                                                participated in insider trading
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-bold text-sm">
+                                                Link
+                                            </p>
+                                            <p className="text-gray-500 text-xs">
+                                                Connected to few accounts, and
+                                                participated in insider trading
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
