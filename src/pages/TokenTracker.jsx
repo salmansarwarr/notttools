@@ -20,11 +20,13 @@ import { toast } from "react-toastify";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { getMint } from "@solana/spl-token";
 import constants from "../constants";
+import InsiderNetworkModal from "../components/Graph";
 
 const TokenTracker = () => {
     const [address, setAddress] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [report, setReport] = useState(null);
+    const [showGraphModal, setShowGraphModal] = useState(false);
 
     const handleSearch = async (e) => {
         if (e) e.preventDefault();
@@ -149,24 +151,24 @@ const TokenTracker = () => {
                               rawPct: Number(h.pct || 0),
                           }))
                         : [],
-                    insiderNetworks: data.insiderNetworks
-                        ? data.insiderNetworks.map((n) => ({
-                              id: n.id,
-                              size: n.size,
-                              type: n.type,
-                              tokenAmount: (
-                                  Number(n.tokenAmount) / Math.pow(10, decimals)
-                              ).toLocaleString(undefined, {
-                                  maximumFractionDigits: 0,
-                              }),
-                              pct: (
-                                  (Number(n.tokenAmount) /
-                                      Number(data.token.supply)) *
-                                  100
-                              ).toFixed(2),
-                              activeAccounts: n.activeAccounts,
-                          }))
-                        : [],
+                    insiderNetworks:
+                        data.insiderNetworks?.map((n) => ({
+                            id: n.id,
+                            size: n.size,
+                            type: n.type,
+                            tokenAmount: (
+                                Number(n.tokenAmount) / Math.pow(10, decimals)
+                            ).toLocaleString(undefined, {
+                                maximumFractionDigits: 0,
+                            }),
+                            pct: (
+                                (Number(n.tokenAmount) /
+                                    Number(data.token.supply)) *
+                                100
+                            ).toFixed(2),
+                            activeAccounts: n.activeAccounts,
+                            walletAddresses: n.walletAddresses || [], // if API ever returns these
+                        })) ?? [],
                     graphInsidersDetected: data.graphInsidersDetected ?? 0,
                 };
 
@@ -336,6 +338,11 @@ const TokenTracker = () => {
 
     return (
         <div className="min-h-screen bg-[#0A151E] pt-20 md:pt-28 px-3 md:px-4 pb-12">
+            <InsiderNetworkModal
+                isOpen={showGraphModal}
+                onClose={() => setShowGraphModal(false)}
+                report={report}
+            />
             <div className="max-w-7xl mx-auto">
                 {/* Header Section */}
                 <div className="text-center mb-8 md:mb-12">
@@ -520,6 +527,14 @@ const TokenTracker = () => {
                                         Insider Networks
                                     </h3>
 
+                                    {report.insiderNetworks?.length > 0 && (
+                                        <button
+                                            onClick={() => setShowGraphModal(true)}
+                                            className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 mb-4"
+                                        >
+                                            View Network Map
+                                        </button>
+                                    )}
                                     {report.insiderNetworks &&
                                     report.insiderNetworks.length > 0 ? (
                                         <div className="space-y-3">
