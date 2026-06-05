@@ -513,9 +513,9 @@ const TokenTracker = () => {
                                 </div>
 
                                 <div className="bg-[#111C26] border border-gray-800 rounded-3xl p-4 md:p-6 relative overflow-hidden group">
-                                    <div className="absolute top-3 right-3 bg-yellow-500/20 text-yellow-500 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">
+                                    {/* <div className="absolute top-3 right-3 bg-yellow-500/20 text-yellow-500 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">
                                         Beta
-                                    </div>
+                                    </div> */}
                                     <h3 className="text-white font-bold text-lg md:text-xl mb-4">
                                         Insider Networks
                                     </h3>
