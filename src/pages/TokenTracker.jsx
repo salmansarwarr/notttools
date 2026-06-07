@@ -53,7 +53,6 @@ const TokenTracker = () => {
 
             if (rugCheckResponse.ok) {
                 const data = await rugCheckResponse.json();
-                console.log("RugCheck API Data:", data);
 
                 const decimals = data.token?.decimals ?? 9;
                 const normalizedReport = {
@@ -89,13 +88,17 @@ const TokenTracker = () => {
                                   maximumFractionDigits: 2,
                               })
                             : "0",
-                    uiMarketCap: data.totalMarketLiquidity
-                        ? "$" +
-                          Number(data.totalMarketLiquidity).toLocaleString(
-                              undefined,
-                              { maximumFractionDigits: 2 },
-                          )
-                        : "$0.00",
+                    uiMarketCap:
+                        data.price && data.token?.supply
+                            ? "$" +
+                              (
+                                  (Number(data.token.supply) /
+                                      Math.pow(10, data.token.decimals || 0)) *
+                                  Number(data.price)
+                              ).toLocaleString(undefined, {
+                                  maximumFractionDigits: 0,
+                              })
+                            : "$0",
                     uiTotalHolders: data.totalHolders
                         ? Number(data.totalHolders).toLocaleString()
                         : "1",
@@ -529,7 +532,9 @@ const TokenTracker = () => {
 
                                     {report.insiderNetworks?.length > 0 && (
                                         <button
-                                            onClick={() => setShowGraphModal(true)}
+                                            onClick={() =>
+                                                setShowGraphModal(true)
+                                            }
                                             className="text-xs text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 mb-4"
                                         >
                                             View Network Map
