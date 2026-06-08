@@ -487,23 +487,49 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                     {/* Mobile panel toggle buttons */}
                     <div className="md:hidden absolute top-3 left-3 flex gap-2 z-10">
                         <button
-                            onClick={() => setMobilePanel(p => p === 'legend' ? null : 'legend')}
+                            onClick={() =>
+                                setMobilePanel((p) =>
+                                    p === "legend" ? null : "legend",
+                                )
+                            }
                             className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all"
                             style={{
-                                background: mobilePanel === 'legend' ? 'rgba(96,165,250,0.2)' : 'rgba(5,14,22,0.85)',
-                                borderColor: mobilePanel === 'legend' ? '#60a5fa' : 'rgba(255,255,255,0.1)',
-                                color: mobilePanel === 'legend' ? '#60a5fa' : '#9ca3af',
+                                background:
+                                    mobilePanel === "legend"
+                                        ? "rgba(96,165,250,0.2)"
+                                        : "rgba(5,14,22,0.85)",
+                                borderColor:
+                                    mobilePanel === "legend"
+                                        ? "#60a5fa"
+                                        : "rgba(255,255,255,0.1)",
+                                color:
+                                    mobilePanel === "legend"
+                                        ? "#60a5fa"
+                                        : "#9ca3af",
                             }}
                         >
                             🎨 Legend
                         </button>
                         <button
-                            onClick={() => setMobilePanel(p => p === 'info' ? null : 'info')}
+                            onClick={() =>
+                                setMobilePanel((p) =>
+                                    p === "info" ? null : "info",
+                                )
+                            }
                             className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all"
                             style={{
-                                background: mobilePanel === 'info' ? 'rgba(96,165,250,0.2)' : 'rgba(5,14,22,0.85)',
-                                borderColor: mobilePanel === 'info' ? '#60a5fa' : 'rgba(255,255,255,0.1)',
-                                color: mobilePanel === 'info' ? '#60a5fa' : '#9ca3af',
+                                background:
+                                    mobilePanel === "info"
+                                        ? "rgba(96,165,250,0.2)"
+                                        : "rgba(5,14,22,0.85)",
+                                borderColor:
+                                    mobilePanel === "info"
+                                        ? "#60a5fa"
+                                        : "rgba(255,255,255,0.1)",
+                                color:
+                                    mobilePanel === "info"
+                                        ? "#60a5fa"
+                                        : "#9ca3af",
                             }}
                         >
                             ⠿ Info
@@ -546,7 +572,11 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                                     <span className="text-gray-500 text-sm">
                                         Address:
                                     </span>
-                                    <a className="flex items-center gap-1" target="_blank" href={`https://solscan.io/account/${selectedNode.fullId || selectedNode.networkId}`}>
+                                    <a
+                                        className="flex items-center gap-1"
+                                        target="_blank"
+                                        href={`https://solscan.io/account/${selectedNode.fullId || selectedNode.networkId}`}
+                                    >
                                         <span className="text-blue-400 font-mono text-xs text-right max-w-[180px] break-all">
                                             {selectedNode.fullId ||
                                                 selectedNode.networkId}
@@ -555,7 +585,7 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                                             size={11}
                                             className="text-blue-400 shrink-0"
                                         />
-                                    </div>
+                                    </a>
                                 </div>
 
                                 <div className="flex justify-between">
@@ -820,16 +850,19 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                 <div
                     className="md:hidden fixed inset-0 z-40"
                     onClick={() => setMobilePanel(null)}
-                    style={{ background: 'rgba(0,0,0,0.5)' }}
+                    style={{ background: "rgba(0,0,0,0.5)" }}
                 />
             )}
             {/* Legend sheet */}
             <div
                 className="md:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-gray-800 overflow-y-auto transition-transform duration-300"
                 style={{
-                    background: 'rgba(5,14,22,0.98)',
-                    maxHeight: '65vh',
-                    transform: mobilePanel === 'legend' ? 'translateY(0)' : 'translateY(100%)',
+                    background: "rgba(5,14,22,0.98)",
+                    maxHeight: "65vh",
+                    transform:
+                        mobilePanel === "legend"
+                            ? "translateY(0)"
+                            : "translateY(100%)",
                 }}
             >
                 <div
@@ -844,37 +877,93 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                 </div>
                 <div className="px-4 py-4 space-y-5">
                     <div>
-                        <p className="text-[10px] font-black tracking-widest text-blue-400 mb-3 text-center border-b border-gray-800 pb-2">NON-TRADING NETWORK MEMBERS</p>
+                        <p className="text-[10px] font-black tracking-widest text-blue-400 mb-3 text-center border-b border-gray-800 pb-2">
+                            NON-TRADING NETWORK MEMBERS
+                        </p>
                         <div className="space-y-3">
                             {[
-                                { role: 'major', label: 'Major Hub', desc: 'Connected to 10+ insider accounts', color: '#ffffff' },
-                                { role: 'minor', label: 'Minor Hub', desc: 'Connected to 5–10 insider accounts', color: '#60a5fa' },
-                                { role: 'connected', label: 'Connected', desc: 'Connected to 2–4 insider accounts', color: '#60a5fa' },
-                                { role: 'leaf', label: 'Leaf', desc: 'Only received from insiders', color: '#60a5fa' },
-                            ].map(item => (
-                                <div key={item.role} className="flex items-start gap-3">
-                                    <div className="w-5 h-5 rounded-full shrink-0 mt-0.5 border border-white/20" style={{ background: item.color }} />
+                                {
+                                    role: "major",
+                                    label: "Major Hub",
+                                    desc: "Connected to 10+ insider accounts",
+                                    color: "#ffffff",
+                                },
+                                {
+                                    role: "minor",
+                                    label: "Minor Hub",
+                                    desc: "Connected to 5–10 insider accounts",
+                                    color: "#60a5fa",
+                                },
+                                {
+                                    role: "connected",
+                                    label: "Connected",
+                                    desc: "Connected to 2–4 insider accounts",
+                                    color: "#60a5fa",
+                                },
+                                {
+                                    role: "leaf",
+                                    label: "Leaf",
+                                    desc: "Only received from insiders",
+                                    color: "#60a5fa",
+                                },
+                            ].map((item) => (
+                                <div
+                                    key={item.role}
+                                    className="flex items-start gap-3"
+                                >
+                                    <div
+                                        className="w-5 h-5 rounded-full shrink-0 mt-0.5 border border-white/20"
+                                        style={{ background: item.color }}
+                                    />
                                     <div>
-                                        <p className="text-white font-bold text-sm">{item.label}</p>
-                                        <p className="text-gray-500 text-xs">{item.desc}</p>
+                                        <p className="text-white font-bold text-sm">
+                                            {item.label}
+                                        </p>
+                                        <p className="text-gray-500 text-xs">
+                                            {item.desc}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </div>
                     <div>
-                        <p className="text-[10px] font-black tracking-widest text-pink-500 mb-3 text-center border-b border-gray-800 pb-2">INSIDER TRADING</p>
+                        <p className="text-[10px] font-black tracking-widest text-pink-500 mb-3 text-center border-b border-gray-800 pb-2">
+                            INSIDER TRADING
+                        </p>
                         <div className="space-y-3">
                             {[
-                                { label: 'Insider Hub', desc: 'Connected to 10+ accounts and participated in insider trading' },
-                                { label: 'Insider', desc: 'Connected to few accounts, and participated in insider trading' },
-                                { label: 'Link', desc: 'Transaction between accounts' },
-                            ].map(item => (
-                                <div key={item.label} className="flex items-start gap-3">
-                                    <div className="w-5 h-5 rounded-full shrink-0 mt-0.5" style={{ background: '#ec4899', boxShadow: '0 0 8px #ec4899' }} />
+                                {
+                                    label: "Insider Hub",
+                                    desc: "Connected to 10+ accounts and participated in insider trading",
+                                },
+                                {
+                                    label: "Insider",
+                                    desc: "Connected to few accounts, and participated in insider trading",
+                                },
+                                {
+                                    label: "Link",
+                                    desc: "Transaction between accounts",
+                                },
+                            ].map((item) => (
+                                <div
+                                    key={item.label}
+                                    className="flex items-start gap-3"
+                                >
+                                    <div
+                                        className="w-5 h-5 rounded-full shrink-0 mt-0.5"
+                                        style={{
+                                            background: "#ec4899",
+                                            boxShadow: "0 0 8px #ec4899",
+                                        }}
+                                    />
                                     <div>
-                                        <p className="text-white font-bold text-sm">{item.label}</p>
-                                        <p className="text-gray-500 text-xs">{item.desc}</p>
+                                        <p className="text-white font-bold text-sm">
+                                            {item.label}
+                                        </p>
+                                        <p className="text-gray-500 text-xs">
+                                            {item.desc}
+                                        </p>
                                     </div>
                                 </div>
                             ))}
@@ -887,9 +976,12 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
             <div
                 className="md:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl border-t border-gray-800 overflow-y-auto transition-transform duration-300"
                 style={{
-                    background: 'rgba(5,14,22,0.98)',
-                    maxHeight: '65vh',
-                    transform: mobilePanel === 'info' ? 'translateY(0)' : 'translateY(100%)',
+                    background: "rgba(5,14,22,0.98)",
+                    maxHeight: "65vh",
+                    transform:
+                        mobilePanel === "info"
+                            ? "translateY(0)"
+                            : "translateY(100%)",
                 }}
             >
                 <div
@@ -898,7 +990,9 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                 >
                     <div className="flex items-center gap-2 text-blue-400">
                         <span className="text-base">⠿</span>
-                        <span className="font-bold text-sm">Graph Information</span>
+                        <span className="font-bold text-sm">
+                            Graph Information
+                        </span>
                     </div>
                     <ChevronDown size={16} className="text-gray-500" />
                 </div>
@@ -908,37 +1002,92 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                         <span className="font-bold text-sm">Overview</span>
                     </div>
                     {[
-                        { icon: '👥', label: 'TOTAL ACCOUNTS', value: totalAccounts, bg: '#312e81' },
-                        { icon: '🔗', label: 'TOTAL CONNECTIONS', value: totalConnections, bg: '#831843' },
-                        { icon: '🔀', label: 'NETWORKS', value: networks.length, bg: '#0c4a6e' },
-                    ].map(stat => (
-                        <div key={stat.label} className="flex items-center gap-3 p-3 rounded-xl border border-gray-800/50" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style={{ background: stat.bg + '80' }}>{stat.icon}</div>
+                        {
+                            icon: "👥",
+                            label: "TOTAL ACCOUNTS",
+                            value: totalAccounts,
+                            bg: "#312e81",
+                        },
+                        {
+                            icon: "🔗",
+                            label: "TOTAL CONNECTIONS",
+                            value: totalConnections,
+                            bg: "#831843",
+                        },
+                        {
+                            icon: "🔀",
+                            label: "NETWORKS",
+                            value: networks.length,
+                            bg: "#0c4a6e",
+                        },
+                    ].map((stat) => (
+                        <div
+                            key={stat.label}
+                            className="flex items-center gap-3 p-3 rounded-xl border border-gray-800/50"
+                            style={{ background: "rgba(255,255,255,0.03)" }}
+                        >
+                            <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0"
+                                style={{ background: stat.bg + "80" }}
+                            >
+                                {stat.icon}
+                            </div>
                             <div>
-                                <p className="text-gray-500 text-[10px] font-black tracking-widest">{stat.label}</p>
-                                <p className="text-white font-black text-2xl leading-tight">{stat.value}</p>
+                                <p className="text-gray-500 text-[10px] font-black tracking-widest">
+                                    {stat.label}
+                                </p>
+                                <p className="text-white font-black text-2xl leading-tight">
+                                    {stat.value}
+                                </p>
                             </div>
                         </div>
                     ))}
                     {majorHubs.length > 0 && (
                         <div>
                             <div className="flex items-center gap-2 mb-3 pt-2 border-t border-gray-800">
-                                <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                                <span className="text-white font-bold text-sm">Major Hubs ({majorHubs.length})</span>
+                                <Star
+                                    size={14}
+                                    className="text-yellow-400 fill-yellow-400"
+                                />
+                                <span className="text-white font-bold text-sm">
+                                    Major Hubs ({majorHubs.length})
+                                </span>
                             </div>
                             <div className="space-y-2">
-                                {majorHubs.map(net => (
-                                    <div key={net.id} className="p-3 rounded-xl border border-gray-800/60" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                {majorHubs.map((net) => (
+                                    <div
+                                        key={net.id}
+                                        className="p-3 rounded-xl border border-gray-800/60"
+                                        style={{
+                                            background:
+                                                "rgba(255,255,255,0.03)",
+                                        }}
+                                    >
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#f59e0b', boxShadow: '0 0 6px #f59e0b' }} />
+                                            <div
+                                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                                style={{
+                                                    background: "#f59e0b",
+                                                    boxShadow:
+                                                        "0 0 6px #f59e0b",
+                                                }}
+                                            />
                                             <span className="text-blue-400 font-mono text-xs flex items-center gap-1">
-                                                {truncate(net.id.replace(/-/g, ''), 5)}
+                                                {truncate(
+                                                    net.id.replace(/-/g, ""),
+                                                    5,
+                                                )}
                                                 <ExternalLink size={10} />
                                             </span>
                                         </div>
                                         <div className="flex gap-2">
-                                            <span className="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30">{net.activeAccounts} connections</span>
-                                            <span className="bg-green-500/20 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/30">{fmtTokens(net.tokenAmount)} tokens</span>
+                                            <span className="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30">
+                                                {net.activeAccounts} connections
+                                            </span>
+                                            <span className="bg-green-500/20 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/30">
+                                                {fmtTokens(net.tokenAmount)}{" "}
+                                                tokens
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
@@ -946,17 +1095,40 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                         </div>
                     )}
                     <div>
-                        <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mb-3 pt-2 border-t border-gray-800">All Networks</p>
+                        <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mb-3 pt-2 border-t border-gray-800">
+                            All Networks
+                        </p>
                         <div className="space-y-1.5">
-                            {networks.map(net => (
-                                <div key={net.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-800/40" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                            {networks.map((net) => (
+                                <div
+                                    key={net.id}
+                                    className="flex items-center justify-between p-2.5 rounded-lg border border-gray-800/40"
+                                    style={{
+                                        background: "rgba(255,255,255,0.02)",
+                                    }}
+                                >
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: (net.activeAccounts || 0) >= 10 ? '#ec4899' : '#60a5fa' }} />
-                                        <span className="text-gray-400 font-mono text-[11px] truncate">{net.id}</span>
+                                        <div
+                                            className="w-2 h-2 rounded-full shrink-0"
+                                            style={{
+                                                background:
+                                                    (net.activeAccounts || 0) >=
+                                                    10
+                                                        ? "#ec4899"
+                                                        : "#60a5fa",
+                                            }}
+                                        />
+                                        <span className="text-gray-400 font-mono text-[11px] truncate">
+                                            {net.id}
+                                        </span>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0 ml-2">
-                                        <span className="text-gray-500 text-[10px]">{net.activeAccounts}w</span>
-                                        <span className="text-red-400 text-[10px] font-bold">{net.pct}%</span>
+                                        <span className="text-gray-500 text-[10px]">
+                                            {net.activeAccounts}w
+                                        </span>
+                                        <span className="text-red-400 text-[10px] font-bold">
+                                            {net.pct}%
+                                        </span>
                                     </div>
                                 </div>
                             ))}
