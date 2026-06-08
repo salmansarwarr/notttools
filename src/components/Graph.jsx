@@ -546,7 +546,7 @@ const InsiderNetworkModal = ({ isOpen, onClose, report }) => {
                                     <span className="text-gray-500 text-sm">
                                         Address:
                                     </span>
-                                    <div className="flex items-center gap-1">
+                                    <a className="flex items-center gap-1" target="_blank" href={`https://solscan.io/account/${selectedNode.fullId || selectedNode.networkId}`}>
                                         <span className="text-blue-400 font-mono text-xs text-right max-w-[180px] break-all">
                                             {selectedNode.fullId ||
                                                 selectedNode.networkId}
