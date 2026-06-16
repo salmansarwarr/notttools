@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Target,
   Zap,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 const Purpose = () => {
+  const { t } = useTranslation();
   const missions = [
     {
       icon: <Zap className="text-yellow-400" size={32} />,
@@ -90,7 +92,7 @@ const Purpose = () => {
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl px-6 py-3 mb-6">
             <Target className="text-blue-400" size={24} />
-            <span className="text-blue-300 font-semibold">Our Purpose</span>
+            <span className="text-blue-300 font-semibold">{t("our_purpose")}</span>
           </div>
 
           <h1 className="text-6xl font-bold text-white mb-6">
@@ -98,14 +100,10 @@ const Purpose = () => {
               NFT Membership
             </span>
             <br />
-            <span className="text-white">Revolution</span>
+            <span className="text-white">{t("revolution")}</span>
           </h1>
 
-          <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed">
-            Introducing a new paradigm where NFTs aren't just collectibles -
-            they're keys to unlimited Web3 creation. Mint, stake with
-            commitment, and unlock premium token creation features on Solana.
-          </p>
+          <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed">{t("purpose_hero_desc")}</p>
         </div>
 
         {/* Mission Cards */}
@@ -157,12 +155,7 @@ const Purpose = () => {
             <h2 className="text-4xl font-bold text-white mb-6">
               The Future of NFT Utility
             </h2>
-            <p className="text-gray-400 text-lg mb-6">
-              We're pioneering a new model where NFTs provide real, tangible
-              value beyond speculation. Our membership system creates
-              sustainable utility that benefits both creators and holders
-              long-term.
-            </p>
+            <p className="text-gray-400 text-lg mb-6">{t("future_nft_desc")}</p>
 
             <div className="space-y-4">
               {[
@@ -228,11 +221,7 @@ const Purpose = () => {
           <h2 className="text-4xl font-bold text-white mb-6">
             Start Your NFT Membership
           </h2>
-          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
-            Mint your exclusive NFT today and unlock premium token creation
-            features. Join the revolution where NFTs provide real utility and
-            lasting value through commitment-based staking.
-          </p>
+          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">{t("start_nft_desc")}</p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
@@ -240,7 +229,7 @@ const Purpose = () => {
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
             >
               <Rocket size={20} />
-              Mint NFT Now
+              {t("mint_nft_now")}
             </a>
 
             <a
@@ -248,7 +237,7 @@ const Purpose = () => {
               className="border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Users size={20} />
-              Learn More
+              {t("learn_more")}
             </a>
           </div>
         </div>

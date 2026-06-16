@@ -31,38 +31,38 @@ const AddLiquidity = () => {
   const steps = [
     {
       id: 1,
-      title: "Visit Raydium",
-      description: "Leading AMM platform on Solana ecosystem",
+      title: t("visit_raydium"),
+      description: t("raydium_leader_desc"),
       image: "/images/raydium-homepage.png", // You'll need to add these images
     },
     {
       id: 2,
-      title: "Connect Your Wallet",
-      description: "Phantom, Solflare or other Solana wallets",
+      title: t("connect_wallet_title"),
+      description: t("solana_wallets_desc"),
       image: "/images/connect-wallet.png",
     },
     {
       id: 3,
-      title: "Go to Liquidity Tab",
-      description: "Select Liquidity from the left menu",
+      title: t("go_liquidity_tab"),
+      description: t("select_liquidity_menu"),
       image: "/images/liquidity-tab.png",
     },
     {
       id: 4,
-      title: "Select Token Pair",
-      description: "Choose the token pair you want to add liquidity to",
+      title: t("select_token_pair"),
+      description: t("choose_pair_desc"),
       image: "/images/select-tokens.png",
     },
     {
       id: 5,
-      title: "Enter Amounts",
-      description: "Specify the token amounts you want to add",
+      title: t("enter_amounts"),
+      description: t("specify_amounts_desc"),
       image: "/images/enter-amounts.png",
     },
     {
       id: 6,
-      title: "Confirm Transaction",
-      description: "Approve the transaction from your wallet to add liquidity",
+      title: t("confirm_transaction"),
+      description: t("approve_transaction_desc"),
       image: "/images/confirm-transaction.png",
     },
   ];
@@ -70,36 +70,35 @@ const AddLiquidity = () => {
   const benefits = [
     {
       icon: <DollarSign className="w-8 h-8 text-green-400" />,
-      title: "Earn Trading Fees",
-      description:
-        "Earn 0.25% fees from every trade in the pool you provide liquidity to",
+      title: t("earn_trading_fees"),
+      description: t("earn_fees_desc"),
     },
     {
       icon: <TrendingUp className="w-8 h-8 text-blue-400" />,
-      title: "Yield Farming",
-      description: "Stake your LP tokens in farms for additional rewards",
+      title: t("yield_farming"),
+      description: t("yield_farming_desc"),
     },
     {
       icon: <BarChart3 className="w-8 h-8 text-purple-400" />,
-      title: "Compound Interest",
-      description: "Your earnings are automatically added to your position",
+      title: t("compound_interest"),
+      description: t("compound_interest_desc"),
     },
   ];
 
   const risks = [
     {
-      title: "Impermanent Loss",
-      description: "Can occur when token prices change at different rates",
+      title: t("impermanent_loss"),
+      description: t("impermanent_loss_desc"),
       severity: "medium",
     },
     {
-      title: "Smart Contract Risk",
-      description: "Potential security vulnerabilities in the protocol",
+      title: t("smart_contract_risk"),
+      description: t("smart_contract_risk_desc"),
       severity: "low",
     },
     {
-      title: "Market Volatility",
-      description: "Natural volatility of cryptocurrency markets",
+      title: t("market_volatility"),
+      description: t("market_volatility_desc"),
       severity: "high",
     },
   ];
@@ -142,7 +141,7 @@ const AddLiquidity = () => {
                     copyToClipboard("https://noottools.io/add-liquidity")
                   }
                   className="p-2 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg transition-colors"
-                  title="Copy address"
+                  title={t("copy_address")}
                 >
                   {copiedText === "https://noottools.io/add-liquidity" ? (
                     <CheckCircle className="w-4 h-4 text-green-400" />
@@ -225,15 +224,15 @@ const AddLiquidity = () => {
                           </p>
                           <div className="flex items-center gap-2 text-blue-400">
                             <CheckCircle className="w-5 h-5" />
-                            <span>Low transaction fees</span>
+                            <span>{t("low_transaction_fees")}</span>
                           </div>
                           <div className="flex items-center gap-2 text-blue-400">
                             <CheckCircle className="w-5 h-5" />
-                            <span>Fast transaction speeds</span>
+                            <span>{t("fast_transaction_speeds")}</span>
                           </div>
                           <div className="flex items-center gap-2 text-blue-400">
                             <CheckCircle className="w-5 h-5" />
-                            <span>High APY rates</span>
+                            <span>{t("high_apy_rates")}</span>
                           </div>
                         </div>
                       )}
@@ -282,7 +281,7 @@ const AddLiquidity = () => {
                             <p className="text-blue-200 text-sm">
                               If you're using it for the first time, prefer
                               adding liquidity to existing pools instead of
-                              "Create Pool".
+                              "{t("create_pool")}".
                             </p>
                           </div>
                         </div>
@@ -350,11 +349,11 @@ const AddLiquidity = () => {
                             </div>
                             <div className="flex items-center gap-2 text-green-400">
                               <CheckCircle className="w-5 h-5" />
-                              <span>LP tokens received instantly</span>
+                              <span>{t("lp_received_instantly")}</span>
                             </div>
                             <div className="flex items-center gap-2 text-green-400">
                               <CheckCircle className="w-5 h-5" />
-                              <span>Start earning fees immediately</span>
+                              <span>{t("start_earning_immediately")}</span>
                             </div>
                           </div>
                         </div>

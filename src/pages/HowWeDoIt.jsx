@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Cog,
   Code,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 
 const HowWeDoIt = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("development");
 
   const tabs = [
@@ -413,7 +415,7 @@ const HowWeDoIt = () => {
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-green-600/20 to-blue-600/20 border border-green-500/30 rounded-2xl px-6 py-3 mb-6">
             <Cog className="text-green-400" size={24} />
-            <span className="text-green-300 font-semibold">How We Do It</span>
+            <span className="text-green-300 font-semibold">{t("how_we_do_it")}</span>
           </div>
 
           <h1 className="text-6xl font-bold text-white mb-6">
@@ -421,14 +423,10 @@ const HowWeDoIt = () => {
               NFT Membership
             </span>
             <br />
-            <span className="text-white">How It Works</span>
+            <span className="text-white">{t("how_it_works")}</span>
           </h1>
 
-          <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed">
-            Discover how our revolutionary NFT membership system works: mint
-            exclusive NFTs, stake them once for 6 months of free token creation,
-            and build unlimited Web3 projects.
-          </p>
+          <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed">{t("how_it_works_desc")}</p>
         </div>
 
         {/* Tab Navigation */}
@@ -460,11 +458,7 @@ const HowWeDoIt = () => {
             <h2 className="text-4xl font-bold text-white mb-6">
               Quality Assurance
             </h2>
-            <p className="text-gray-400 text-lg mb-6">
-              Every line of code is thoroughly tested and reviewed. We maintain
-              the highest standards of quality through comprehensive testing,
-              code reviews, and continuous monitoring.
-            </p>
+            <p className="text-gray-400 text-lg mb-6">{t("qa_desc")}</p>
 
             <div className="space-y-4">
               {[
@@ -490,23 +484,23 @@ const HowWeDoIt = () => {
               <div className="text-3xl font-bold text-green-400 mb-2">
                 99.9%
               </div>
-              <div className="text-gray-400">Uptime</div>
+              <div className="text-gray-400">{t("uptime")}</div>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-6 text-center border border-gray-700">
               <div className="text-3xl font-bold text-blue-400 mb-2">100%</div>
-              <div className="text-gray-400">Code Coverage</div>
+              <div className="text-gray-400">{t("code_coverage")}</div>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-6 text-center border border-gray-700">
               <div className="text-3xl font-bold text-purple-400 mb-2">
                 &lt;1s
               </div>
-              <div className="text-gray-400">Response Time</div>
+              <div className="text-gray-400">{t("response_time")}</div>
             </div>
             <div className="bg-gray-800/50 rounded-xl p-6 text-center border border-gray-700">
               <div className="text-3xl font-bold text-yellow-400 mb-2">
                 24/7
               </div>
-              <div className="text-gray-400">Monitoring</div>
+              <div className="text-gray-400">{t("monitoring")}</div>
             </div>
           </div>
         </div>
@@ -517,10 +511,7 @@ const HowWeDoIt = () => {
             <h2 className="text-4xl font-bold text-white mb-4">
               Continuous Innovation
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              We're always pushing the boundaries of what's possible in Web3,
-              staying ahead of trends and implementing cutting-edge solutions.
-            </p>
+            <p className="text-gray-400 max-w-2xl mx-auto">{t("innovation_desc")}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -563,11 +554,7 @@ const HowWeDoIt = () => {
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Start Your NFT Membership?
           </h2>
-          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
-            Join our exclusive membership program and unlock 6 months of free
-            token creation. Mint your NFT today and become part of the Web3
-            revolution.
-          </p>
+          <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">{t("join_membership_desc")}</p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
@@ -575,7 +562,7 @@ const HowWeDoIt = () => {
               className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2"
             >
               <Code size={20} />
-              Mint NFT Now
+              {t("mint_nft_now")}
             </a>
 
             <a
@@ -583,7 +570,7 @@ const HowWeDoIt = () => {
               className="border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Users size={20} />
-              Learn More
+              {t("learn_more")}
             </a>
           </div>
         </div>

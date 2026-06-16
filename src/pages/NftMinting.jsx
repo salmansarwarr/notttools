@@ -375,9 +375,7 @@ const NftMinting = () => {
                                         </div>
 
                                         <button
-                                            onClick={() =>
-                                                setMintAmount(mintAmount + 1)
-                                            }
+                                            onClick={() => setMintAmount(Math.min(mintAmount + 1, configInfo?.maxNftsPerWallet ?? Infinity))}
                                             disabled={isMinting}
                                             className="w-12 h-12 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded-lg flex items-center justify-center text-white font-bold text-xl transition-colors"
                                         >

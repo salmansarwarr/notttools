@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { useBondingCurveFlow } from "../hooks/useSolanaTokenFlow";
 import { useGlobalState } from "../hooks/useGlobalState";
@@ -9,6 +10,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const BondingCurveCreateCoin = () => {
+    const { t } = useTranslation();
     const wallet = useUnifiedWallet();
     const { globalState } = useGlobalState();
     const {
@@ -1014,12 +1016,8 @@ const calculateEstimatedTokens = (solAmount) => {
                     <div className="bg-[#192630] rounded-2xl shadow-2xl p-8 border border-gray-700">
                         <div className="flex items-center justify-between mb-8">
                             <div>
-                                <h1 className="text-3xl font-bold text-white mb-2">
-                                    Smart Token Creator
-                                </h1>
-                                <p className="text-gray-400 text-sm">
-                                    Fair Launch via Bonding Curve
-                                </p>
+                                <h1 className="text-3xl font-bold text-white mb-2">{t("smart_token_creator")}</h1>
+                                <p className="text-gray-400 text-sm">{t("fair_launch_bonding_curve")}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div
@@ -1030,7 +1028,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                     }`}
                                 ></div>
                                 <span className="text-xs text-gray-400">
-                                    {isFormValid() ? "Ready" : "Fill form"}
+                                    {isFormValid() ? t("ready") : t("fill_form")}
                                 </span>
                             </div>
                         </div>
@@ -1038,20 +1036,16 @@ const calculateEstimatedTokens = (solAmount) => {
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Basic Info */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-white">
-                                    Basic Information
-                                </h3>
+                                <h3 className="text-lg font-semibold text-white">{t("basic_information")}</h3>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Coin Name *
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("coin_name")}</label>
                                     <input
                                         type="text"
                                         name="coinName"
                                         value={formData.coinName}
                                         onChange={handleInputChange}
-                                        placeholder="Enter coin name"
+                                        placeholder={t("enter_coin_name")}
                                         maxLength={32}
                                         className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
@@ -1063,15 +1057,13 @@ const calculateEstimatedTokens = (solAmount) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Ticker *
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("ticker")}</label>
                                     <input
                                         type="text"
                                         name="ticker"
                                         value={formData.ticker}
                                         onChange={handleInputChange}
-                                        placeholder="Enter ticker symbol"
+                                        placeholder={t("enter_ticker_symbol")}
                                         maxLength={10}
                                         className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
@@ -1083,14 +1075,12 @@ const calculateEstimatedTokens = (solAmount) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Description
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("description")}</label>
                                     <textarea
                                         name="description"
                                         value={formData.description}
                                         onChange={handleInputChange}
-                                        placeholder="Describe your token"
+                                        placeholder={t("describe_your_token")}
                                         rows={4}
                                         className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
@@ -1099,14 +1089,10 @@ const calculateEstimatedTokens = (solAmount) => {
 
                             {/* Media Upload */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-white">
-                                    Media
-                                </h3>
+                                <h3 className="text-lg font-semibold text-white">{t("media")}</h3>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Coin Image/Video *
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("coin_image_video")}</label>
                                     <div className="flex items-center gap-4">
                                         <label className="flex-1 cursor-pointer">
                                             <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 hover:border-blue-500 transition-colors">
@@ -1176,9 +1162,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Banner Image (Optional)
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("banner_image_optional")}</label>
                                     <div className="flex items-center gap-4">
                                         <label className="flex-1 cursor-pointer">
                                             <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 hover:border-blue-500 transition-colors">
@@ -1244,14 +1228,10 @@ const calculateEstimatedTokens = (solAmount) => {
 
                             {/* Social Links */}
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-white">
-                                    Social Links (Optional)
-                                </h3>
+                                <h3 className="text-lg font-semibold text-white">{t("social_links_optional")}</h3>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Website
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("website")}</label>
                                     <input
                                         type="url"
                                         name="website"
@@ -1263,9 +1243,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Twitter
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("twitter")}</label>
                                     <input
                                         type="text"
                                         name="twitter"
@@ -1277,9 +1255,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Telegram
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">{t("telegram")}</label>
                                     <input
                                         type="text"
                                         name="telegram"
@@ -1293,9 +1269,7 @@ const calculateEstimatedTokens = (solAmount) => {
 
                             {/* Legal Agreements */}
                             <div className="space-y-4 pt-6 border-t border-gray-700">
-                                <h3 className="text-lg font-semibold text-white">
-                                    Legal Agreements *
-                                </h3>
+                                <h3 className="text-lg font-semibold text-white">{t("legal_agreements_star")}</h3>
 
                                 <div className="space-y-3">
                                     <label className="flex items-start gap-3 cursor-pointer group">
@@ -1314,7 +1288,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-gray-800"
                                         />
                                         <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                                            I have read and accept the{" "}
+                                            {t("read_accept_general_stmt_1")} {" "}
                                             <a
                                                 href="/general-statement"
                                                 target="_blank"
@@ -1323,11 +1297,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
-                                            >
-                                                General Statement
-                                            </a>{" "}
-                                            regarding token creation and
-                                            platform usage.
+                                            >{t("general_statement")}</a>{" "} {t("read_accept_general_stmt_2")}
                                         </span>
                                     </label>
                                     {errors.generalStatement && (
@@ -1350,7 +1320,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-gray-800"
                                         />
                                         <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                                            I have read and understand the{" "}
+                                            {t("read_accept_legal_advice_1")} {" "}
                                             <a
                                                 href="/legal-advice"
                                                 target="_blank"
@@ -1359,11 +1329,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
-                                            >
-                                                Legal Advice
-                                            </a>{" "}
-                                            and acknowledge the legal
-                                            implications of token creation.
+                                            >{t("legal_advice")}</a>{" "} {t("read_accept_legal_advice_2")}
                                         </span>
                                     </label>
                                     {errors.legalAdvice && (
@@ -1386,7 +1352,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             className="mt-1 w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-gray-800"
                                         />
                                         <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                                            I have read and accept the{" "}
+                                            {t("read_accept_general_stmt_1")} {" "}
                                             <a
                                                 href="/privacy-policy"
                                                 target="_blank"
@@ -1395,10 +1361,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
-                                            >
-                                                Privacy Policy
-                                            </a>{" "}
-                                            regarding data collection and usage.
+                                            >{t("privacy_policy")}</a>{" "} {t("read_accept_privacy_2")}
                                         </span>
                                     </label>
                                     {errors.privacyPolicy && (
@@ -1413,10 +1376,7 @@ const calculateEstimatedTokens = (solAmount) => {
                             <div className="sticky bottom-0 bg-[#192630] pt-6 pb-4 -mx-8 px-8 border-t border-gray-700">
                                 {!wallet.connected && (
                                     <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
-                                        <p className="text-yellow-300 text-sm text-center">
-                                            Please connect your wallet to create
-                                            a token
-                                        </p>
+                                        <p className="text-yellow-300 text-sm text-center">{t("please_connect_wallet_create")}</p>
                                     </div>
                                 )}
                                 <button
@@ -1442,7 +1402,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                                     clipRule="evenodd"
                                                 />
                                             </svg>
-                                            Create Token on Bonding Curve
+                                            {t("create_token_bonding_curve")}
                                         </>
                                     )}
                                 </button>
@@ -1452,9 +1412,7 @@ const calculateEstimatedTokens = (solAmount) => {
 
                     {/* Preview Section - Shows Bonding Curve Info */}
                     <div className="bg-[#192630] rounded-2xl shadow-2xl p-8 border border-gray-700 sticky top-28 h-fit">
-                        <h2 className="text-2xl font-bold text-white mb-6">
-                            Bonding Curve Launch
-                        </h2>
+                        <h2 className="text-2xl font-bold text-white mb-6">{t("bonding_curve_launch")}</h2>
 
                         {/* Bonding Curve Explanation */}
                         <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-600/30 rounded-lg p-6 mb-6">
@@ -1465,44 +1423,31 @@ const calculateEstimatedTokens = (solAmount) => {
                                     viewBox="0 0 20 20"
                                 >
                                     <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-                                </svg>
-                                How It Works
-                            </h3>
+                                </svg>{t("how_it_works_curve")}</h3>
                             <ul className="text-sm text-blue-200 space-y-2">
                                 <li className="flex items-start gap-2">
                                     <span className="text-purple-400 mt-0.5">
                                         1.
                                     </span>
-                                    <span>
-                                        Token launches on bonding curve - users
-                                        buy/sell directly
-                                    </span>
+                                    <span>{t("curve_step1")}</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="text-purple-400 mt-0.5">
                                         2.
                                     </span>
-                                    <span>
-                                        Price increases automatically as more
-                                        SOL is deposited
-                                    </span>
+                                    <span>{t("curve_step2")}</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="text-purple-400 mt-0.5">
                                         3.
                                     </span>
-                                    <span>
-                                        First buyer's tokens are locked until
-                                        conditions met
-                                    </span>
+                                    <span>{t("curve_step3")}</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <span className="text-purple-400 mt-0.5">
                                         4.
                                     </span>
-                                    <span>
-                                        At{" "}
-                                        {
+                                    <span>{t("curve_at")} {" "}{
                                             BONDING_CURVE_CONFIG.MIGRATION_THRESHOLD
                                         }{" "}
                                         SOL, migrates to Raydium pool
@@ -1513,22 +1458,16 @@ const calculateEstimatedTokens = (solAmount) => {
 
                         {/* Token Economics */}
                         <div className="bg-gray-800/30 rounded-lg p-4 mb-4">
-                            <h3 className="text-white font-semibold mb-3 text-sm">
-                                Token Economics
-                            </h3>
+                            <h3 className="text-white font-semibold mb-3 text-sm">{t("token_economics")}</h3>
                             <div className="space-y-2 text-xs">
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Total Supply:
-                                    </span>
+                                    <span className="text-gray-400">{t("total_supply")}</span>
                                     <span className="text-white font-medium">
                                         {BONDING_CURVE_CONFIG.TOTAL_SUPPLY.toLocaleString()}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Initial Price:
-                                    </span>
+                                    <span className="text-gray-400">{t("initial_price")}</span>
                                     <span className="text-white font-medium">
                                         ~
                                         {(
@@ -1539,9 +1478,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Virtual SOL:
-                                    </span>
+                                    <span className="text-gray-400">{t("virtual_sol")}</span>
                                     <span className="text-white font-medium">
                                         {
                                             BONDING_CURVE_CONFIG.VIRTUAL_SOL_RESERVES
@@ -1550,9 +1487,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Virtual Tokens:
-                                    </span>
+                                    <span className="text-gray-400">{t("virtual_tokens")}</span>
                                     <span className="text-white font-medium">
                                         {(
                                             BONDING_CURVE_CONFIG.VIRTUAL_TOKEN_RESERVES /
@@ -1562,18 +1497,14 @@ const calculateEstimatedTokens = (solAmount) => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Unlock Holder Threshold:
-                                    </span>
+                                    <span className="text-gray-400">{t("unlock_holder_threshold")}</span>
                                     <span className="text-white font-medium">
                                         {BONDING_CURVE_CONFIG.HOLDER_THRESHOLD}{" "}
                                         holders
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Unlock Volume Threshold:
-                                    </span>
+                                    <span className="text-gray-400">{t("unlock_volume_threshold")}</span>
                                     <span className="text-white font-medium">
                                         $
                                         {BONDING_CURVE_CONFIG.VOLUME_THRESHOLD_USD_CENTS /
@@ -1581,9 +1512,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Migration Threshold:
-                                    </span>
+                                    <span className="text-gray-400">{t("migration_threshold")}</span>
                                     <span className="text-white font-medium">
                                         {
                                             BONDING_CURVE_CONFIG.MIGRATION_THRESHOLD
@@ -1596,9 +1525,7 @@ const calculateEstimatedTokens = (solAmount) => {
 
                         {/* Features */}
                         <div className="bg-gray-800/30 rounded-lg p-4 mb-4">
-                            <h3 className="text-white font-semibold mb-3 text-sm">
-                                Key Features
-                            </h3>
+                            <h3 className="text-white font-semibold mb-3 text-sm">{t("key_features")}</h3>
                             <div className="space-y-2">
                                 <div className="flex items-start gap-2">
                                     <svg
@@ -1612,9 +1539,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             clipRule="evenodd"
                                         />
                                     </svg>
-                                    <span className="text-xs text-gray-300">
-                                        Fair launch with no pre-sale
-                                    </span>
+                                    <span className="text-xs text-gray-300">{t("fair_launch_no_presale")}</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <svg
@@ -1628,10 +1553,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             clipRule="evenodd"
                                         />
                                     </svg>
-                                    <span className="text-xs text-gray-300">
-                                        0.75% transfer fee to the creator on all
-                                        trades
-                                    </span>
+                                    <span className="text-xs text-gray-300">{t("transfer_fee_creator")}</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <svg
@@ -1645,9 +1567,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             clipRule="evenodd"
                                         />
                                     </svg>
-                                    <span className="text-xs text-gray-300">
-                                        First buyer tokens locked until{" "}
-                                        {BONDING_CURVE_CONFIG.HOLDER_THRESHOLD}{" "}
+                                    <span className="text-xs text-gray-300">{t("first_buyer_locked_until")} {" "}{BONDING_CURVE_CONFIG.HOLDER_THRESHOLD}{" "}
                                         holders & $
                                         {BONDING_CURVE_CONFIG.VOLUME_THRESHOLD_USD_CENTS /
                                             100}{" "}
@@ -1666,9 +1586,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             clipRule="evenodd"
                                         />
                                     </svg>
-                                    <span className="text-xs text-gray-300">
-                                        Automatic migration to Raydium
-                                    </span>
+                                    <span className="text-xs text-gray-300">{t("automatic_migration_raydium")}</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <svg
@@ -1682,9 +1600,7 @@ const calculateEstimatedTokens = (solAmount) => {
                                             clipRule="evenodd"
                                         />
                                     </svg>
-                                    <span className="text-xs text-gray-300">
-                                        Revoked mint authority
-                                    </span>
+                                    <span className="text-xs text-gray-300">{t("revoked_mint_authority")}</span>
                                 </div>
                             </div>
                         </div>
@@ -1694,9 +1610,7 @@ const calculateEstimatedTokens = (solAmount) => {
                             formData.ticker ||
                             mediaPreview) && (
                             <div className="bg-gray-800/30 rounded-lg p-4">
-                                <h3 className="text-white font-semibold mb-3 text-sm">
-                                    Token Preview
-                                </h3>
+                                <h3 className="text-white font-semibold mb-3 text-sm">{t("token_preview")}</h3>
                                 <div className="flex items-center gap-4">
                                     {mediaPreview && (
                                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500">
@@ -1718,10 +1632,10 @@ const calculateEstimatedTokens = (solAmount) => {
                                     )}
                                     <div className="flex-1">
                                         <h4 className="text-white font-medium">
-                                            {formData.coinName || "Your Token"}
+                                            {formData.coinName || t("your_token")}
                                         </h4>
                                         <p className="text-gray-400 text-sm">
-                                            ${formData.ticker || "TICKER"}
+                                            ${formData.ticker || t("ticker_placeholder")}
                                         </p>
                                     </div>
                                 </div>
@@ -1748,17 +1662,8 @@ const calculateEstimatedTokens = (solAmount) => {
                                     />
                                 </svg>
                                 <div>
-                                    <h4 className="text-yellow-300 font-semibold text-sm mb-1">
-                                        Important Notice
-                                    </h4>
-                                    <p className="text-yellow-200 text-xs">
-                                        Token creation is irreversible.
-                                        Double-check all information before
-                                        launching. You'll need SOL for
-                                        transaction fees. The first buyer will
-                                        have their tokens locked until unlock
-                                        conditions are met.
-                                    </p>
+                                    <h4 className="text-yellow-300 font-semibold text-sm mb-1">{t("important_notice")}</h4>
+                                    <p className="text-yellow-200 text-xs">{t("token_creation_irreversible")}</p>
                                 </div>
                             </div>
                         </div>

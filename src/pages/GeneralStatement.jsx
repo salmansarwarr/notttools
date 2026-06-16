@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   FileText,
   Building2,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 
 const GeneralStatement = () => {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0A151E] via-[#0D1B2A] to-[#0A151E]">
       {/* Hero Section */}
@@ -17,19 +19,12 @@ const GeneralStatement = () => {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl px-6 py-3 mb-8">
               <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-              <span className="text-purple-300 font-medium">
-                Legal Documentation
-              </span>
+              <span className="text-purple-300 font-medium">{t("legal_documentation")}</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                General Statement
-              </span>
+              <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">{t("general_statement_title")}</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Official terms, conditions, and important information about
-              NOOTTOOLS SL
-            </p>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">{t("general_statement_desc")}</p>
           </div>
         </div>
       </div>
@@ -43,35 +38,22 @@ const GeneralStatement = () => {
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white">
-                Identification Data
-              </h2>
+              <h2 className="text-3xl font-bold text-white">{t("identification_data")}</h2>
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                <h3 className="text-xl font-semibold text-purple-300 mb-4">
-                  Company Information
-                </h3>
+                <h3 className="text-xl font-semibold text-purple-300 mb-4">{t("company_information")}</h3>
                 <div className="space-y-4 text-gray-300">
-                  <p>
-                    This website is owned by{" "}
+                  <p>{t("website_owned_by_1")} {" "}
                     <span className="text-white font-semibold">
                       NOOTTOOLS SL
-                    </span>{" "}
-                    (hereinafter, the "Company"). Through this website, the
-                    Company provides its users with an information society
-                    service, electronically and at the user's individual
-                    request, within the framework of an economic activity proper
-                    to a commercial company.
-                  </p>
+                    </span>{" "}{t("website_owned_by_2")}</p>
                 </div>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                <h3 className="text-xl font-semibold text-blue-300 mb-4">
-                  Contact Details
-                </h3>
+                <h3 className="text-xl font-semibold text-blue-300 mb-4">{t("contact_details")}</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-gray-300">
                     <Mail className="w-4 h-4 text-purple-400" />
@@ -82,37 +64,21 @@ const GeneralStatement = () => {
                       noot@noottools.io
                     </a>
                   </div>
-                  <div className="text-gray-300">
-                    <strong>Address:</strong>
-                    <br />
-                    Calle Campo Sagrado, núm. 11, 4º D<br />
-                    33205 Gijón (Asturias) – SPAIN
-                  </div>
+                  <div className="text-gray-300"><strong>{t("address")}</strong> <br />{t("address_line1")}<br />{t("address_line2")}</div>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-              <h3 className="text-xl font-semibold text-cyan-300 mb-4">
-                Legal Registration
-              </h3>
+              <h3 className="text-xl font-semibold text-cyan-300 mb-4">{t("legal_registration")}</h3>
               <div className="grid md:grid-cols-2 gap-6 text-gray-300">
                 <div>
-                  <p>
-                    <strong>Tax ID:</strong> B-22808646
-                  </p>
-                  <p>
-                    <strong>Incorporation:</strong> July 30, 2025
-                  </p>
+                  <p><strong>{t("tax_id")}</strong> B-22808646</p>
+                  <p><strong>{t("incorporation")}</strong> {t("incorporation_date")}</p>
                 </div>
                 <div>
-                  <p>
-                    <strong>CNAE:</strong> 6201 – Computer Programming
-                    Activities
-                  </p>
-                  <p>
-                    <strong>SIC:</strong> 7372
-                  </p>
+                  <p><strong>{t("cnae")}</strong> {t("cnae_desc")}</p>
+                  <p><strong>{t("sic")}</strong> 7372</p>
                 </div>
               </div>
             </div>
@@ -124,62 +90,29 @@ const GeneralStatement = () => {
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                 <FileText className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white">
-                Terms and Conditions
-              </h2>
+              <h2 className="text-3xl font-bold text-white">{t("terms_and_conditions")}</h2>
             </div>
 
             <div className="space-y-8">
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                <h3 className="text-xl font-semibold text-purple-300 mb-4">
-                  Acceptance of Terms
-                </h3>
-                <p className="text-gray-300 leading-relaxed">
-                  Any person who accesses and uses this website declares that
-                  they understand and accept these "General Conditions", which
-                  are available to any user through its Legal Notice.
-                  Understanding and accepting these General Conditions are a
-                  necessary prerequisite for accessing the information society
-                  services offered by NOOTTOOLS SL.
-                </p>
+                <h3 className="text-xl font-semibold text-purple-300 mb-4">{t("acceptance_of_terms")}</h3>
+                <p className="text-gray-300 leading-relaxed">{t("acceptance_of_terms_desc")}</p>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                <h3 className="text-xl font-semibold text-blue-300 mb-4">
-                  Website Ownership
-                </h3>
-                <p className="text-gray-300 leading-relaxed mb-4">
-                  This website (www.noottools.io) is the exclusive property of
-                  NOOTTOOLS SL. All intellectual property rights, exploitation
-                  rights, and reproduction rights over this website, as well as
-                  its content, appearance, and design, belong solely to the
-                  Company.
-                </p>
+                <h3 className="text-xl font-semibold text-blue-300 mb-4">{t("website_ownership")}</h3>
+                <p className="text-gray-300 leading-relaxed mb-4">{t("website_ownership_desc")}</p>
                 <div className="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-4">
-                  <p className="text-yellow-200 text-sm">
-                    <strong>Important:</strong> Any improper or unauthorized use
-                    of this website or its contents may be prosecuted in
-                    accordance with applicable law.
-                  </p>
+                  <p className="text-yellow-200 text-sm"><strong>{t("important_label")}</strong> {t("improper_use_warning")}</p>
                 </div>
               </div>
 
               <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-                <h3 className="text-xl font-semibold text-cyan-300 mb-4">
-                  Scope of Website
-                </h3>
-                <p className="text-gray-300 leading-relaxed mb-4">
-                  All information provided through this website is intended for{" "}
-                  <strong>informational purposes only</strong>. The content does
-                  not constitute legal, financial, or investment advice
-                  regarding the cryptocurrency market.
-                </p>
+                <h3 className="text-xl font-semibold text-cyan-300 mb-4">{t("scope_of_website")}</h3>
+                <p className="text-gray-300 leading-relaxed mb-4">{t("scope_info_1")} {" "}
+                  <strong>{t("informational_purposes_only")}</strong>{t("scope_info_2")}</p>
                 <div className="bg-red-600/20 border border-red-500/30 rounded-lg p-4">
-                  <p className="text-red-200 text-sm">
-                    <strong>Disclaimer:</strong> Users are solely responsible
-                    for seeking appropriate advice on risks, applicable
-                    regulations, and functioning of cryptoasset markets.
-                  </p>
+                  <p className="text-red-200 text-sm"><strong>{t("disclaimer_label")}</strong> {t("users_solely_responsible")}</p>
                 </div>
               </div>
             </div>
@@ -191,45 +124,40 @@ const GeneralStatement = () => {
               <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white">
-                Important Risk Notice
-              </h2>
+              <h2 className="text-3xl font-bold text-white">{t("important_risk_notice")}</h2>
             </div>
 
             <div className="bg-red-600/10 border border-red-500/30 rounded-xl p-6 mb-6">
               <p className="text-red-200 font-medium mb-4">
-                <strong>
-                  NOOTTOOLS SL expressly warns users about the risks related to
-                  cryptocurrency markets and cryptoassets:
-                </strong>
+                <strong>{t("risk_warning_intro")}</strong>
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
               {[
                 {
-                  title: "Volatility Risk",
-                  desc: "Investments may fluctuate significantly and investors may lose their entire investment.",
+                  title: t("volatility_risk"),
+                  desc: t("volatility_risk_desc"),
                 },
                 {
-                  title: "Startup Risk",
-                  desc: "Early-stage projects entail high risk, requiring thorough understanding of business models.",
+                  title: t("startup_risk"),
+                  desc: t("startup_risk_desc"),
                 },
                 {
-                  title: "Lack of Protection",
-                  desc: "Cryptoassets are not covered by customer protection mechanisms like deposit guarantees.",
+                  title: t("lack_of_protection"),
+                  desc: t("lack_of_protection_desc"),
                 },
                 {
-                  title: "Liquidity Risk",
-                  desc: "Many cryptoassets suffer from low liquidity, making it difficult to sell without losses.",
+                  title: t("liquidity_risk"),
+                  desc: t("liquidity_risk_desc"),
                 },
                 {
-                  title: "Technology Risk",
-                  desc: "Distributed ledger technologies may present operational or security vulnerabilities.",
+                  title: t("technology_risk"),
+                  desc: t("technology_risk_desc"),
                 },
                 {
-                  title: "Cybersecurity Risk",
-                  desc: "Theft of private keys or credentials could result in irretrievable loss of funds.",
+                  title: t("cybersecurity_risk"),
+                  desc: t("cybersecurity_risk_desc"),
                 },
               ].map((risk, index) => (
                 <div
@@ -253,18 +181,12 @@ const GeneralStatement = () => {
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
                 <Scale className="w-6 h-6 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-white">Governing Law</h2>
+              <h2 className="text-3xl font-bold text-white">{t("governing_law")}</h2>
             </div>
 
             <div className="bg-gray-800/30 rounded-xl p-6 border border-gray-700/50">
-              <p className="text-gray-300 leading-relaxed mb-4">
-                This legal notice and the NOOTTOOLS SL website are governed by{" "}
-                <strong className="text-white">Spanish law</strong>. Any
-                disputes that may arise between the Company and users shall be
-                submitted to the courts and tribunals of
-                <strong className="text-white"> Asturias, Spain</strong>, with
-                the express waiver of any other jurisdiction that may apply.
-              </p>
+              <p className="text-gray-300 leading-relaxed mb-4">{t("governing_law_1")} {" "}
+                <strong className="text-white">{t("spanish_law")}</strong>{t("governing_law_2")}<strong className="text-white">{t("asturias_spain")}</strong>{t("governing_law_3")}</p>
 
               <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-700">
                 <Shield className="w-5 h-5 text-purple-400" />

@@ -1110,6 +1110,50 @@ export const getUserStakes = async (wallet) => {
   }
 };
 
+let cachedNetworkConfig = null;
+
+/**
+ * Resolve program ID from database (preferred) and RPC from VITE_RPC_URL.
+ * Program ID in DB fixes local/prod drift; RPC always comes from env (Helius).
+ */
+export const resolveNetworkConfig = async (dbConfigResult = null) => {
+  if (cachedNetworkConfig && !dbConfigResult) {
+    return cachedNetworkConfig;
+  }
+
+  const dbConfig = dbConfigResult ?? (await getConfigFromDatabase());
+
+  let programId = PROGRAM_ID;
+  let source = "constants";
+
+  if (dbConfig.source === "database" && dbConfig.programId) {
+    if (dbConfig.programId !== constants.network.programId) {
+      console.warn(
+        `⚠️ Program mismatch: build uses ${constants.network.programId}, database uses ${dbConfig.programId}. Using database program ID.`,
+      );
+    }
+    programId = new PublicKey(dbConfig.programId);
+    source = "database";
+  }
+
+  const resolved = {
+    programId,
+    rpcEndpoint: NETWORK,
+    source,
+  };
+
+  if (!dbConfigResult) {
+    cachedNetworkConfig = resolved;
+  }
+
+  return resolved;
+};
+
+export const getResolvedConnection = async () => {
+  const { rpcEndpoint } = await resolveNetworkConfig();
+  return new Connection(rpcEndpoint, COMMITMENT);
+};
+
 /**
  * Fetch config from database API (NEW)
  */
@@ -1166,17 +1210,20 @@ export const getConfigFromDatabase = async () => {
 export const getConfigInfo = async () => {
   try {
     console.log("🔧 Fetching config info (hybrid mode)...");
-    
-    const connection = getConnection();
+
+    const dbConfigResult = await getConfigFromDatabase();
+    const { programId, rpcEndpoint } =
+      await resolveNetworkConfig(dbConfigResult);
+
+    const connection = new Connection(rpcEndpoint, COMMITMENT);
     const [configPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
-      PROGRAM_ID
+      programId,
     );
 
-    // Fetch both sources in parallel
     const [dbConfig, blockchainConfig] = await Promise.allSettled([
-      getConfigFromDatabase(),
-      connection.getAccountInfo(configPda)
+      Promise.resolve(dbConfigResult),
+      connection.getAccountInfo(configPda),
     ]);
 
     // Parse blockchain config if available

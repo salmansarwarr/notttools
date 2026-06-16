@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Smartphone,
   Download,
@@ -23,6 +24,7 @@ import constants from "../constants";
 import axios from "axios";
 
 const Wallet = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [settings, setSettings] = useState(null);
@@ -65,72 +67,68 @@ const Wallet = () => {
   const features = [
     {
       icon: <Shield className="text-blue-400" size={24} />,
-      title: "Bank-Level Security",
-      description:
-        "Multi-layer encryption and biometric authentication to keep your assets safe",
+      title: t("bank_level_security"),
+      description: t("bank_level_security_desc"),
     },
     {
       icon: <Zap className="text-yellow-400" size={24} />,
-      title: "Lightning Fast",
-      description:
-        "Instant transactions with minimal fees on the Solana network",
+      title: t("lightning_fast"),
+      description: t("lightning_fast_desc"),
     },
     {
       icon: <Coins className="text-green-400" size={24} />,
-      title: "Multi-Asset Support",
-      description:
-        "Store and manage SOL, SPL tokens, and NFTs all in one place",
+      title: t("multi_asset_support"),
+      description: t("multi_asset_support_desc"),
     },
     {
       icon: <TrendingUp className="text-purple-400" size={24} />,
-      title: "DeFi Integration",
-      description:
-        "Access staking, swapping, and yield farming directly from your wallet",
+      title: t("defi_integration"),
+      description: t("defi_integration_desc"),
     },
     {
       icon: <QrCode className="text-pink-400" size={24} />,
-      title: "QR Code Payments",
-      description: "Send and receive payments instantly using QR codes",
+      title: t("qr_code_payments"),
+      description: t("qr_code_payments_desc"),
     },
     {
       icon: <Globe className="text-cyan-400" size={24} />,
-      title: "dApp Browser",
-      description: "Explore the Solana ecosystem with built-in dApp browser",
+      title: t("dapp_browser"),
+      description: t("dapp_browser_desc"),
     },
   ];
 
   const roadmapItems = [
     {
-      phase: "Phase 1",
-      title: "Core Wallet Features",
+      phase: t("phase_1"),
+      title: t("core_wallet_features"),
       status: "in-progress",
       items: [
-        "Basic wallet functionality",
-        "Send/Receive SOL & SPL tokens",
-        "NFT gallery and management",
-        "Transaction history",
+        t("basic_wallet_functionality"),
+        t("send_receive_sol_spl"),
+        t("nft_gallery_management"),
+        t("transaction_history"),
       ],
     },
     {
-      phase: "Phase 2",
-      title: "Advanced Features",
+      phase: t("phase_2"),
+      title: t("advanced_features_phase"),
       status: "planned",
       items: [
-        "DeFi integrations",
-        "Staking interface",
-        "Token swapping",
-        "Portfolio tracking",
+        t("defi_integrations_phase"),
+        t("staking_interface_phase"),
+        t("token_swapping_phase"),
+        t("portfolio_tracking_phase"),
       ],
     },
     {
-      phase: "Phase 3",
-      title: "Ecosystem Integration",
+      phase: t("phase_3"),
+      title: t("ecosystem_integration_phase"),
       status: "planned",
       items: [
-        "Noottools platform integration",
-        "Exclusive wallet features",
-        "Community governance",
-        "Advanced analytics",
+        t("noottools_platform_integration"),
+        t("exclusive_wallet_features"),
+        t("community_governance_phase"),
+        t("advanced_analytics_phase"),
       ],
     },
   ];
@@ -142,7 +140,7 @@ const Wallet = () => {
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-2xl px-6 py-3 mb-6">
             <Smartphone className="text-blue-400" size={24} />
-            <span className="text-blue-300 font-semibold">Mobile Wallet</span>
+            <span className="text-blue-300 font-semibold">{t("mobile_wallet")}</span>
           </div>
 
           <h1 className="text-6xl font-bold text-white mb-6">
@@ -150,12 +148,10 @@ const Wallet = () => {
               Noottools
             </span>
             <br />
-            <span className="text-white">Mobile Wallet</span>
+            <span className="text-white">{t("mobile_wallet")}</span>
           </h1>
 
-          <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed mb-8">
-          Experience the future of crypto with our mobile wallet. Designed for the Solana ecosystem with seamless integration to the Noottools platform
-          </p>
+          <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed mb-8">{t("wallet_hero_desc")}</p>
         </div>
 
         {/* Phone Mockup */}
@@ -186,11 +182,7 @@ const Wallet = () => {
               <h2 className="text-3xl font-bold text-white mb-4">
                 Be the First to Download
               </h2>
-              <p className="text-gray-400 mb-6">
-                 Join
-                thousands of users for the most advanced Solana wallet
-                experience.
-              </p>
+              <p className="text-gray-400 mb-6">{t("join_thousands")}</p>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {/* iOS App Store */}
@@ -208,14 +200,14 @@ const Wallet = () => {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <Apple className="text-gray-400" size={20} />
-                    <span className="text-gray-400 font-medium">iOS</span>
+                    <span className="text-gray-400 font-medium">{t("ios")}</span>
                   </div>
                   <div className="text-gray-500 text-sm">
                     {isLoadingSettings
-                      ? "Loading..."
+                      ? t("loading")
                       : settings?.wallet_app_store_link
-                      ? "Download Now"
-                      : "Coming Soon"}
+                      ? t("download_now")
+                      : t("coming_soon")}
                   </div>
                 </div>
 
@@ -237,14 +229,14 @@ const Wallet = () => {
                 >
                   <div className="flex items-center gap-3 mb-2">
                     <Play className="text-gray-400" size={20} />
-                    <span className="text-gray-400 font-medium">Android</span>
+                    <span className="text-gray-400 font-medium">{t("android")}</span>
                   </div>
                   <div className="text-gray-500 text-sm">
                     {isLoadingSettings
-                      ? "Loading..."
+                      ? t("loading")
                       : settings?.wallet_google_play_link
-                      ? "Download Now"
-                      : "Coming Soon"}
+                      ? t("download_now")
+                      : t("coming_soon")}
                   </div>
                 </div>
               </div>
@@ -256,7 +248,7 @@ const Wallet = () => {
                 </div> */}
                 <div className="flex items-center gap-2">
                   <Star className="text-yellow-400" size={16} />
-                  <span>Premium features</span>
+                  <span>{t("premium_features")}</span>
                 </div>
               </div>
             </div>
@@ -272,7 +264,7 @@ const Wallet = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email address"
+                      placeholder={t("enter_email")}
                       className="w-full bg-gray-700/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
                       required
                     />
@@ -312,21 +304,21 @@ const Wallet = () => {
         <div className="grid md:grid-cols-1 justify-center items-center w-full gap-6 mb-20">
           {/* <div className="text-center">
             <div className="text-4xl font-bold text-blue-400 mb-2">5,000+</div>
-            <div className="text-gray-400">Users Waiting</div>
+            <div className="text-gray-400">{t("users_waiting")}</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-green-400 mb-2">50+</div>
-            <div className="text-gray-400">Features Planned</div>
+            <div className="text-gray-400">{t("features_planned")}</div>
           </div>
           <div className="text-center">
             <div className="text-4xl font-bold text-purple-400 mb-2">
               Q4 2025
             </div>
-            <div className="text-gray-400">Expected Launch</div>
+            <div className="text-gray-400">{t("expected_launch")}</div>
           </div> */}
           {/* <div className="text-center">
             <div className="text-4xl font-bold text-yellow-400 mb-2">100%</div>
-            <div className="text-gray-400">Free to Use</div>
+            <div className="text-gray-400">{t("free_to_use")}</div>
           </div> */}
         </div>
 
@@ -343,14 +335,14 @@ const Wallet = () => {
               //     "We're targeting Q4 2025 for the initial release. Beta testing will begin earlier for early subscribers.",
               // },
               {
-                question: "Is it free to use?",
+                question: t("is_it_free"),
                 answer:
-                  "Yes! The Noottools Mobile Wallet is completely free to download and use, with no hidden fees.",
+                  t("free_to_use_desc"),
               },
               {
-                question: "What platforms are supported?",
+                question: t("supported_platforms"),
                 answer:
-                  "Compatible with iOS and Android",
+                  t("compatible_ios_android"),
               },
               // {
               //   question: "How will it integrate with Noottools platform?",

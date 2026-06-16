@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
@@ -18,6 +19,7 @@ import { toast } from "react-toastify";
 import { Star, Zap, Rocket, TrendingUp, Shield, Award } from "lucide-react";
 
 const BoostToken = () => {
+  const { t } = useTranslation();
   const { globalState } = useGlobalState();
   const { connected, publicKey, sendTransaction } = useUnifiedWallet();
   const navigate = useNavigate();
@@ -250,9 +252,9 @@ const BoostToken = () => {
     const now = new Date();
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
-    if (diffInDays === 0) return "Today";
-    if (diffInDays === 1) return "1 day ago";
-    if (diffInDays < 30) return `${diffInDays} days ago`;
+    if (diffInDays === 0) return t("today");
+    if (diffInDays === 1) return t("one_day_ago");
+    if (diffInDays < 30) return t("days_ago", { count: diffInDays });
     return date.toLocaleDateString();
   };
 
@@ -268,20 +270,12 @@ const BoostToken = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl px-6 py-3 mb-6">
             <Rocket className="text-purple-400" size={24} />
-            <span className="text-purple-300 font-semibold">
-              Boost Your Token
-            </span>
+            <span className="text-purple-300 font-semibold">{t("boost_your_token")}</span>
           </div>
 
-          <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Feature Your Project
-          </h1>
+          <h1 className="text-5xl font-bold text-white mb-6 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">{t("feature_your_project")}</h1>
 
-          <p className="text-gray-400 text-xl max-w-3xl mx-auto leading-relaxed">
-            Boost your token's visibility and reach thousands of potential
-            investors. Featured projects get priority placement, enhanced
-            discoverability, and premium exposure across our platform.
-          </p>
+          <p className="text-gray-400 text-xl max-w-3xl mx-auto leading-relaxed">{t("boost_token_desc")}</p>
         </div>
 
         {/* Feature Benefits */}
@@ -290,37 +284,24 @@ const BoostToken = () => {
             <div className="w-14 h-14 bg-purple-600/20 rounded-xl mb-4 flex items-center justify-center">
               <TrendingUp className="text-purple-400" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
-              Priority Placement
-            </h3>
-            <p className="text-gray-400">
-              Your project appears at the top of listings and gets featured on
-              our homepage slider.
-            </p>
+            <h3 className="text-xl font-bold text-white mb-2">{t("priority_placement")}</h3>
+            <p className="text-gray-400">{t("priority_placement_desc")}</p>
           </div>
 
           <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-6 border border-gray-700">
             <div className="w-14 h-14 bg-blue-600/20 rounded-xl mb-4 flex items-center justify-center">
               <Shield className="text-blue-400" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Trust Badge</h3>
-            <p className="text-gray-400">
-              Featured projects receive a premium badge that builds investor
-              confidence.
-            </p>
+            <h3 className="text-xl font-bold text-white mb-2">{t("trust_badge")}</h3>
+            <p className="text-gray-400">{t("trust_badge_desc")}</p>
           </div>
 
           <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-6 border border-gray-700">
             <div className="w-14 h-14 bg-green-600/20 rounded-xl mb-4 flex items-center justify-center">
               <Award className="text-green-400" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
-              Enhanced Visibility
-            </h3>
-            <p className="text-gray-400">
-              Get maximum exposure with special highlighting and promotional
-              placement.
-            </p>
+            <h3 className="text-xl font-bold text-white mb-2">{t("enhanced_visibility")}</h3>
+            <p className="text-gray-400">{t("enhanced_visibility_desc")}</p>
           </div>
         </div>
 
@@ -331,9 +312,7 @@ const BoostToken = () => {
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl mx-auto mb-4 flex items-center justify-center">
                 <Zap className="text-white" size={24} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">
-                Feature Package
-              </h3>
+              <h3 className="text-2xl font-bold text-white mb-2">{t("feature_package")}</h3>
               <div className="text-4xl font-bold text-transparent bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text mb-4">
                 {parseFloat(settings.feature_price_sol).toFixed(2)} SOL
               </div>
@@ -353,12 +332,8 @@ const BoostToken = () => {
                 <Rocket className="text-white" size={32} />
               </div>
 
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Ready to Boost Your Token?
-              </h2>
-              <p className="text-gray-400 mb-8">
-                Connect your wallet and login to feature your projects
-              </p>
+              <h2 className="text-2xl font-bold text-white mb-4">{t("ready_boost_token")}</h2>
+              <p className="text-gray-400 mb-8">{t("connect_wallet_feature")}</p>
 
               <WalletLogin />
             </div>
@@ -367,24 +342,18 @@ const BoostToken = () => {
           <div className="max-w-2xl mx-auto">
             <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700 text-center">
               <div className="text-gray-400 text-6xl mb-6">🚀</div>
-              <h2 className="text-2xl font-bold text-white mb-4">
-                No Projects Found
-              </h2>
-              <p className="text-gray-400 mb-8">
-                Create your first token to start featuring projects
-              </p>
+              <h2 className="text-2xl font-bold text-white mb-4">{t("no_projects_found")}</h2>
+              <p className="text-gray-400 mb-8">{t("create_first_token")}</p>
               <button
                 onClick={() => navigate("/create-coin")}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
-              >
-                Create Your First Token
-              </button>
+              >{t("create_your_first_token")}</button>
             </div>
           </div>
         ) : (
           <div>
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-3xl font-bold text-white">Your Projects</h2>
+              <h2 className="text-3xl font-bold text-white">{t("your_projects")}</h2>
               <div className="text-sm text-gray-400">
                 {userProjects.length} project
                 {userProjects.length !== 1 ? "s" : ""} found
@@ -423,7 +392,7 @@ const BoostToken = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="text-lg font-bold text-white truncate">
-                              {project.name || "Unnamed Project"}
+                              {project.name || t("unnamed_project")}
                             </h3>
                             {project.featured && (
                               <Star
@@ -457,16 +426,14 @@ const BoostToken = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-green-400 font-semibold">
-                            Featured
-                          </span>
+                          <span className="text-green-400 font-semibold">{t("featured")}</span>
                         </div>
                         <div className="text-xs text-gray-500">
                           {project.featuring_end_date
                             ? `Ends: ${new Date(
                                 project.featuring_end_date
                               ).toLocaleDateString()}`
-                            : "Premium placement active"}
+                            : t("premium_placement_active")}
                         </div>
                       </div>
                     ) : (
@@ -478,12 +445,12 @@ const BoostToken = () => {
                         {isProcessing || paymentMutation.isPending ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Processing...
+                            {t("processing")}
                           </>
                         ) : (
                           <>
                             <Zap size={16} />
-                            Feature Project (
+                            {t("feature_project_btn")} (
                             {parseFloat(
                               settings?.feature_price_sol || 0
                             ).toFixed(2)}{" "}
@@ -506,43 +473,26 @@ const BoostToken = () => {
           </h2>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-3">
-                How long does featuring last?
-              </h3>
+              <h3 className="text-lg font-bold text-white mb-3">{t("how_long_featuring")}</h3>
               <p className="text-gray-400">
-                Featured status lasts for {settings?.featuring_days || 30} days
+                {t("featured_status_lasts")} {settings?.featuring_days || 30} days
                 once purchased. After that, you can renew the featured status.
               </p>
             </div>
 
             <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-3">
-                What payment methods are accepted?
-              </h3>
-              <p className="text-gray-400">
-                We only accept SOL payments directly from your connected Solana
-                wallet for security and transparency.
-              </p>
+              <h3 className="text-lg font-bold text-white mb-3">{t("payment_methods_accepted")}</h3>
+              <p className="text-gray-400">{t("payment_methods_desc")}</p>
             </div>
 
             <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-3">
-                Is the payment secure?
-              </h3>
-              <p className="text-gray-400">
-                Yes, all payments are processed on-chain using Solana's secure
-                blockchain technology. No middlemen involved.
-              </p>
+              <h3 className="text-lg font-bold text-white mb-3">{t("is_payment_secure")}</h3>
+              <p className="text-gray-400">{t("payment_secure_desc")}</p>
             </div>
 
             <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-3">
-                Can I feature multiple projects?
-              </h3>
-              <p className="text-gray-400">
-                Absolutely! You can feature as many projects as you want. Each
-                project requires a separate payment.
-              </p>
+              <h3 className="text-lg font-bold text-white mb-3">{t("feature_multiple")}</h3>
+              <p className="text-gray-400">{t("feature_multiple_desc")}</p>
             </div>
           </div>
         </div>

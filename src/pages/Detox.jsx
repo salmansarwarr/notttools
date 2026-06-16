@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import {
@@ -24,6 +25,7 @@ const RENT_PER_ACCOUNT = 0.00203928;
 const FEE_PERCENTAGE = 0.2;
 
 export default function Detox() {
+    const { t } = useTranslation();
     const { publicKey, signTransaction } = useUnifiedWallet();
     const [scanResults, setScanResults] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -181,7 +183,7 @@ export default function Detox() {
                             <div className="w-14 h-14 bg-blue-600/20 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/30">
                                 <Search className="text-blue-400" size={28} />
                             </div>
-                            <h2 className="text-2xl font-bold mb-3">ANALYZE</h2>
+                            <h2 className="text-2xl font-bold mb-3">{t("analyze")}</h2>
                             <p className="text-gray-400 mb-8 leading-relaxed">
                                 Scan your wallet to find empty accounts, NFTs,
                                 and tokens that are wasting your SOL. Choose
@@ -206,7 +208,7 @@ export default function Detox() {
                                     ) : (
                                         <Zap size={20} />
                                     )}
-                                    {loading ? "SCANNING..." : "START ANALYSIS"}
+                                    {loading ? t("scanning") : t("start_analysis")}
                                 </button>
                             )}
                         </div>
@@ -256,20 +258,20 @@ export default function Detox() {
                                             onClick={() => setFilter("all")}
                                             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === "all" ? "bg-blue-600 text-white" : "bg-[#152431] text-gray-400 hover:bg-[#1a2d3d]"}`}
                                         >
-                                            ALL ({scanResults.accounts.length})
+                                            {t("all")} ({scanResults.accounts.length})
                                         </button>
                                         <button
                                             onClick={() => setFilter("empty")}
                                             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === "empty" ? "bg-blue-600 text-white" : "bg-[#152431] text-gray-400 hover:bg-[#1a2d3d]"}`}
                                         >
-                                            EMPTY (
+                                            {t("empty")} (
                                             {scanResults.emptyAccounts.length})
                                         </button>
                                         <button
                                             onClick={() => setFilter("tokens")}
                                             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filter === "tokens" ? "bg-blue-600 text-white" : "bg-[#152431] text-gray-400 hover:bg-[#1a2d3d]"}`}
                                         >
-                                            TOKENS (
+                                            {t("tokens")} (
                                             {scanResults.tokenAccounts.length})
                                         </button>
                                     </div>
@@ -333,7 +335,7 @@ export default function Detox() {
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-bold text-gray-200 truncate max-w-[200px]">
                                                                 {acc.name ===
-                                                                "Unknown Token"
+                                                                "{t('unknown_token')}"
                                                                     ? acc.mint.slice(
                                                                           0,
                                                                           8,
@@ -472,12 +474,12 @@ export default function Detox() {
                                                 className="animate-spin"
                                                 size={20}
                                             />
-                                            <span>BURNING...</span>
+                                            <span>{t("burning")}</span>
                                         </>
                                     ) : (
                                         <>
                                             <Flame size={20} />
-                                            <span>EXECUTE BURN</span>
+                                            <span>{t("execute_burn")}</span>
                                         </>
                                     )}
                                 </button>

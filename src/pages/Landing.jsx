@@ -290,10 +290,7 @@ const Landing = () => {
                                 {t("token_creator")}
                             </h3>
                             <p className="text-slate-400 mb-12 text-xl leading-relaxed font-medium">
-                                Create unlimited custom tokens with our
-                                exclusive NFT membership. Stake our NFTs and
-                                enjoy 6 months of completely FREE token creation
-                                on Solana.
+                                {t("token_creator_landing_desc")}
                             </p>
                             <Button
                                 as={Link}
@@ -316,9 +313,7 @@ const Landing = () => {
                                 {t("add_liquidity")}
                             </h3>
                             <p className="text-slate-400 mb-12 text-xl leading-relaxed font-medium">
-                                Learn how to manually add liquidity to Raydium
-                                pools. Our comprehensive guide helps you
-                                maximize returns on your token investments.
+                                {t("add_liquidity_landing_desc")}
                             </p>
                             <Button
                                 as={Link}
@@ -357,7 +352,7 @@ const Landing = () => {
                             <div className="absolute top-0 right-0 w-72 h-72 opacity-70 group-hover:opacity-90 transition-opacity">
                                 <img
                                     src="/category_background.png"
-                                    alt="NFT Minting"
+                                    alt={t("nft_minting")}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -379,7 +374,7 @@ const Landing = () => {
                                     {t("nft_minting")}
                                 </h3>
                                 <p className="text-sm text-slate-400">
-                                    Mint Premium NFTs for Platform Access
+                                    {t("nft_minting_landing_desc")}
                                 </p>
                             </div>
                         </div>
@@ -405,7 +400,7 @@ const Landing = () => {
                             <div className="absolute top-0 right-0 w-72 h-68 opacity-70 group-hover:opacity-90 transition-opacity">
                                 <img
                                     src="/lorem_ipsum.png"
-                                    alt="NFT Staking"
+                                    alt={t("nft_staking")}
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -427,7 +422,7 @@ const Landing = () => {
                                     {t("nft_staking")}
                                 </h3>
                                 <p className="text-sm text-slate-400">
-                                    Stake for 6 Months Free Token Creation
+                                    {t("nft_staking_landing_desc")}
                                 </p>
                             </div>
                         </div>
@@ -538,7 +533,7 @@ const Landing = () => {
                             {
                                 icon: <Zap className="w-7 h-7 text-white" />,
                                 title: t("token_creation"),
-                                body: "Stake our NFTs for 6 months and create unlimited tokens on Solana completely free. No platform fees, no hidden costs.",
+                                body: t("token_creation_why_desc"),
                                 grad: "from-blue-500 to-violet-600",
                                 glow: "rgba(139,92,246,0.35)",
                                 hover: "rgba(139,92,246,0.35)",
@@ -548,7 +543,7 @@ const Landing = () => {
                                     <CheckCircle className="w-7 h-7 text-white" />
                                 ),
                                 title: t("membership_title"),
-                                body: "Our NFTs grant exclusive access to premium features. Once staked, enjoy 6 months of unlimited token creation and priority support.",
+                                body: t("membership_why_desc"),
                                 grad: "from-emerald-500 to-teal-600",
                                 glow: "rgba(16,185,129,0.35)",
                                 hover: "rgba(16,185,129,0.35)",
@@ -706,25 +701,25 @@ const Landing = () => {
                         {[
                             {
                                 quarter: "Q4 2025",
-                                title: "NFT Launch & Staking",
+                                title: t("roadmap_q4_title"),
                                 description:
-                                    "Genesis NFT collection mint, one-time staking implementation, and 6-month membership activation",
+                                    t("roadmap_q4_desc"),
                                 status: "completed",
                                 grad: "from-purple-500 to-pink-500",
                             },
                             {
                                 quarter: "Q1 2026",
-                                title: "Platform Expansion",
+                                title: t("roadmap_q1_title"),
                                 description:
-                                    "Enhanced token creation tools, advanced liquidity guides, and community governance features",
+                                    t("roadmap_q1_desc"),
                                 status: "in-progress",
                                 grad: "from-blue-500 to-violet-500",
                             },
                             {
                                 quarter: "Q2 2026",
-                                title: "Multi-Chain Support",
+                                title: t("roadmap_q2_title"),
                                 description:
-                                    "Support for Ethereum, Polygon, and other major blockchain networks with cross-chain NFT utility",
+                                    t("roadmap_q2_desc"),
                                 status: "upcoming",
                                 grad: "from-emerald-500 to-teal-500",
                             },
@@ -748,10 +743,10 @@ const Landing = () => {
                                         className={`px-3 py-1 rounded-full text-xs font-semibold w-fit ${item.status === "completed" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : item.status === "in-progress" ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" : "bg-purple-500/20 text-purple-300 border border-purple-500/30"}`}
                                     >
                                         {item.status === "completed"
-                                            ? "✓ Completed"
+                                            ? "✓ " + t("completed")
                                             : item.status === "in-progress"
-                                              ? "🚧 In Progress"
-                                              : "🚀 Coming Soon"}
+                                              ? "🚧 " + t("in_progress")
+                                              : "🚀 " + t("coming_soon")}
                                     </div>
                                 </div>
                                 <h3 className="text-xl font-black text-white mb-2">
@@ -780,25 +775,25 @@ const Landing = () => {
                             {[
                                 {
                                     quarter: "Q4 2025",
-                                    title: "NFT Launch & Staking",
+                                    title: t("roadmap_q4_title"),
                                     description:
-                                        "Genesis NFT collection mint, one-time staking implementation, and 6-month membership activation",
+                                        t("roadmap_q4_desc"),
                                     status: "completed",
                                     color: "from-purple-500 to-pink-500",
                                 },
                                 {
                                     quarter: "Q1 2026",
-                                    title: "Platform Expansion",
+                                    title: t("roadmap_q1_title"),
                                     description:
-                                        "Enhanced token creation tools, advanced liquidity guides, and community governance features",
+                                        t("roadmap_q1_desc"),
                                     status: "in-progress",
                                     color: "from-blue-500 to-purple-500",
                                 },
                                 {
                                     quarter: "Q2 2026",
-                                    title: "Multi-Chain Support",
+                                    title: t("roadmap_q2_title"),
                                     description:
-                                        "Support for Ethereum, Polygon, and other major blockchain networks with cross-chain NFT utility",
+                                        t("roadmap_q2_desc"),
                                     status: "upcoming",
                                     color: "from-green-500 to-teal-500",
                                 },

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Search,
@@ -23,6 +24,7 @@ import constants from "../constants";
 import InsiderNetworkModal from "../components/Graph";
 
 const TokenTracker = () => {
+    const { t } = useTranslation();
     const [address, setAddress] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [report, setReport] = useState(null);
@@ -31,7 +33,7 @@ const TokenTracker = () => {
     const handleSearch = async (e) => {
         if (e) e.preventDefault();
         if (!address.trim()) {
-            toast.error("Please enter a token address");
+            toast.error(t("enter_token_address"));
             return;
         }
 
@@ -39,7 +41,7 @@ const TokenTracker = () => {
         try {
             mintPubkey = new PublicKey(address.trim());
         } catch (err) {
-            toast.error("Invalid Solana address format");
+            toast.error(t("invalid_address"));
             return;
         }
 
@@ -180,10 +182,10 @@ const TokenTracker = () => {
                 return;
             }
 
-            throw new Error("RugCheck API unavailable or CORS restricted");
+            throw new Error(t("rugcheck_unavailable"));
         } catch (error) {
             console.warn(
-                "RugCheck API failed, falling back to on-chain analysis:",
+                t("rugcheck_failed_fallback"),
                 error.message,
             );
 
@@ -202,35 +204,35 @@ const TokenTracker = () => {
 
                 if (mintInfo.mintAuthority) {
                     risks.push({
-                        name: "Mint Authority Enabled",
+                        name: t("mint_authority_enabled"),
                         level: "danger",
                         description:
-                            "The creator can mint unlimited tokens, which can lead to a rug pull.",
+                            t("mint_authority_enabled_desc"),
                     });
                     score += 400;
                 } else {
                     risks.push({
-                        name: "Mint Authority Revoked",
+                        name: t("mint_authority_revoked"),
                         level: "safe",
                         description:
-                            "The supply is fixed and cannot be increased.",
+                            t("mint_authority_revoked_desc"),
                     });
                 }
 
                 if (mintInfo.freezeAuthority) {
                     risks.push({
-                        name: "Freeze Authority Enabled",
+                        name: t("freeze_authority_enabled"),
                         level: "warning",
                         description:
-                            "The creator can freeze user wallets, preventing them from selling.",
+                            t("freeze_authority_enabled_desc"),
                     });
                     score += 200;
                 } else {
                     risks.push({
-                        name: "Freeze Authority Revoked",
+                        name: t("freeze_authority_revoked"),
                         level: "safe",
                         description:
-                            "Users have full control over their tokens.",
+                            t("freeze_authority_revoked_desc"),
                     });
                 }
 
@@ -257,7 +259,7 @@ const TokenTracker = () => {
 
                 if (topHolders[0] && topHolders[0].rawPct > 20) {
                     risks.push({
-                        name: "High Individual Ownership",
+                        name: t("high_ownership_warning"),
                         level: "danger",
                         description: `A single wallet holds ${topHolders[0].pct} of the supply.`,
                     });
@@ -270,7 +272,7 @@ const TokenTracker = () => {
                     score: score,
                     scoreNormalised: Math.min(100, Math.round(score / 10)),
                     tokenMeta: {
-                        name: "On-Chain Asset",
+                        name: t("on_chain_asset"),
                         symbol: "TOKEN",
                     },
                     tokenImage: null,
@@ -278,7 +280,7 @@ const TokenTracker = () => {
                         Number(mintInfo.supply) /
                         Math.pow(10, mintInfo.decimals)
                     ).toLocaleString(),
-                    creator: "On-Chain Verify",
+                    creator: t("on_chain_verify"),
                     fullCreator: address,
                     uiCreatorBalance: "Unknown",
                     uiMarketCap: "Fetching...",
@@ -358,7 +360,7 @@ const TokenTracker = () => {
                         TOKEN SECURITY SCANNER
                     </motion.div>
                     <h1 className="text-3xl md:text-5xl font-black text-white mb-4 md:mb-6 tracking-tight">
-                        Know Your{" "}
+                        {t("know_your")}{" "}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
                             Risk
                         </span>
@@ -379,7 +381,7 @@ const TokenTracker = () => {
                                 type="text"
                                 value={address}
                                 onChange={(e) => setAddress(e.target.value)}
-                                placeholder="Paste mint address..."
+                                placeholder={t("paste_mint_address")}
                                 className="flex-1 bg-transparent text-white text-sm md:text-base outline-none placeholder-gray-600 min-w-0"
                             />
                             <button

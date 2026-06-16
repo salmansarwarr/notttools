@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Mail,
   Phone,
@@ -18,6 +19,7 @@ import axios from "axios";
 import constants from "../constants";
 
 const Contact = () => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -67,31 +69,31 @@ const Contact = () => {
   const contactInfo = [
     {
       icon: <Mail className="text-blue-400" size={24} />,
-      title: "Email Us",
+      title: t("email_us"),
       info: "noot@noottools.io",
       subInfo: "noot@noottools.io",
-      description: "Get in touch with our team",
+      description: "{t('get_in_touch_desc')}",
     },
     {
       icon: <MessageCircle className="text-green-400" size={24} />,
-      title: "Live Chat",
-      info: "24/7 Support",
-      subInfo: "Average response: 2 minutes",
-      description: "Chat with our support team",
+      title: t("live_chat"),
+      info: "{t('support_24_7')}",
+      subInfo: "{t('avg_response_time')}",
+      description: "{t('chat_support_desc')}",
     },
     {
       icon: <Clock className="text-purple-400" size={24} />,
-      title: "Office Hours",
-      info: "Mon - Fri: 9:00 - 18:00",
-      subInfo: "UTC+0 Timezone",
-      description: "When we're available",
+      title: t("office_hours"),
+      info: "{t('support_hours')}",
+      subInfo: "{t('timezone_info')}",
+      description: "{t('when_available_desc')}",
     },
     {
       icon: <MapPin className="text-orange-400" size={24} />,
-      title: "Location",
-      info: "Global Team",
-      subInfo: "Remote-first company",
-      description: "We're everywhere",
+      title: t("location"),
+      info: "{t('global_team')}",
+      subInfo: "{t('remote_first_desc')}",
+      description: "{t('were_everywhere_desc')}",
     },
   ];
 
@@ -166,7 +168,7 @@ const Contact = () => {
 
       // Check if response is successful (including 204)
       if (!response.ok && response.status !== 204) {
-        throw new Error("Failed to send message");
+        throw new Error(t("failed_send_message"));
       }
 
       // Handle empty response for 204 status
@@ -189,7 +191,7 @@ const Contact = () => {
     },
     onError: (error) => {
       console.error("Contact form error:", error);
-      setContactError("Failed to send message. Please try again later.");
+      setContactError(t("failed_send_message_detail"));
     },
   });
 
@@ -208,7 +210,7 @@ const Contact = () => {
       !formData.subject ||
       !formData.message
     ) {
-      setContactError("Please fill in all required fields");
+      setContactError(t("fill_required_fields"));
       return;
     }
     setContactError(null);
@@ -217,24 +219,20 @@ const Contact = () => {
 
   const faqItems = [
     {
-      question: "How do I create my first token?",
-      answer:
-        "Simply connect your wallet, fill out the token creation form, and deploy to the Solana blockchain. Our intuitive interface guides you through every step.",
+      question: t("faq_q1"),
+      answer: t("faq_a1"),
     },
     {
-      question: "What are the fees for token creation?",
-      answer:
-        "Token creation fees start at 0.05 SOL, which includes deployment costs and platform fees. Additional features like liquidity pools may have separate costs.",
+      question: t("faq_q2"),
+      answer: t("faq_a2"),
     },
     {
-      question: "How secure is the platform?",
-      answer:
-        "We use enterprise-grade security with multi-layer encryption, smart contract audits, and regular security updates. Your assets are protected by industry-leading security measures.",
+      question: t("faq_q3"),
+      answer: t("faq_a3"),
     },
     {
-      question: "Can I get a refund?",
-      answer:
-        "Due to the nature of blockchain transactions, most fees are non-refundable. However, we offer full support to ensure your project succeeds.",
+      question: t("faq_q4"),
+      answer: t("faq_a4"),
     },
   ];
 
@@ -245,7 +243,7 @@ const Contact = () => {
         <div className="text-center mb-20">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600/20 to-green-600/20 border border-blue-500/30 rounded-2xl px-6 py-3 mb-6">
             <Phone className="text-blue-400" size={24} />
-            <span className="text-blue-300 font-semibold">Get In Touch</span>
+            <span className="text-blue-300 font-semibold">{t("get_in_touch")}</span>
           </div>
 
           <h1 className="text-6xl font-bold text-white mb-6">
@@ -253,7 +251,7 @@ const Contact = () => {
               Contact
             </span>
             <br />
-            <span className="text-white">Our Team</span>
+            <span className="text-white">{t("our_team")}</span>
           </h1>
 
           <p className="text-gray-400 text-xl max-w-4xl mx-auto leading-relaxed">
@@ -295,7 +293,7 @@ const Contact = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-gray-300 mb-2">Name *</label>
+                      <label className="block text-gray-300 mb-2">{t("name_required")}</label>
                       <input
                         type="text"
                         name="name"
@@ -303,7 +301,7 @@ const Contact = () => {
                         onChange={handleInputChange}
                         required
                         className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
-                        placeholder="Your name"
+                        placeholder={t("your_name")}
                       />
                     </div>
 
@@ -334,7 +332,7 @@ const Contact = () => {
                       onChange={handleInputChange}
                       required
                       className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
-                      placeholder="What's this about?"
+                      placeholder={t("whats_this_about")}
                     />
                   </div>
 
@@ -349,7 +347,7 @@ const Contact = () => {
                       required
                       rows="6"
                       className="w-full bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none transition-colors"
-                      placeholder="Tell us how we can help you..."
+                      placeholder={t("how_we_can_help")}
                     />
                   </div>
 
@@ -361,12 +359,12 @@ const Contact = () => {
                     {contactMutation.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        Sending...
+                        {t("sending")}
                       </>
                     ) : (
                       <>
                         <Send size={20} />
-                        Send Message
+                        {t("send_message")}
                       </>
                     )}
                   </button>
@@ -440,7 +438,7 @@ const Contact = () => {
 
             {/* Quick FAQ */}
             <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700">
-              <h3 className="text-2xl font-bold text-white mb-6">Quick FAQ</h3>
+              <h3 className="text-2xl font-bold text-white mb-6">{t("quick_faq")}</h3>
               <div className="space-y-4">
                 {faqItems.map((faq, index) => (
                   <div

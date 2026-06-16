@@ -44,49 +44,45 @@ const NootToken = () => {
   const features = [
     {
       icon: <Gamepad2 className="w-8 h-8 text-purple-400" />,
-      title: "Internal Currency in NOOTBATTLE",
-      description:
-        "Acquire improvements, skills and characters within the game. Used as payment in internal transactions and special events.",
+      title: t("noot_battle_internal_currency"),
+      description: t("noot_battle_internal_currency_desc"),
     },
     {
       icon: <Zap className="w-8 h-8 text-blue-400" />,
-      title: "Access to Premium Features",
-      description:
-        "Unlock advanced features in NOOTTOOLS and special benefits within NOOTBATTLE.",
+      title: t("premium_features_access"),
+      description: t("premium_features_access_desc"),
     },
     {
       icon: <Trophy className="w-8 h-8 text-orange-400" />,
-      title: "Participation in Rankings & Tournaments",
-      description:
-        "Enter tournaments and improve your position in internal rankings in competitive mode.",
+      title: t("rankings_tournaments_participation"),
+      description: t("rankings_tournaments_participation_desc"),
     },
     {
       icon: <Star className="w-8 h-8 text-cyan-400" />,
-      title: "Interaction with Future Developments",
-      description:
-        "The NOOTTOOLS ecosystem will grow with new integrations and modules that may require NOOT tokens.",
+      title: t("future_developments_interaction"),
+      description: t("future_developments_interaction_desc"),
     },
   ];
 
   const tokenInfo = [
     {
-      label: "Token Name",
-      value: "NOOT Token",
+      label: t("token_name_label"),
+      value: t("noot_token"),
       icon: <Coins className="w-5 h-5 text-purple-400" />,
     },
     {
-      label: "Purpose",
-      value: "Utility Token",
+      label: t("purpose"),
+      value: t("utility_token"),
       icon: <Shield className="w-5 h-5 text-green-400" />,
     },
     {
-      label: "Use Case",
-      value: "NOOTTOOLS & NOOTBATTLE Ecosystem",
+      label: t("use_case"),
+      value: t("noot_ecosystem_use_case"),
       icon: <Gamepad2 className="w-5 h-5 text-blue-400" />,
     },
     {
-      label: "Developer",
-      value: "NOOTTOOLS, SL",
+      label: t("developer"),
+      value: t("noottools_sl"),
       icon: <Users className="w-5 h-5 text-orange-400" />,
     },
   ];
@@ -103,7 +99,7 @@ const NootToken = () => {
 
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              NOOT Token
+              {t("noot_token")}
             </span>
           </h1>
 
@@ -175,15 +171,9 @@ const NootToken = () => {
 
           <div className="prose prose-invert max-w-none">
             <p className="text-gray-300 leading-relaxed text-lg mb-6">
-              The NOOT token is a utility token designed to be used solely
-              within the NOOTTOOLS ecosystem and, in particular, as an internal
-              currency in the NOOTBATTLE video game. Its planned functionalities
-              include serving as internal currency, providing access to premium
-              features, enabling participation in rankings and tournaments, and
-              facilitating interaction with future developments in the ecosystem
-              developed by{" "}
+              {t("about_noot_token_paragraph_1")}{" "}
               <span className="text-purple-400 font-semibold">
-                NOOTTOOLS, SL
+                {t("noottools_sl")}
               </span>
               .
             </p>
@@ -196,12 +186,7 @@ const NootToken = () => {
                     {t('important_warning')}
                   </h3>
                   <p className="text-red-200 text-sm leading-relaxed">
-                    The NOOT token does not constitute a financial instrument.
-                    It does not grant participation, dividends, interests or
-                    economic rights of any kind. NOOTTOOLS, SL does not
-                    guarantee that NOOT has or will have a monetary value. Its
-                    purpose is exclusively utilitarian and is limited to the
-                    NOOTTOOLS and NOOTBATTLE ecosystem.
+                    {t("noot_token_warning_desc")}
                   </p>
                 </div>
               </div>
@@ -213,12 +198,11 @@ const NootToken = () => {
         <div className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-white mb-4">
-              Token{" "}
+              {t("token_label")}{" "}
               <span className="text-purple-400">{t('planned_functionalities')}</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Discover all the planned ways you can use NOOT tokens within the
-              NOOTTOOLS and NOOTBATTLE ecosystem
+              {t("discover_planned_ways")}
             </p>
           </div>
 
@@ -257,10 +241,7 @@ const NootToken = () => {
               {t('noot_eco_integration')}
             </h2>
             <p className="text-gray-300 text-lg max-w-3xl mx-auto">
-              NOOT tokens are designed to be integrated seamlessly into the
-              entire NOOTTOOLS ecosystem, with NOOTBATTLE being the primary
-              gaming platform, providing utility and value across all future
-              developments.
+              {t("noot_integration_desc")}
             </p>
           </div>
 
@@ -273,7 +254,7 @@ const NootToken = () => {
                 {t('internal_currency')}
               </h3>
               <p className="text-gray-400 text-sm">
-                Used for improvements, skills and characters within NOOTBATTLE
+                {t("used_for_improvements")}
               </p>
             </div>
 
@@ -285,7 +266,7 @@ const NootToken = () => {
                 {t('competitive_features')}
               </h3>
               <p className="text-gray-400 text-sm">
-                Access tournaments and improve rankings in competitive mode
+                {t("access_tournaments_competitive")}
               </p>
             </div>
 
@@ -297,7 +278,7 @@ const NootToken = () => {
                 {t('premium_access_nav')}
               </h3>
               <p className="text-gray-400 text-sm">
-                Unlock advanced features in NOOTTOOLS and special benefits
+                {t("unlock_advanced_features")}
               </p>
             </div>
           </div>
@@ -315,16 +296,11 @@ const NootToken = () => {
           </div>
 
           <p className="text-gray-300 leading-relaxed text-lg">
-            NOOTTOOLS, SL is committed to creating innovative gaming experiences
-            that push the boundaries of what's possible in the Web3 gaming
-            space. The NOOT token represents our dedication to providing players
-            with meaningful utility within the NOOTTOOLS and NOOTBATTLE
-            ecosystem.
+            {t("noot_token_developer_desc")}{" "}
             {!isLoadingSettings && settings?.whitepaper && (
               <>
                 {" "}
-                The whitepaper is available for detailed information about the
-                token's specifications and roadmap.
+                {t("noot_whitepaper_available_desc")}
               </>
             )}
           </p>

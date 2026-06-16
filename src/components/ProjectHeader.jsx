@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import constants from "../constants";
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 
 const ProjectHeader = ({ project }) => {
+  const { t } = useTranslation();
   // Get comments count
   const { data: commentsCount = 0 } = useQuery({
     queryKey: ["comments-count", project.id],
@@ -38,13 +40,13 @@ const ProjectHeader = ({ project }) => {
     const diffInMonths = Math.floor(diffInDays / 30);
     const diffInYears = Math.floor(diffInDays / 365);
 
-    if (diffInDays === 0) return "Today";
-    if (diffInDays === 1) return "1 day ago";
-    if (diffInDays < 30) return `${diffInDays} days ago`;
-    if (diffInMonths === 1) return "1 month ago";
-    if (diffInMonths < 12) return `${diffInMonths} months ago`;
-    if (diffInYears === 1) return "1 year ago";
-    return `${diffInYears} years ago`;
+    if (diffInDays === 0) return t("today");
+    if (diffInDays === 1) return t("one_day_ago");
+    if (diffInDays < 30) return t("days_ago", { count: diffInDays });
+    if (diffInMonths === 1) return t("one_month_ago");
+    if (diffInMonths < 12) return t("months_ago", { count: diffInMonths });
+    if (diffInYears === 1) return t("one_year_ago");
+    return t("years_ago", { count: diffInYears });
   };
 
   return (
@@ -88,7 +90,7 @@ const ProjectHeader = ({ project }) => {
                   </h1>
                   <div className="flex items-center gap-1 bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">
                     <Star className="w-4 h-4" />
-                    <span className="text-sm font-medium">Featured</span>
+                    <span className="text-sm font-medium">{t("featured")}</span>
                   </div>
                 </div>
 
@@ -160,7 +162,7 @@ const ProjectHeader = ({ project }) => {
                   </div>
                 )}
                 <span className="text-gray-300 font-medium">
-                  {project.user?.first_name || "Unknown"}
+                  {project.user?.first_name || t("unknown")}
                 </span>
               </div>
 
@@ -175,13 +177,13 @@ const ProjectHeader = ({ project }) => {
               {/* Comments Count */}
               <div className="flex items-center gap-2 bg-gray-800/30 rounded-lg px-3 py-2">
                 <MessageCircle className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-300">{commentsCount} comments</span>
+                <span className="text-gray-300">{commentsCount} {t("comments_text", { count: commentsCount })}</span>
               </div>
 
               {/* Live indicator */}
               <div className="flex items-center gap-2 bg-green-600/20 rounded-lg px-3 py-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-400 font-medium">Live Trading</span>
+                <span className="text-green-400 font-medium">{t("live_trading")}</span>
               </div>
             </div>
           </div>

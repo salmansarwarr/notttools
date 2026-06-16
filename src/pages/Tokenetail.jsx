@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUnifiedWallet } from "../hooks/useUnifiedWallet";
 import { useGlobalState } from "../hooks/useGlobalState";
@@ -15,6 +16,7 @@ import TradingPage from "../components/TradingPage";
 const IS_MAINNET = true;
 
 const TokenDetail = () => {
+    const { t } = useTranslation();
     const { mintAddress } = useParams();
     const navigate = useNavigate();
     const wallet = useUnifiedWallet();
@@ -81,7 +83,7 @@ const TokenDetail = () => {
             if (data.data && data.data.length > 0) {
                 setTokenData(data.data[0]);
             } else {
-                toast.error("Token not found in database");
+                toast.error(t("token_not_found_db"));
             }
         } catch (error) {
             console.error("Error fetching token data:", error);
@@ -123,12 +125,12 @@ const TokenDetail = () => {
 
     const executeTrade = async () => {
         if (!wallet.connected) {
-            toast.warning("Please connect your wallet first");
+            toast.warning(t("please_connect_wallet_first"));
             return;
         }
 
         if (!tradeQuote) {
-            toast.warning("Please enter a valid amount");
+            toast.warning(t("please_enter_valid_amount"));
             return;
         }
 
@@ -144,7 +146,7 @@ const TokenDetail = () => {
                 // Check if this was the first buy
                 if (result?.isFirstBuy) {
                     toast.info(
-                        "🔒 You're the first buyer! Your tokens are locked until unlock conditions are met.",
+                        t("first_buyer_toast"),
                         {
                             autoClose: 8000,
                         }
@@ -171,7 +173,7 @@ const TokenDetail = () => {
 
     const handleCheckUnlock = async () => {
         if (!wallet.connected) {
-            toast.warning("Please connect your wallet first");
+            toast.warning(t("please_connect_wallet_first"));
             return;
         }
 
@@ -193,7 +195,7 @@ const TokenDetail = () => {
 
     const handleUnlock = async () => {
         if (!wallet.connected) {
-            toast.warning("Please connect your wallet first");
+            toast.warning(t("please_connect_wallet_first"));
             return;
         }
 
@@ -223,10 +225,8 @@ const TokenDetail = () => {
             <div className="min-h-screen bg-[#0A151E] pt-28 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400 text-lg">
-                        Loading token data...
-                    </p>
-                    <p className="text-gray-500 text-sm mt-2">Please wait</p>
+                    <p className="text-gray-400 text-lg">{t("loading_token_data")}</p>
+                    <p className="text-gray-500 text-sm mt-2">{t("please_wait")}</p>
                 </div>
             </div>
         );
@@ -249,19 +249,12 @@ const TokenDetail = () => {
                             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                         />
                     </svg>
-                    <p className="text-red-400 mb-4 text-xl font-semibold">
-                        Token Not Found
-                    </p>
-                    <p className="text-gray-400 mb-6">
-                        The token you're looking for doesn't exist or hasn't
-                        been indexed yet.
-                    </p>
+                    <p className="text-red-400 mb-4 text-xl font-semibold">{t("token_not_found")}</p>
+                    <p className="text-gray-400 mb-6">{t("token_not_exist")}</p>
                     <button
                         onClick={() => navigate("/")}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                    >
-                        Go Home
-                    </button>
+                    >{t("go_home")}</button>
                 </div>
             </div>
         );
@@ -306,14 +299,10 @@ const TokenDetail = () => {
                                         {tokenData.name}
                                     </h1>
                                     {bondingCurveInfo?.isMigrated && (
-                                        <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-3 py-1 rounded-full border border-purple-500/30">
-                                            MIGRATED TO RAYDIUM
-                                        </span>
+                                        <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-3 py-1 rounded-full border border-purple-500/30">{t("migrated_to_raydium_label")}</span>
                                     )}
                                     {bondingCurveInfo?.firstBuyerLockActive && (
-                                        <span className="bg-orange-500/20 text-orange-400 text-xs font-semibold px-3 py-1 rounded-full border border-orange-500/30">
-                                            🔒 FIRST BUYER LOCKED
-                                        </span>
+                                        <span className="bg-orange-500/20 text-orange-400 text-xs font-semibold px-3 py-1 rounded-full border border-orange-500/30">{t("first_buyer_locked_label")}</span>
                                     )}
                                 </div>
                                 <p className="text-gray-400">
@@ -328,7 +317,7 @@ const TokenDetail = () => {
                             </p>
                             {bondingCurveInfo && (
                                 <p className="text-sm text-gray-400">
-                                    Market Cap: ${" "}
+                                    {t("market_cap")}{" "}
                                     {bondingCurveInfo?.marketCap
                                         ? bondingCurveInfo.marketCap >= 1e6
                                             ? `$${(
@@ -353,7 +342,7 @@ const TokenDetail = () => {
                     {bondingCurveInfo && !bondingCurveInfo.isMigrated && (
                         <div className="mt-6">
                             <div className="flex justify-between text-sm text-gray-400 mb-2">
-                                <span>Migration Progress</span>
+                                <span>{t("migration_progress")}</span>
                                 <span className="text-white font-semibold">
                                     {bondingCurveInfo.progress.toFixed(1)}%
                                 </span>
@@ -386,9 +375,7 @@ const TokenDetail = () => {
                     {/* Token Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                         <div className="bg-gray-800/50 rounded-lg p-4">
-                            <p className="text-gray-400 text-sm mb-1">
-                                Total Reserves
-                            </p>
+                            <p className="text-gray-400 text-sm mb-1">{t("total_reserves")}</p>
                             <p className="text-white font-semibold">
                                 {bondingCurveInfo?.totalSolReserves.toFixed(
                                     2
@@ -397,9 +384,7 @@ const TokenDetail = () => {
                             </p>
                         </div>
                         <div className="bg-gray-800/50 rounded-lg p-4">
-                            <p className="text-gray-400 text-sm mb-1">
-                                Tokens in Curve
-                            </p>
+                            <p className="text-gray-400 text-sm mb-1">{t("tokens_in_curve")}</p>
                             <p className="text-white font-semibold">
                                 {bondingCurveInfo
                                     ? (
@@ -410,9 +395,7 @@ const TokenDetail = () => {
                             </p>
                         </div>
                         <div className="bg-gray-800/50 rounded-lg p-4">
-                            <p className="text-gray-400 text-sm mb-1">
-                                Total Supply
-                            </p>
+                            <p className="text-gray-400 text-sm mb-1">{t("total_supply")}</p>
                             <p className="text-white font-semibold">
                                 {bondingCurveInfo
                                     ? (
@@ -422,7 +405,7 @@ const TokenDetail = () => {
                             </p>
                         </div>
                         <div className="bg-gray-800/50 rounded-lg p-4">
-                            <p className="text-gray-400 text-sm mb-1">Status</p>
+                            <p className="text-gray-400 text-sm mb-1">{t("status")}</p>
                             <p
                                 className={`font-semibold ${
                                     bondingCurveInfo?.isMigrated
@@ -431,8 +414,8 @@ const TokenDetail = () => {
                                 }`}
                             >
                                 {bondingCurveInfo?.isMigrated
-                                    ? "🏊 Migrated"
-                                    : "📈 Active"}
+                                    ? t("migrated_status")
+                                    : t("active_status")}
                             </p>
                         </div>
                     </div>
@@ -483,8 +466,8 @@ const TokenDetail = () => {
                                     }`}
                                 >
                                     {bondingCurveInfo?.isMigrated
-                                        ? "Trade on Raydium"
-                                        : "Trade on Curve"}
+                                        ? t("trade_on_raydium")
+                                        : t("trade_on_curve")}
                                 </button>
                                 <button
                                     onClick={() => setActiveTab("info")}
@@ -493,9 +476,7 @@ const TokenDetail = () => {
                                             ? "bg-blue-600 text-white"
                                             : "text-gray-400 hover:text-white hover:bg-gray-800"
                                     }`}
-                                >
-                                    Curve Info
-                                </button>
+                                >{t("curve_info")}</button>
                             </div>
 
                             {/* Content */}
@@ -516,15 +497,8 @@ const TokenDetail = () => {
                                                         clipRule="evenodd"
                                                     />
                                                 </svg>
-                                                <h3 className="text-purple-300 font-semibold text-xl mb-2">
-                                                    Token Migrated to Raydium!
-                                                </h3>
-                                                <p className="text-purple-200 text-sm mb-6">
-                                                    This token has successfully
-                                                    reached its migration
-                                                    threshold and is now trading
-                                                    on Raydium DEX.
-                                                </p>
+                                                <h3 className="text-purple-300 font-semibold text-xl mb-2">{t("token_migrated_to_raydium_title")}</h3>
+                                                <p className="text-purple-200 text-sm mb-6">{t("token_migrated_desc")}</p>
                                                 <a
                                                     href={`https://raydium.io/swap/?inputCurrency=sol&outputCurrency=${mintAddress}`}
                                                     target="_blank"
@@ -562,9 +536,7 @@ const TokenDetail = () => {
                                                             ? "bg-green-600 text-white"
                                                             : "text-gray-400 hover:text-white"
                                                     }`}
-                                                >
-                                                    Buy
-                                                </button>
+                                                >{t("buy")}</button>
                                                 <button
                                                     onClick={() =>
                                                         setTradeMode("sell")
@@ -574,17 +546,15 @@ const TokenDetail = () => {
                                                             ? "bg-red-600 text-white"
                                                             : "text-gray-400 hover:text-white"
                                                     }`}
-                                                >
-                                                    Sell
-                                                </button>
+                                                >{t("sell")}</button>
                                             </div>
 
                                             {/* Amount Input */}
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-300 mb-2">
                                                     {tradeMode === "buy"
-                                                        ? "Amount (SOL)"
-                                                        : `Amount (${tokenData.symbol})`}
+                                                        ? t("amount_sol")
+                                                        : `${t("amount")} (${tokenData.symbol})`}
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -610,9 +580,7 @@ const TokenDetail = () => {
 
                                             {/* Slippage */}
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                                    Slippage Tolerance (%)
-                                                </label>
+                                                <label className="block text-sm font-medium text-gray-300 mb-2">{t("slippage_tolerance")}</label>
                                                 <div className="flex gap-2">
                                                     {["0.5", "1", "2", "5"].map(
                                                         (value) => (
@@ -645,10 +613,10 @@ const TokenDetail = () => {
                                                 <div className="bg-gray-800/50 rounded-lg p-4 space-y-2 border border-gray-700">
                                                     <div className="flex justify-between text-sm">
                                                         <span className="text-gray-400">
-                                                            You{" "}
-                                                            {tradeMode === "buy"
-                                                                ? "pay"
-                                                                : "receive"}
+                                                            {t("you")} {" "}
+                                                                {tradeMode === "buy"
+                                                                    ? t("pay")
+                                                                    : t("receive")}
                                                         </span>
                                                         <span className="text-white font-semibold">
                                                             {tradeQuote.input.toFixed(
@@ -661,10 +629,10 @@ const TokenDetail = () => {
                                                     </div>
                                                     <div className="flex justify-between text-sm">
                                                         <span className="text-gray-400">
-                                                            You{" "}
-                                                            {tradeMode === "buy"
-                                                                ? "receive"
-                                                                : "pay"}
+                                                            {t("you")} {" "}
+                                                                {tradeMode === "buy"
+                                                                    ? t("receive")
+                                                                    : t("pay")}
                                                         </span>
                                                         <span className="text-white font-semibold">
                                                             {tradeQuote.output.toFixed(
@@ -676,9 +644,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-gray-400">
-                                                            Price per token
-                                                        </span>
+                                                        <span className="text-gray-400">{t("price_per_token")}</span>
                                                         <span className="text-white font-semibold">
                                                             $
                                                             {tradeQuote.pricePerToken.toFixed(
@@ -687,9 +653,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between text-sm pt-2 border-t border-gray-700">
-                                                        <span className="text-gray-400">
-                                                            Price Impact
-                                                        </span>
+                                                        <span className="text-gray-400">{t("price_impact")}</span>
                                                         <span
                                                             className={`font-semibold ${
                                                                 tradeQuote.priceImpact >
@@ -715,9 +679,7 @@ const TokenDetail = () => {
                                                 <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
                                                     <div className="flex items-center justify-center gap-2 text-gray-400">
                                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                                                        <span className="text-sm">
-                                                            Calculating quote...
-                                                        </span>
+                                                        <span className="text-sm">{t("calculating_quote")}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -739,27 +701,14 @@ const TokenDetail = () => {
                                                                 />
                                                             </svg>
                                                             <div>
-                                                                <h4 className="text-orange-300 font-semibold text-sm mb-1">
-                                                                    First Buyer
-                                                                    Lock
-                                                                </h4>
-                                                                <p className="text-orange-200 text-xs">
-                                                                    The first
-                                                                    buyer's
-                                                                    tokens will
-                                                                    be locked
-                                                                    until{" "}
-                                                                    {
+                                                                <h4 className="text-orange-300 font-semibold text-sm mb-1">{t("first_buyer_lock_title")}</h4>
+                                                                <p className="text-orange-200 text-xs">{t("first_buyer_tokens_locked_until")} {" "}{
                                                                         bondingCurveInfo?.holderThreshold
                                                                     }{" "}
-                                                                    holders and
-                                                                    $
+                                                                    {t("holders_and")} $
                                                                     {
                                                                         bondingCurveInfo?.volumeThreshold
-                                                                    }{" "}
-                                                                    trading
-                                                                    volume is
-                                                                    reached.
+                                                                    }{" "} {t("trading_volume_reached")}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -789,14 +738,14 @@ const TokenDetail = () => {
                                                         </span>
                                                     </>
                                                 ) : !wallet.connected ? (
-                                                    "Connect Wallet"
+                                                    t("connect_wallet")
                                                 ) : isFetchingQuote ? (
-                                                    "Calculating..."
+                                                    t("calculating")
                                                 ) : (
                                                     <>
                                                         {tradeMode === "buy"
-                                                            ? "Buy Tokens"
-                                                            : "Sell Tokens"}
+                                                            ? t("buy_tokens")
+                                                            : t("sell_tokens")}
                                                     </>
                                                 )}
                                             </button>
@@ -818,25 +767,12 @@ const TokenDetail = () => {
                                                                 />
                                                             </svg>
                                                             <div>
-                                                                <h4 className="text-yellow-300 font-semibold text-sm mb-1">
-                                                                    High Price
-                                                                    Impact
-                                                                    Warning
-                                                                </h4>
-                                                                <p className="text-yellow-200 text-xs">
-                                                                    This trade
-                                                                    will have a
-                                                                    significant
-                                                                    price impact
-                                                                    (
+                                                                <h4 className="text-yellow-300 font-semibold text-sm mb-1">{t("high_price_impact_warning")}</h4>
+                                                                <p className="text-yellow-200 text-xs">{t("trade_high_impact_1")}(
                                                                     {tradeQuote.priceImpact.toFixed(
                                                                         2
                                                                     )}
-                                                                    %). Consider
-                                                                    reducing
-                                                                    your trade
-                                                                    size.
-                                                                </p>
+                                                                    %){t("trade_high_impact_2")}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -844,16 +780,8 @@ const TokenDetail = () => {
 
                                             {/* Info Note */}
                                             <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4">
-                                                <p className="text-blue-200 text-xs">
-                                                    💡 Trading on bonding curve
-                                                    with automated price
-                                                    discovery. Price increases
-                                                    as more SOL is deposited. At{" "}
-                                                    {bondingCurveInfo?.migrationThreshold ||
-                                                        85}{" "}
-                                                    SOL, token automatically
-                                                    migrates to Raydium.
-                                                </p>
+                                                <p className="text-blue-200 text-xs">💡 {t("trading_bonding_curve_note_1")} {" "}{bondingCurveInfo?.migrationThreshold ||
+                                                        85}{" "} {t("trading_bonding_curve_note_2")}</p>
                                             </div>
                                         </div>
                                     )
@@ -861,23 +789,14 @@ const TokenDetail = () => {
                                     // Curve Info Tab
                                     <div className="space-y-6">
                                         <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-600/30 rounded-lg p-6">
-                                            <h3 className="text-blue-300 font-semibold text-lg mb-4">
-                                                📊 Bonding Curve Mechanics
-                                            </h3>
+                                            <h3 className="text-blue-300 font-semibold text-lg mb-4">📊 {t("bonding_curve_mechanics")}</h3>
                                             <div className="space-y-4 text-sm">
                                                 <div>
-                                                    <p className="text-gray-400 mb-1">
-                                                        Pricing Model
-                                                    </p>
-                                                    <p className="text-white">
-                                                        Constant Product (x * y
-                                                        = k)
-                                                    </p>
+                                                    <p className="text-gray-400 mb-1">{t("pricing_model")}</p>
+                                                    <p className="text-white">{t("constant_product")}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-400 mb-1">
-                                                        Virtual Liquidity
-                                                    </p>
+                                                    <p className="text-gray-400 mb-1">{t("virtual_liquidity")}</p>
                                                     <p className="text-white">
                                                         {bondingCurveInfo?.virtualSolReserves.toFixed(
                                                             2
@@ -893,9 +812,7 @@ const TokenDetail = () => {
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-400 mb-1">
-                                                        Real Reserves
-                                                    </p>
+                                                    <p className="text-gray-400 mb-1">{t("real_reserves")}</p>
                                                     <p className="text-white">
                                                         {bondingCurveInfo?.realSolReserves.toFixed(
                                                             2
@@ -911,17 +828,13 @@ const TokenDetail = () => {
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-400 mb-1">
-                                                        Current Price
-                                                    </p>
+                                                    <p className="text-gray-400 mb-1">{t("current_price")}</p>
                                                     <p className="text-white">
                                                         ${currentPrice}
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-400 mb-1">
-                                                        Migration Threshold
-                                                    </p>
+                                                    <p className="text-gray-400 mb-1">{t("migration_threshold")}</p>
                                                     <p className="text-white">
                                                         {bondingCurveInfo?.migrationThreshold ||
                                                             85}{" "}
@@ -929,9 +842,7 @@ const TokenDetail = () => {
                                                     </p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-400 mb-1">
-                                                        Progress to Migration
-                                                    </p>
+                                                    <p className="text-gray-400 mb-1">{t("progress_to_migration")}</p>
                                                     <p className="text-white font-semibold">
                                                         {bondingCurveInfo?.progress.toFixed(
                                                             2
@@ -945,14 +856,10 @@ const TokenDetail = () => {
                                         {/* First Buyer Lock Info */}
                                         {bondingCurveInfo?.firstBuyer && (
                                             <div className="bg-orange-900/20 border border-orange-600/30 rounded-lg p-6">
-                                                <h3 className="text-orange-300 font-semibold text-lg mb-4">
-                                                    🔒 First Buyer Lock Status
-                                                </h3>
+                                                <h3 className="text-orange-300 font-semibold text-lg mb-4">🔒 {t("first_buyer_lock_status")}</h3>
                                                 <div className="space-y-3 text-sm">
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            First Buyer
-                                                        </span>
+                                                        <span className="text-gray-400">{t("first_buyer")}</span>
                                                         <span className="text-white font-mono text-xs">
                                                             {bondingCurveInfo.firstBuyer.slice(
                                                                 0,
@@ -965,9 +872,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Locked Amount
-                                                        </span>
+                                                        <span className="text-gray-400">{t("locked_amount")}</span>
                                                         <span className="text-white">
                                                             {bondingCurveInfo.firstBuyerLockedAmount.toFixed(
                                                                 2
@@ -976,9 +881,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Lock Active
-                                                        </span>
+                                                        <span className="text-gray-400">{t("lock_active")}</span>
                                                         <span
                                                             className={
                                                                 bondingCurveInfo.firstBuyerLockActive
@@ -987,14 +890,12 @@ const TokenDetail = () => {
                                                             }
                                                         >
                                                             {bondingCurveInfo.firstBuyerLockActive
-                                                                ? "🔒 Yes"
-                                                                : "🔓 No"}
+                                                                ? t("locked_yes")
+                                                                : t("locked_no")}
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Holder Threshold
-                                                        </span>
+                                                        <span className="text-gray-400">{t("holder_threshold")}</span>
                                                         <span className="text-white">
                                                             {
                                                                 bondingCurveInfo.currentHolderCount
@@ -1006,9 +907,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Volume Threshold
-                                                        </span>
+                                                        <span className="text-gray-400">{t("volume_threshold")}</span>
                                                         <span className="text-white">
                                                             $
                                                             {bondingCurveInfo.totalVolumeUsd.toFixed(
@@ -1021,9 +920,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Unlockable
-                                                        </span>
+                                                        <span className="text-gray-400">{t("unlockable")}</span>
                                                         <span
                                                             className={
                                                                 bondingCurveInfo.unlockable
@@ -1032,8 +929,8 @@ const TokenDetail = () => {
                                                             }
                                                         >
                                                             {bondingCurveInfo.unlockable
-                                                                ? "✅ Ready"
-                                                                : "⏳ Not Yet"}
+                                                                ? t("ready_yes")
+                                                                : t("not_yet")}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1042,14 +939,10 @@ const TokenDetail = () => {
 
                                         {bondingCurveInfo?.isMigrated && (
                                             <div className="bg-purple-900/20 border border-purple-600/30 rounded-lg p-6">
-                                                <h3 className="text-purple-300 font-semibold text-lg mb-4">
-                                                    🏊 Migration Complete
-                                                </h3>
+                                                <h3 className="text-purple-300 font-semibold text-lg mb-4">🏊 {t("migration_complete")}</h3>
                                                 <div className="space-y-3 text-sm">
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Platform Fee (5%)
-                                                        </span>
+                                                        <span className="text-gray-400">{t("platform_fee_5")}</span>
                                                         <span className="text-white">
                                                             {bondingCurveInfo.realSolReserves
                                                                 ? (
@@ -1061,9 +954,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            SOL to Pool
-                                                        </span>
+                                                        <span className="text-gray-400">{t("sol_to_pool")}</span>
                                                         <span className="text-white">
                                                             {bondingCurveInfo.realSolReserves
                                                                 ? (
@@ -1075,9 +966,7 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            Tokens to Pool
-                                                        </span>
+                                                        <span className="text-gray-400">{t("tokens_to_pool")}</span>
                                                         <span className="text-white">
                                                             {bondingCurveInfo.realTokenReserves
                                                                 ? (
@@ -1089,77 +978,50 @@ const TokenDetail = () => {
                                                         </span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="text-gray-400">
-                                                            LP Lock Status
-                                                        </span>
-                                                        <span className="text-green-400">
-                                                            🔒 60% Locked
-                                                        </span>
+                                                        <span className="text-gray-400">{t("lp_lock_status")}</span>
+                                                        <span className="text-green-400">🔒 {t("locked_60")}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
 
                                         <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-6">
-                                            <h3 className="text-yellow-300 font-semibold text-lg mb-4">
-                                                ⚡ How It Works
-                                            </h3>
+                                            <h3 className="text-yellow-300 font-semibold text-lg mb-4">⚡ {t("how_it_works_bolt")}</h3>
                                             <ul className="space-y-3 text-sm text-yellow-200">
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-yellow-400 mt-0.5">
                                                         1.
                                                     </span>
-                                                    <span>
-                                                        Token launches with
-                                                        virtual liquidity for
-                                                        price discovery
-                                                    </span>
+                                                    <span>{t("curve_works_1")}</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-yellow-400 mt-0.5">
                                                         2.
                                                     </span>
-                                                    <span>
-                                                        First buyer's tokens are
-                                                        locked until{" "}
-                                                        {bondingCurveInfo?.holderThreshold ||
+                                                    <span>{t("first_buyer_tokens_locked_until")} {" "}{bondingCurveInfo?.holderThreshold ||
                                                             300}{" "}
-                                                        holders and $
+                                                        {t("holders_and")} $
                                                         {bondingCurveInfo?.volumeThreshold ||
-                                                            25000}{" "}
-                                                        volume
-                                                    </span>
+                                                            25000}{" "} {t("volume")}</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-yellow-400 mt-0.5">
                                                         3.
                                                     </span>
-                                                    <span>
-                                                        Price increases as more
-                                                        SOL is deposited into
-                                                        the curve
-                                                    </span>
+                                                    <span>{t("curve_works_3")}</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-yellow-400 mt-0.5">
                                                         4.
                                                     </span>
-                                                    <span>
-                                                        At{" "}
-                                                        {bondingCurveInfo?.migrationThreshold ||
-                                                            85}{" "}
-                                                        SOL, automatically
-                                                        migrates to Raydium
-                                                    </span>
+                                                    <span>{t("curve_at")} {" "}{bondingCurveInfo?.migrationThreshold ||
+                                                            85}{" "} {t("sol_migrates_raydium_auto")}</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-yellow-400 mt-0.5">
                                                         5.
                                                     </span>
-                                                    <span>
-                                                        3% platform fee + 100%
-                                                        LP burn
-                                                    </span>
+                                                    <span>{t("curve_works_5")}</span>
                                                 </li>
                                             </ul>
                                         </div>
@@ -1173,12 +1035,10 @@ const TokenDetail = () => {
                     <div className="space-y-6">
                         {/* Description */}
                         <div className="bg-[#192630] rounded-2xl p-6 border border-gray-700">
-                            <h2 className="text-xl font-bold text-white mb-4">
-                                About
-                            </h2>
+                            <h2 className="text-xl font-bold text-white mb-4">{t("about")}</h2>
                             <p className="text-gray-300 text-sm leading-relaxed">
                                 {tokenData.description ||
-                                    "No description available."}
+                                    t("no_description_available")}
                             </p>
 
                             {/* Social Links */}
@@ -1186,9 +1046,7 @@ const TokenDetail = () => {
                                 tokenData.twitter ||
                                 tokenData.telegram) && (
                                 <div className="mt-6 pt-6 border-t border-gray-700">
-                                    <h3 className="text-sm font-semibold text-gray-400 mb-3">
-                                        Links
-                                    </h3>
+                                    <h3 className="text-sm font-semibold text-gray-400 mb-3">{t("links")}</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {tokenData.website && (
                                             <a
@@ -1207,9 +1065,7 @@ const TokenDetail = () => {
                                                         d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z"
                                                         clipRule="evenodd"
                                                     />
-                                                </svg>
-                                                Website
-                                            </a>
+                                                </svg>{t("website")}</a>
                                         )}
                                         {tokenData.twitter && (
                                             <a
@@ -1224,9 +1080,7 @@ const TokenDetail = () => {
                                                     viewBox="0 0 24 24"
                                                 >
                                                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                                                </svg>
-                                                Twitter
-                                            </a>
+                                                </svg>{t("twitter")}</a>
                                         )}
                                         {tokenData.telegram && (
                                             <a
@@ -1241,9 +1095,7 @@ const TokenDetail = () => {
                                                     viewBox="0 0 24 24"
                                                 >
                                                     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.820 1.230-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.230.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.892-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                                                </svg>
-                                                Telegram
-                                            </a>
+                                                </svg>{t("telegram")}</a>
                                         )}
                                     </div>
                                 </div>
@@ -1252,14 +1104,10 @@ const TokenDetail = () => {
 
                         {/* Contract Info */}
                         <div className="bg-[#192630] rounded-2xl p-6 border border-gray-700">
-                            <h2 className="text-xl font-bold text-white mb-4">
-                                Contract
-                            </h2>
+                            <h2 className="text-xl font-bold text-white mb-4">{t("contract")}</h2>
                             <div className="space-y-3">
                                 <div>
-                                    <p className="text-gray-400 text-xs mb-1">
-                                        Token Address
-                                    </p>
+                                    <p className="text-gray-400 text-xs mb-1">{t("token_address")}</p>
                                     <div className="flex items-center gap-2">
                                         <code className="text-white text-xs bg-gray-800 px-3 py-2 rounded flex-1 overflow-hidden text-ellipsis">
                                             {mintAddress}
@@ -1269,9 +1117,7 @@ const TokenDetail = () => {
                                                 navigator.clipboard.writeText(
                                                     mintAddress
                                                 );
-                                                toast.success(
-                                                    "Address copied to clipboard!"
-                                                );
+                                                toast.success(t("address_copied"));
                                             }}
                                             className="p-2 bg-gray-800 hover:bg-gray-700 rounded transition-colors"
                                         >
@@ -1299,7 +1145,7 @@ const TokenDetail = () => {
                                         rel="noopener noreferrer"
                                         className="flex items-center justify-between w-full bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors"
                                     >
-                                        <span>View on Solscan</span>
+                                        <span>{t("view_on_solscan")}</span>
                                         <svg
                                             className="w-4 h-4"
                                             fill="none"
@@ -1320,18 +1166,14 @@ const TokenDetail = () => {
 
                         {/* Quick Actions */}
                         <div className="bg-[#192630] rounded-2xl p-6 border border-gray-700">
-                            <h2 className="text-xl font-bold text-white mb-4">
-                                Quick Actions
-                            </h2>
+                            <h2 className="text-xl font-bold text-white mb-4">{t("quick_actions")}</h2>
                             <div className="space-y-3">
                                 <button
                                     onClick={() => {
                                         navigator.clipboard.writeText(
                                             window.location.href
                                         );
-                                        toast.success(
-                                            "Link copied to clipboard!"
-                                        );
+                                        toast.success(t("link_copied"));
                                     }}
                                     className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
                                 >
@@ -1347,13 +1189,13 @@ const TokenDetail = () => {
                                             strokeWidth="2"
                                             d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
                                         />
-                                    </svg>
-                                    Share Token
-                                </button>
+                                    </svg>{t("share_token")}</button>
 
                                 <button
                                     onClick={() => {
-                                        const text = `Check out ${tokenData.name} ($${tokenData.symbol}) - Fair launch on bonding curve!\n\n${window.location.href}`;
+                                        const text = `${t("check_out_token")} ${tokenData.name} ($${tokenData.symbol}) - ${t("fair_launch_text")}
+
+${window.location.href}`;
                                         window.open(
                                             `https://twitter.com/intent/tweet?text=${encodeURIComponent(
                                                 text
@@ -1369,9 +1211,7 @@ const TokenDetail = () => {
                                         viewBox="0 0 24 24"
                                     >
                                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                                    </svg>
-                                    Share on Twitter
-                                </button>
+                                    </svg>{t("share_on_twitter")}</button>
                             </div>
                         </div>
                     </div>

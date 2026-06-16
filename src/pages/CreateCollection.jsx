@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -15,6 +16,7 @@ import constants from "../constants";
 const CLUSTER = constants.network.type;
 
 function CreateCollection() {
+    const { t } = useTranslation();
     const { connection } = useConnection();
     const wallet = useWallet();
     const [loading, setLoading] = useState(false);
@@ -40,12 +42,12 @@ function CreateCollection() {
 
     const handleCreateCollection = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus("❌ Please connect your wallet first");
+            setStatus(`❌ ${t("status_connect_wallet_first")}`);
             return;
         }
 
         setLoading(true);
-        setStatus("🔄 Creating collection NFT...");
+        setStatus(`🔄 ${t("status_creating_collection_nft")}`);
         setTxSignature("");
         setCollectionAddress("");
 
@@ -87,14 +89,14 @@ function CreateCollection() {
 
             setTxSignature(signature);
             setCollectionAddress(collectionAddr);
-            setStatus("✅ Collection NFT created successfully!");
+            setStatus(`✅ ${t("status_collection_nft_created")}`);
 
             console.log("✅ Collection Created!");
             console.log("   Address:", collectionAddr);
             console.log("   Transaction:", signature);
         } catch (error) {
             console.error("Error:", error);
-            setStatus(`❌ Error: ${error.message}`);
+            setStatus(`❌ ${t("status_error")} ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -105,12 +107,8 @@ function CreateCollection() {
             <div className="max-w-2xl w-full bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">
-                        🎨 Create Collection NFT
-                    </h1>
-                    <p className="text-gray-300">
-                        Create a new NFT collection on Solana
-                    </p>
+                    <h1 className="text-4xl font-bold text-white mb-2">🎨 {t("create_collection_nft_title")}</h1>
+                    <p className="text-gray-300">{t("create_nft_collection_solana")}</p>
                 </div>
 
                 {/* Wallet Connection */}
@@ -123,15 +121,13 @@ function CreateCollection() {
                     <div className="bg-white/5 rounded-lg p-4 mb-6 border border-white/10">
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Network:</span>
+                                <span className="text-gray-400">{t("network_label")}</span>
                                 <span className="text-white font-mono">
                                     {CLUSTER}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">
-                                    Your Wallet:
-                                </span>
+                                <span className="text-gray-400">{t("your_wallet_label")}</span>
                                 <span className="text-white font-mono text-xs">
                                     {wallet.publicKey.toString().slice(0, 8)}...
                                     {wallet.publicKey.toString().slice(-8)}
@@ -144,46 +140,38 @@ function CreateCollection() {
                 {/* Form */}
                 {wallet.connected && (
                     <div className="bg-white/5 rounded-lg p-6 border border-white/10 mb-6">
-                        <h3 className="text-xl font-semibold text-white mb-4">
-                            Collection Details
-                        </h3>
+                        <h3 className="text-xl font-semibold text-white mb-4">{t("collection_details_title")}</h3>
 
                         <div className="space-y-4">
                             {/* Name */}
                             <div>
-                                <label className="block text-gray-300 text-sm font-semibold mb-2">
-                                    Collection Name
-                                </label>
+                                <label className="block text-gray-300 text-sm font-semibold mb-2">{t("collection_name_label")}</label>
                                 <input
                                     type="text"
                                     name="name"
                                     value={formData.name}
                                     onChange={handleInputChange}
                                     className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    placeholder="My NFT Collection"
+                                    placeholder={t("my_nft_collection_placeholder")}
                                 />
                             </div>
 
                             {/* Symbol */}
                             <div>
-                                <label className="block text-gray-300 text-sm font-semibold mb-2">
-                                    Symbol
-                                </label>
+                                <label className="block text-gray-300 text-sm font-semibold mb-2">{t("symbol_label")}</label>
                                 <input
                                     type="text"
                                     name="symbol"
                                     value={formData.symbol}
                                     onChange={handleInputChange}
                                     className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    placeholder="NFT"
+                                    placeholder={t("nft_placeholder")}
                                 />
                             </div>
 
                             {/* Metadata URI */}
                             <div>
-                                <label className="block text-gray-300 text-sm font-semibold mb-2">
-                                    Metadata URI
-                                </label>
+                                <label className="block text-gray-300 text-sm font-semibold mb-2">{t("metadata_uri_label")}</label>
                                 <input
                                     type="text"
                                     name="uri"
@@ -192,17 +180,12 @@ function CreateCollection() {
                                     className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     placeholder="https://..."
                                 />
-                                <p className="text-gray-400 text-xs mt-1">
-                                    Upload your metadata JSON file to a service
-                                    like Arweave or IPFS
-                                </p>
+                                <p className="text-gray-400 text-xs mt-1">{t("upload_metadata_json_desc")}</p>
                             </div>
 
                             {/* Royalty */}
                             <div>
-                                <label className="block text-gray-300 text-sm font-semibold mb-2">
-                                    Royalty (Basis Points)
-                                </label>
+                                <label className="block text-gray-300 text-sm font-semibold mb-2">{t("royalty_basis_points_label")}</label>
                                 <input
                                     type="number"
                                     name="royaltyBasisPoints"
@@ -213,10 +196,7 @@ function CreateCollection() {
                                     className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     placeholder="500"
                                 />
-                                <p className="text-gray-400 text-xs mt-1">
-                                    100 basis points = 1% (e.g., 500 = 5%
-                                    royalty)
-                                </p>
+                                <p className="text-gray-400 text-xs mt-1">{t("royalty_basis_points_desc")}</p>
                             </div>
                         </div>
 
@@ -246,11 +226,9 @@ function CreateCollection() {
                                             fill="currentColor"
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                         />
-                                    </svg>
-                                    Creating Collection...
-                                </span>
+                                    </svg>{t("creating_collection_btn")}</span>
                             ) : (
-                                "🎨 Create Collection NFT"
+                                t("create_collection_nft_btn")
                             )}
                         </button>
                     </div>
@@ -271,9 +249,7 @@ function CreateCollection() {
                         {collectionAddress && (
                             <div className="mt-3 space-y-2">
                                 <div className="bg-black/20 rounded p-2">
-                                    <p className="text-xs text-gray-400 mb-1">
-                                        Collection Address:
-                                    </p>
+                                    <p className="text-xs text-gray-400 mb-1">{t("collection_address_label")}</p>
                                     <p className="font-mono text-sm break-all">
                                         {collectionAddress}
                                     </p>
@@ -283,9 +259,7 @@ function CreateCollection() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-sm underline block hover:text-white transition-colors"
-                                >
-                                    View on Solscan →
-                                </a>
+                                >{t("view_on_solscan_arrow")}</a>
                             </div>
                         )}
                         {txSignature && !collectionAddress && (
@@ -294,24 +268,20 @@ function CreateCollection() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm underline mt-2 block hover:text-white transition-colors"
-                            >
-                                View Transaction on Explorer →
-                            </a>
+                            >{t("view_transaction_explorer")}</a>
                         )}
                     </div>
                 )}
 
                 {/* Instructions */}
                 <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-blue-200 text-sm">
-                    <p className="font-semibold mb-2">ℹ️ Instructions:</p>
+                    <p className="font-semibold mb-2">ℹ️ {t("instructions_title")}</p>
                     <ol className="space-y-1 list-decimal list-inside">
-                        <li>Connect your wallet</li>
-                        <li>Fill in your collection details</li>
-                        <li>Upload metadata JSON to Arweave/IPFS first</li>
-                        <li>Click "Create Collection NFT"</li>
-                        <li>
-                            Use the collection address in your minting program
-                        </li>
+                        <li>{t("instruction_step_1")}</li>
+                        <li>{t("instruction_step_2")}</li>
+                        <li>{t("instruction_step_3")}</li>
+                        <li>{t("instruction_step_4")}</li>
+                        <li>{t("instruction_step_5")}</li>
                     </ol>
                 </div>
             </div>

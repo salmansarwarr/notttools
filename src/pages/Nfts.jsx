@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Image } from "@heroui/react";
 import {
     Image as ImageIcon,
@@ -18,6 +19,7 @@ import {
 import { getConfigInfo } from "../hooks/frontend-functions-old";
 
 const Nfts = () => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState("overview");
     const [configInfo, setConfigInfo] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -118,29 +120,26 @@ const Nfts = () => {
 
     const roadmapItems = [
         {
-            title: "NFT Membership Launch",
-            description:
-                "Launch exclusive NFT membership with unique benefits and staking rewards.",
+            title: t("nft_membership_launch"),
+            description: t("nft_membership_launch_desc"),
             date: "Q4 2025",
             status: "completed",
         },
         {
-            title: "Advanced Features",
-            description: "Implement advanced portfolio management tools.",
+            title: t("advanced_features"),
+            description: t("advanced_features_desc"),
             date: "Q1 2026",
             status: "in-progress",
         },
         {
-            title: "Cross-Chain Integration",
-            description:
-                "Expand to Ethereum, BSC, and other major blockchain networks.",
+            title: t("cross_chain_integration"),
+            description: t("cross_chain_integration_desc"),
             date: "Q2 2026",
             status: "upcoming",
         },
         {
-            title: "Mobile Application",
-            description:
-                "Launch iOS and Android apps with full trading capabilities.",
+            title: t("mobile_application"),
+            description: t("mobile_application_desc"),
             date: "Q3 2026",
             status: "upcoming",
         },
@@ -149,53 +148,50 @@ const Nfts = () => {
     const nftFeatures = [
         {
             icon: <Crown className="w-8 h-8 text-yellow-400" />,
-            title: "Exclusive Access",
-            description:
-                "Gain priority access to new token launches and premium features.",
+            title: t("exclusive_access"),
+            description: t("exclusive_access_desc"),
             benefits: [
-                "Early access to IDOs",
-                "VIP support",
-                "Exclusive community",
+                t("early_access_idos"),
+                t("vip_support"),
+                t("exclusive_community"),
             ],
         },
         {
             icon: <Zap className="w-8 h-8 text-blue-400" />,
-            title: "Free Token Creation",
-            description:
-                "Create unlimited tokens on Solana without any fees when you stake your NFT.",
+            title: t("free_token_creation"),
+            description: t("free_token_creation_desc"),
             benefits: [
-                "Free token deployment",
-                "No transaction fees",
-                "Unlimited creations",
+                t("free_token_deployment"),
+                t("no_transaction_fees"),
+                t("unlimited_creations"),
             ],
         },
         {
             icon: <Shield className="w-8 h-8 text-green-400" />,
-            title: "Premium Security",
-            description:
-                "Access advanced security features and insurance coverage.",
+            title: t("premium_security"),
+            description: t("premium_security_desc"),
             benefits: [
-                "Multi-sig protection",
-                "Insurance coverage",
-                "Priority recovery",
+                t("multi_sig_protection"),
+                t("insurance_coverage"),
+                t("priority_recovery"),
             ],
         },
         {
             icon: <TrendingUp className="w-8 h-8 text-purple-400" />,
-            title: "Trading Advantages",
-            description: "Get advanced trading tools and market insights.",
+            title: t("trading_advantages"),
+            description: t("trading_advantages_desc"),
             benefits: [
-                "Advanced charts",
-                "Market signals",
-                "Portfolio analytics",
+                t("advanced_charts"),
+                t("market_signals"),
+                t("portfolio_analytics"),
             ],
         },
     ];
 
     const tabs = [
-        { id: "overview", label: "Overview", icon: <ImageIcon size={20} /> },
-        { id: "benefits", label: "Benefits", icon: <Star size={20} /> },
-        { id: "roadmap", label: "Roadmap", icon: <Calendar size={20} /> },
+        { id: "overview", label: t("overview"), icon: <ImageIcon size={20} /> },
+        { id: "benefits", label: t("benefits"), icon: <Star size={20} /> },
+        { id: "roadmap", label: t("roadmap"), icon: <Calendar size={20} /> },
     ];
 
     const TabContent = () => {
@@ -207,78 +203,48 @@ const Nfts = () => {
                         <div className="text-center space-y-8">
                             <div className="inline-flex items-center gap-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-full px-6 py-3 border border-yellow-500/30">
                                 <Crown className="w-6 h-6 text-yellow-400" />
-                                <span className="text-yellow-400 font-semibold">
-                                    Exclusive NFT Membership
-                                </span>
+                                <span className="text-yellow-400 font-semibold">{t("exclusive_nft_membership")}</span>
                             </div>
 
-                            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                                NOOTTOOLS NFT
-                                <br />
-                                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                                    Collection
-                                </span>
+                            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">{t("noottools_nft")}<br />
+                                <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">{t("collection")}</span>
                             </h1>
 
-                            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                                Join our exclusive membership community and
-                                unlock premium features, enhanced rewards, and
-                                priority access to new opportunities on Solana.
-                            </p>
+                            <p className="text-xl text-gray-300 max-w-3xl mx-auto">{t("join_exclusive_membership")}</p>
 
                             <div className="flex flex-wrap justify-center gap-6 text-sm">
                                 <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg px-4 py-2">
                                     <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                    <span className="text-gray-300">
-                                        Live Collection
-                                    </span>
+                                    <span className="text-gray-300">{t("live_collection")}</span>
                                 </div>
                                 <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg px-4 py-2">
                                     <Users className="w-4 h-4 text-blue-400" />
-                                    <span className="text-gray-300">
-                                        5,000 Total Supply
-                                    </span>
+                                    <span className="text-gray-300">{t("total_supply_5000")}</span>
                                 </div>
                                 <div className="flex items-center gap-2 bg-gray-800/50 rounded-lg px-4 py-2">
                                     <Coins className="w-4 h-4 text-yellow-400" />
-                                    <span className="text-gray-300">
-                                        Solana Blockchain
-                                    </span>
+                                    <span className="text-gray-300">{t("solana_blockchain")}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Live Collection Stats */}
                         <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700">
-                            <h2 className="text-3xl font-bold text-white text-center mb-8">
-                                Live Collection Stats
-                            </h2>
+                            <h2 className="text-3xl font-bold text-white text-center mb-8">{t("live_collection_stats")}</h2>
 
                             {loading ? (
                                 <div className="grid md:grid-cols-3 gap-8">
                                     <div className="text-center space-y-2">
-                                        <div className="text-3xl font-bold text-gray-600 animate-pulse">
-                                            Loading...
-                                        </div>
-                                        <div className="text-gray-400">
-                                            Minted NFTs
-                                        </div>
+                                        <div className="text-3xl font-bold text-gray-600 animate-pulse">{t("loading")}</div>
+                                        <div className="text-gray-400">{t("minted_nfts")}</div>
                                     </div>
                                     <div className="text-center space-y-2">
-                                        <div className="text-3xl font-bold text-gray-600 animate-pulse">
-                                            Loading...
-                                        </div>
-                                        <div className="text-gray-400">
-                                            Total Staked
-                                        </div>
+                                        <div className="text-3xl font-bold text-gray-600 animate-pulse">{t("loading")}</div>
+                                        <div className="text-gray-400">{t("total_staked_nft")}</div>
                                     </div>
                                     <div className="text-center space-y-2">
-                                        <div className="text-3xl font-bold text-gray-600 animate-pulse">
-                                            Loading...
-                                        </div>
-                                        <div className="text-gray-400">
-                                            Mint Price
-                                        </div>
+                                        <div className="text-3xl font-bold text-gray-600 animate-pulse">{t("loading")}</div>
+                                        <div className="text-gray-400">{t("mint_price")}</div>
                                     </div>
                                 </div>
                             ) : configInfo ? (
@@ -289,9 +255,7 @@ const Nfts = () => {
                                                 ? configInfo.totalMinted.toLocaleString()
                                                 : "0"}
                                         </div>
-                                        <div className="text-gray-400">
-                                            Minted NFTs
-                                        </div>
+                                        <div className="text-gray-400">{t("minted_nfts")}</div>
                                     </div>
 
                                     <div className="text-center space-y-2">
@@ -300,9 +264,7 @@ const Nfts = () => {
                                                 ? configInfo.totalStaked.toLocaleString()
                                                 : "0"}
                                         </div>
-                                        <div className="text-gray-400">
-                                            Total Transactions
-                                        </div>
+                                        <div className="text-gray-400">{t("total_transactions_nft")}</div>
                                     </div>
 
                                     <div className="text-center space-y-2">
@@ -311,24 +273,18 @@ const Nfts = () => {
                                                 ? `${configInfo.mintingFee} SOL`
                                                 : "0.1 SOL"}
                                         </div>
-                                        <div className="text-gray-400">
-                                            Mint Price
-                                        </div>
+                                        <div className="text-gray-400">{t("mint_price")}</div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center text-gray-400">
-                                    Failed to load blockchain data
-                                </div>
+                                <div className="text-center text-gray-400">{t("failed_to_load_blockchain_data")}</div>
                             )}
                         </div>
 
                         {/* Random NFT Preview */}
                         <div className="bg-gradient-to-br from-[#192630] to-[#1a2332] rounded-2xl p-8 border border-gray-700">
                             <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-2xl text-center font-bold text-white">
-                                    Collection Preview
-                                </h2>
+                                <h2 className="text-2xl text-center font-bold text-white">{t("collection_preview")}</h2>
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -369,23 +325,14 @@ const Nfts = () => {
 
                         {/* Call to Action */}
                         <div className="text-center space-y-8">
-                            <h2 className="text-4xl font-bold text-white mb-6">
-                                Ready to Join the Elite?
-                            </h2>
-                            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                                Mint your NFT membership today and unlock
-                                exclusive benefits in the NOOTTOOLS ecosystem.
-                            </p>
+                            <h2 className="text-4xl font-bold text-white mb-6">{t("ready_to_join_elite")}</h2>
+                            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">{t("mint_nft_membership_desc")}</p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <a
                                     href="/nft-minting"
                                     className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-4 px-8 rounded-xl hover:from-yellow-400 hover:to-orange-400 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-yellow-500/25"
-                                >
-                                    Mint NFT Membership
-                                </a>
-                                <button className="border border-gray-600 text-white font-semibold py-4 px-8 rounded-xl hover:border-gray-500 hover:bg-gray-800/50 transition-all duration-300">
-                                    View Collection
-                                </button>
+                                >{t("mint_nft_membership")}</a>
+                                <button className="border border-gray-600 text-white font-semibold py-4 px-8 rounded-xl hover:border-gray-500 hover:bg-gray-800/50 transition-all duration-300">{t("view_collection")}</button>
                             </div>
                         </div>
                     </div>
@@ -395,13 +342,8 @@ const Nfts = () => {
                 return (
                     <div className="space-y-20">
                         <div className="text-center space-y-6">
-                            <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                                Membership Benefits
-                            </h1>
-                            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                                Unlock premium features and exclusive
-                                opportunities with your NFT membership.
-                            </p>
+                            <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{t("membership_benefits")}</h1>
+                            <p className="text-xl text-gray-300 max-w-3xl mx-auto">{t("unlock_premium_features")}</p>
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-8">
@@ -446,13 +388,8 @@ const Nfts = () => {
                 return (
                     <div className="space-y-20">
                         <div className="text-center space-y-6">
-                            <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                                Development Roadmap
-                            </h1>
-                            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                                Follow our journey as we build the future of
-                                decentralized trading.
-                            </p>
+                            <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">{t("development_roadmap")}</h1>
+                            <p className="text-xl text-gray-300 max-w-3xl mx-auto">{t("follow_our_journey")}</p>
                         </div>
 
                         <div className="space-y-8">
@@ -501,11 +438,11 @@ const Nfts = () => {
                                                     }`}
                                                 >
                                                     {item.status === "completed"
-                                                        ? "Completed"
+                                                        ? t("completed")
                                                         : item.status ===
                                                             "in-progress"
-                                                          ? "In Progress"
-                                                          : "Upcoming"}
+                                                          ? t("in_progress")
+                                                          : t("upcoming")}
                                                 </span>
                                             </div>
 

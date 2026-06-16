@@ -17,7 +17,11 @@ import constants from "../constants.jsx";
 
 // Import your IDL
 import idl from "./solana_nft_anchor.json";
-import { getConfigFromDatabase, getConfigInfo } from "./frontend-functions-old.js";
+import {
+  getConfigFromDatabase,
+  getConfigInfo,
+  resolveNetworkConfig,
+} from "./frontend-functions-old.js";
 
 // Program ve network ayarları
 const PROGRAM_ID = new PublicKey(constants.network.programId);
@@ -85,35 +89,40 @@ const getMasterEditionPDA = (mint) => {
 /**
  * PDA hesaplamaları
  */
-export const getPDAs = (mintPubkey, userPubkey) => {
+export const getPDAs = (mintPubkey, userPubkey, programIdParam = PROGRAM_ID) => {
+  const programId =
+    programIdParam instanceof PublicKey
+      ? programIdParam
+      : new PublicKey(programIdParam);
+
   const [configPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config")],
-    PROGRAM_ID
+    programId
   );
 
   const [vaultPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("vault")],
-    PROGRAM_ID
+    programId
   );
 
   const [feeVaultPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("fee_vault")],
-    PROGRAM_ID
+    programId
   );
 
   const [stakeInfoPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("stake_info"), mintPubkey.toBuffer()],
-    PROGRAM_ID
+    programId
   );
 
   const [userStatsPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("user_stats"), userPubkey.toBuffer()],
-    PROGRAM_ID
+    programId
   );
 
   const [globalStatsPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("global_stats")],
-    PROGRAM_ID
+    programId
   );
 
   return {
@@ -238,11 +247,17 @@ export const mintRandomNFT = async (wallet, collectionMintAddress) => {
       throw new Error("Wallet not connected");
     }
 
-    const program = getProgram(wallet);
+    const { programId, rpcEndpoint } = await resolveNetworkConfig();
+    const connection = new Connection(rpcEndpoint, COMMITMENT);
+    const provider = new AnchorProvider(connection, wallet, {
+      commitment: COMMITMENT,
+    });
+    const program = new Program(idl, provider);
     const userPubkey = wallet.publicKey;
 
     console.log("🔑 User:", userPubkey.toString());
-    console.log("📋 Program ID:", PROGRAM_ID.toString());
+    console.log("📋 Program ID:", programId.toString());
+    console.log("🌐 RPC:", rpcEndpoint);
 
     // Get collection mint from config if not provided
     let collectionMint;
@@ -276,8 +291,7 @@ export const mintRandomNFT = async (wallet, collectionMintAddress) => {
 
     console.log("🎨 New Mint Address:", mintPubkey.toString());
 
-    // Get PDAs
-    const pdas = getPDAs(mintPubkey, userPubkey);
+    const pdas = getPDAs(mintPubkey, userPubkey, programId);
 
     // Token accounts
     const associatedTokenAccount = await getAssociatedTokenAddress(

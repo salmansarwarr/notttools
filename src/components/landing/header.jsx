@@ -45,9 +45,9 @@ export const Header = ({ isHeroInView, onSidebarToggle }) => {
 
                 {/* Right — Actions */}
                 <div className="flex items-center gap-2 md:gap-3">
-                    <div className="hidden md:block">
+                    {/* <div className="hidden md:block">
                         <LanguageSelector />
-                    </div>
+                    </div> */}
                     <div className="btn-solantify-wrapper">
                         <WalletLogin />
                     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 
 const Projects = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("date_created");
   const [currentPage, setCurrentPage] = useState(1);
@@ -160,11 +162,11 @@ const Projects = () => {
     const now = new Date();
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 
-    if (diffInDays === 0) return "Today";
-    if (diffInDays === 1) return "1 day ago";
-    if (diffInDays < 30) return `${diffInDays} days ago`;
-    if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
-    return `${Math.floor(diffInDays / 365)} years ago`;
+    if (diffInDays === 0) return t("today");
+    if (diffInDays === 1) return t("one_day_ago");
+    if (diffInDays < 30) return t("days_ago", { count: diffInDays });
+    if (diffInDays < 365) return t("months_ago", { count: Math.floor(diffInDays / 30) });
+    return t("years_ago", { count: Math.floor(diffInDays / 365) });
   };
 
   if (isLoading && featuredLoading) return <Loading darkMode={true} />;
@@ -176,20 +178,19 @@ const Projects = () => {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl px-6 py-3 mb-8">
             <Sparkles className="w-5 h-5 text-purple-400 animate-pulse" />
-            <span className="text-purple-300 font-semibold">Live Projects</span>
+            <span className="text-purple-300 font-semibold">{t("live_projects")}</span>
           </div>
 
           <h1 className="text-5xl md:text-6xl font-bold mb-6">
             <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              Explore
+              {t("explore")}
             </span>
             <br />
-            <span className="text-white">Web3 Projects</span>
+            <span className="text-white">{t("web3_projects")}</span>
           </h1>
 
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed mb-12">
-            Discover innovative blockchain projects, trade tokens, and join
-            thriving communities built on our platform.
+            {t("projects_hero_desc")}
           </p>
 
           {/* Stats */}
@@ -198,15 +199,15 @@ const Projects = () => {
               <div className="text-3xl font-bold text-white mb-2">
                 {totalCount}
               </div>
-              <div className="text-gray-400">Total Projects</div>
+              <div className="text-gray-400">{t("total_projects")}</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-white mb-2">24/7</div>
-              <div className="text-gray-400">Active Trading</div>
+              <div className="text-gray-400">{t("active_trading")}</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-white mb-2">100%</div>
-              <div className="text-gray-400">Decentralized</div>
+              <div className="text-gray-400">{t("decentralized")}</div>
             </div>
           </div>
         </div>
@@ -219,7 +220,7 @@ const Projects = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search projects by name or symbol..."
+                placeholder={t("search_projects")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
@@ -234,9 +235,9 @@ const Projects = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="pl-10 pr-8 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none cursor-pointer"
               >
-                <option value="date_created">Latest First</option>
-                <option value="name">Name A-Z</option>
-                <option value="-name">Name Z-A</option>
+                <option value="date_created">{t("latest_first")}</option>
+                <option value="name">{t("name_az")}</option>
+                <option value="-name">{t("name_za")}</option>
               </select>
             </div>
           </div>
@@ -304,7 +305,7 @@ const Projects = () => {
 
                       <div className="absolute top-6 right-6 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold px-4 py-2 rounded-full flex items-center gap-2">
                         <Star className="w-4 h-4" />
-                        Featured
+                        {t("featured")}
                       </div>
 
                       <div className="relative z-10 grid md:grid-cols-2 gap-8 items-center">
@@ -336,7 +337,7 @@ const Projects = () => {
 
                           <p className="text-gray-300 mb-6 leading-relaxed">
                             {project.description ||
-                              "No description available for this project."}
+                              t("no_description_available")}
                           </p>
 
                           <div className="flex items-center gap-6 text-sm text-gray-400 mb-6">
@@ -346,7 +347,7 @@ const Projects = () => {
                             </div>
                             <div className="flex items-center gap-2">
                               <Users className="w-4 h-4" />
-                              {project.user?.first_name || "Unknown"}
+                              {project.user?.first_name || t("unknown")}
                             </div>
                           </div>
 
@@ -426,7 +427,7 @@ const Projects = () => {
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-8">
             <TrendingUp className="w-6 h-6 text-blue-400" />
-            <h2 className="text-3xl font-bold text-white">All Projects</h2>
+            <h2 className="text-3xl font-bold text-white">{t("all_projects")}</h2>
           </div>
 
           {error ? (
@@ -435,9 +436,9 @@ const Projects = () => {
                 <ExternalLink className="w-10 h-10 text-red-400" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
-                Failed to Load Projects
+                {t("failed_load_projects")}
               </h3>
-              <p className="text-gray-400">Please try again later</p>
+              <p className="text-gray-400">{t("try_again_later")}</p>
             </div>
           ) : projects.length === 0 ? (
             <div className="text-center py-20">
@@ -445,10 +446,10 @@ const Projects = () => {
                 <Search className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2">
-                No Projects Found
+                {t("no_projects_found")}
               </h3>
               <p className="text-gray-400">
-                Try adjusting your search terms or filters
+                {t("adjust_filters")}
               </p>
             </div>
           ) : (
@@ -463,7 +464,7 @@ const Projects = () => {
                   {project.featured && (
                     <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
                       <Star className="w-3 h-3" />
-                      Featured
+                      {t("featured")}
                     </div>
                   )}
 
@@ -484,7 +485,7 @@ const Projects = () => {
                     )}
                     <div className="flex-1">
                       <h3 className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors">
-                        {project.name || "Unnamed Project"}
+                        {project.name || t("unnamed_project")}
                       </h3>
                       <p className="text-blue-400 font-medium">
                         ${project.symbol?.toUpperCase() || "TKN"}
@@ -495,7 +496,7 @@ const Projects = () => {
                   {/* Description */}
                   <p className="text-gray-400 text-sm mb-4 line-clamp-3">
                     {project.description ||
-                      "No description available for this project."}
+                      t("no_description")}
                   </p>
 
                   {/* Contract Address */}
@@ -567,7 +568,7 @@ const Projects = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Users className="w-4 h-4" />
-                      {project.user?.first_name || "Unknown"}
+                      {project.user?.first_name || t("unknown")}
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
@@ -27,6 +28,7 @@ const DEFAULT_MAX_NFTS = 10;
 const DEFAULT_STAKING_MONTHS = 6;
 
 function CollectionSetup() {
+    const { t } = useTranslation();
     const { connection } = useConnection();
     const wallet = useWallet();
     const [loading, setLoading] = useState(false);
@@ -65,12 +67,12 @@ function CollectionSetup() {
     // Update Config Function
     const handleUpdateConfig = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus("❌ Please connect your wallet first");
+            setStatus(`❌ ${t("status_connect_wallet_first")}`);
             return;
         }
 
         setLoading(true);
-        setStatus("🔄 Updating config...");
+        setStatus(`🔄 ${t("status_updating_config")}`);
         setTxSignature("");
 
         try {
@@ -93,15 +95,15 @@ function CollectionSetup() {
                 .rpc();
 
             setTxSignature(tx);
-            setStatus("✅ Config updated successfully!");
+            setStatus(`✅ ${t("status_config_updated")}`);
 
             console.log("Transaction:", tx);
         } catch (error) {
             console.error("Error:", error);
             if (error.message.includes("Unauthorized")) {
-                setStatus("❌ Only the admin can update config");
+                setStatus(`❌ ${t("status_only_admin")}`);
             } else {
-                setStatus(`❌ Error: ${error.message}`);
+                setStatus(`❌ ${t("status_error")} ${error.message}`);
             }
         } finally {
             setLoading(false);
@@ -111,12 +113,12 @@ function CollectionSetup() {
     // Set Collection Mint
     const handleSetCollectionMint = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus("❌ Please connect your wallet first");
+            setStatus(`❌ ${t("status_connect_wallet_first")}`);
             return;
         }
 
         setLoading(true);
-        setStatus("🔄 Setting collection mint in config...");
+        setStatus(`🔄 ${t("status_setting_mint")}`);
         setTxSignature("");
 
         try {
@@ -145,12 +147,12 @@ function CollectionSetup() {
                 .rpc();
 
             setTxSignature(tx);
-            setStatus("✅ Collection mint set successfully!");
+            setStatus(`✅ ${t("status_mint_set")}`);
 
             console.log("Transaction:", tx);
         } catch (error) {
             console.error("Error:", error);
-            setStatus(`❌ Error: ${error.message}`);
+            setStatus(`❌ ${t("status_error")} ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -159,12 +161,12 @@ function CollectionSetup() {
     // Update Collection Authority
     const handleUpdateAuthority = async () => {
         if (!wallet.connected || !wallet.publicKey) {
-            setStatus("❌ Please connect your wallet first");
+            setStatus(`❌ ${t("status_connect_wallet_first")}`);
             return;
         }
 
         setLoading(true);
-        setStatus("🔄 Updating collection authority...");
+        setStatus(`🔄 ${t("status_updating_authority")}`);
         setTxSignature("");
 
         try {
@@ -191,14 +193,12 @@ function CollectionSetup() {
 
             const signature = Buffer.from(result.signature).toString("base64");
             setTxSignature(signature);
-            setStatus(
-                "✅ Authority updated successfully! Config PDA is now the collection authority.",
-            );
+            setStatus(`✅ ${t("status_authority_updated")}`);
 
             console.log("Transaction:", signature);
         } catch (error) {
             console.error("Error:", error);
-            setStatus(`❌ Error: ${error.message}`);
+            setStatus(`❌ ${t("status_error")} ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -209,12 +209,8 @@ function CollectionSetup() {
             <div className="max-w-3xl w-full bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">
-                        Collection Setup
-                    </h1>
-                    <p className="text-gray-300">
-                        Configure your NFT collection
-                    </p>
+                    <h1 className="text-4xl font-bold text-white mb-2">{t("collection_setup_title")}</h1>
+                    <p className="text-gray-300">{t("configure_nft_collection")}</p>
                 </div>
 
                 {/* Wallet Connection */}
@@ -227,24 +223,20 @@ function CollectionSetup() {
                     <div className="bg-white/5 rounded-lg p-4 mb-6 border border-white/10">
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-400">Network:</span>
+                                <span className="text-gray-400">{t("network_label")}</span>
                                 <span className="text-white font-mono">
                                     {CLUSTER}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">
-                                    Collection:
-                                </span>
+                                <span className="text-gray-400">{t("collection_label")}</span>
                                 <span className="text-white font-mono text-xs">
                                     {COLLECTION_MINT.slice(0, 8)}...
                                     {COLLECTION_MINT.slice(-8)}
                                 </span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-400">
-                                    Your Wallet:
-                                </span>
+                                <span className="text-gray-400">{t("your_wallet_label")}</span>
                                 <span className="text-white font-mono text-xs">
                                     {wallet.publicKey.toString().slice(0, 8)}...
                                     {wallet.publicKey.toString().slice(-8)}
@@ -252,9 +244,7 @@ function CollectionSetup() {
                             </div>
                             {configPda && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">
-                                        Config PDA:
-                                    </span>
+                                    <span className="text-gray-400">{t("config_pda_label")}</span>
                                     <span className="text-green-400 font-mono text-xs">
                                         {configPda.slice(0, 8)}...
                                         {configPda.slice(-8)}
@@ -271,27 +261,17 @@ function CollectionSetup() {
                     <div className="bg-white/5 rounded-lg p-6 border border-orange-500/30">
                         <div className="flex items-start justify-between mb-3">
                             <div className="flex-1">
-                                <h3 className="text-xl font-semibold text-white mb-1">
-                                    🔧 Update Config (Admin Only)
-                                </h3>
-                                <p className="text-gray-400 text-sm mb-4">
-                                    Modify config parameters
-                                </p>
+                                <h3 className="text-xl font-semibold text-white mb-1">🔧 {t("update_config_admin")}</h3>
+                                <p className="text-gray-400 text-sm mb-4">{t("modify_config_params")}</p>
 
                                 <div className="bg-orange-500/10 border border-orange-500/30 rounded p-3 mb-4">
-                                    <p className="text-orange-300 text-xs">
-                                        ⚠️ Only the admin wallet can update
-                                        config. Changes take effect immediately
-                                        for new mints.
-                                    </p>
+                                    <p className="text-orange-300 text-xs">⚠️ {t("admin_wallet_warning")}</p>
                                 </div>
 
                                 {/* Config Form */}
                                 <div className="space-y-3 bg-white/5 rounded p-4 mb-4">
                                     <div>
-                                        <label className="text-gray-300 text-sm block mb-1">
-                                            New Minting Fee (lamports)
-                                        </label>
+                                        <label className="text-gray-300 text-sm block mb-1">{t("new_minting_fee")}</label>
                                         <input
                                             type="number"
                                             value={mintingFee}
@@ -303,16 +283,11 @@ function CollectionSetup() {
                                             className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
                                             placeholder="100000000"
                                         />
-                                        <p className="text-xs text-gray-400 mt-1">
-                                            Default: 0.1 SOL (100,000,000
-                                            lamports)
-                                        </p>
+                                        <p className="text-xs text-gray-400 mt-1">{t("default_minting_fee")}</p>
                                     </div>
 
                                     <div>
-                                        <label className="text-gray-300 text-sm block mb-1">
-                                            New Max NFTs per Wallet
-                                        </label>
+                                        <label className="text-gray-300 text-sm block mb-1">{t("new_max_nfts")}</label>
                                         <input
                                             type="number"
                                             value={maxNfts}
@@ -329,9 +304,7 @@ function CollectionSetup() {
                                     </div>
 
                                     <div>
-                                        <label className="text-gray-300 text-sm block mb-1">
-                                            New Staking Duration (months)
-                                        </label>
+                                        <label className="text-gray-300 text-sm block mb-1">{t("new_staking_duration")}</label>
                                         <input
                                             type="number"
                                             value={stakingMonths}
@@ -348,9 +321,7 @@ function CollectionSetup() {
                                     </div>
                                 </div>
                             </div>
-                            <span className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-xs font-semibold ml-4">
-                                ADMIN
-                            </span>
+                            <span className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-xs font-semibold ml-4">{t("admin_badge")}</span>
                         </div>
                         <button
                             onClick={handleUpdateConfig}
@@ -377,11 +348,9 @@ function CollectionSetup() {
                                             fill="currentColor"
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                         />
-                                    </svg>
-                                    Processing...
-                                </span>
+                                    </svg>{t("processing")}</span>
                             ) : (
-                                "Update Config Parameters"
+                                t("update_config_parameters")
                             )}
                         </button>
                     </div>
@@ -390,12 +359,8 @@ function CollectionSetup() {
                     <div className="bg-white/5 rounded-lg p-6 border border-white/10">
                         <div className="flex items-start justify-between mb-3">
                             <div>
-                                <h3 className="text-xl font-semibold text-white mb-1">
-                                    Step 1: Set Collection Mint
-                                </h3>
-                                <p className="text-gray-400 text-sm">
-                                    Store collection mint in program config
-                                </p>
+                                <h3 className="text-xl font-semibold text-white mb-1">{t("step_1_set_mint")}</h3>
+                                <p className="text-gray-400 text-sm">{t("store_collection_mint")}</p>
                             </div>
                             <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-xs font-semibold">
                                 1/2
@@ -426,11 +391,9 @@ function CollectionSetup() {
                                             fill="currentColor"
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                         />
-                                    </svg>
-                                    Processing...
-                                </span>
+                                    </svg>{t("processing")}</span>
                             ) : (
-                                "Set Collection Mint"
+                                t("set_collection_mint_btn")
                             )}
                         </button>
                     </div>
@@ -439,12 +402,8 @@ function CollectionSetup() {
                     <div className="bg-white/5 rounded-lg p-6 border border-white/10">
                         <div className="flex items-start justify-between mb-3">
                             <div>
-                                <h3 className="text-xl font-semibold text-white mb-1">
-                                    Step 2: Update Authority
-                                </h3>
-                                <p className="text-gray-400 text-sm">
-                                    Transfer collection authority to Config PDA
-                                </p>
+                                <h3 className="text-xl font-semibold text-white mb-1">{t("step_2_update_authority")}</h3>
+                                <p className="text-gray-400 text-sm">{t("transfer_collection_authority")}</p>
                             </div>
                             <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-xs font-semibold">
                                 2/2
@@ -475,11 +434,9 @@ function CollectionSetup() {
                                             fill="currentColor"
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                         />
-                                    </svg>
-                                    Processing...
-                                </span>
+                                    </svg>{t("processing")}</span>
                             ) : (
-                                "Update Collection Authority"
+                                t("update_collection_authority_btn")
                             )}
                         </button>
                     </div>
@@ -505,34 +462,20 @@ function CollectionSetup() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm underline mt-2 block hover:text-white transition-colors"
-                            >
-                                View on Explorer →
-                            </a>
+                            >{t("view_on_explorer")}</a>
                         )}
                     </div>
                 )}
 
                 {/* Instructions */}
                 <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-yellow-200 text-sm">
-                    <p className="font-semibold mb-2">⚠️ Important Notes:</p>
+                    <p className="font-semibold mb-2">⚠️ {t("important_notes")}</p>
                     <ul className="space-y-1 list-disc list-inside">
-                        <li>
-                            Use "Update Config" to modify parameters anytime
-                            (admin only)
-                        </li>
-                        <li>
-                            Run Step 1 to store the collection mint address in
-                            config
-                        </li>
-                        <li>
-                            Step 2 transfers authority permanently to the
-                            program
-                        </li>
-                        <li>
-                            Make sure collection metadata is finalized before
-                            Step 2
-                        </li>
-                        <li>You must be the current collection authority</li>
+                        <li>{t("important_note_1")}</li>
+                        <li>{t("important_note_2")}</li>
+                        <li>{t("important_note_3")}</li>
+                        <li>{t("important_note_4")}</li>
+                        <li>{t("important_note_5")}</li>
                     </ul>
                 </div>
             </div>

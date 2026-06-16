@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program, BN } from "@coral-xyz/anchor";
@@ -24,6 +25,7 @@ const fetchSolPrice = async () => {
 };
 
 const TokensPage = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [tokens, setTokens] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -253,7 +255,7 @@ const TokensPage = () => {
             <div className="min-h-screen bg-[#0A151E] pt-28 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading tokens...</p>
+                    <p className="text-gray-400">{t("loading_tokens")}</p>
                 </div>
             </div>
         );
@@ -263,12 +265,8 @@ const TokensPage = () => {
         <div className="min-h-screen bg-[#0A151E] pt-28 px-4 pb-8">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">
-                        Bonding Curve Tokens
-                    </h1>
-                    <p className="text-gray-400">
-                        Fair launch tokens with automated Raydium migration
-                    </p>
+                    <h1 className="text-4xl font-bold text-white mb-2">{t("bonding_curve_tokens")}</h1>
+                    <p className="text-gray-400">{t("bonding_curve_desc")}</p>
                 </div>
 
                 <div className="bg-[#192630] rounded-2xl p-6 mb-6 border border-gray-700">
@@ -281,9 +279,7 @@ const TokensPage = () => {
                                         ? "bg-blue-600 text-white"
                                         : "text-gray-400 hover:text-white"
                                 }`}
-                            >
-                                All Tokens
-                            </button>
+                            >{t("all_tokens")}</button>
                             <button
                                 onClick={() => setFilterStatus("active")}
                                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
@@ -291,9 +287,7 @@ const TokensPage = () => {
                                         ? "bg-blue-600 text-white"
                                         : "text-gray-400 hover:text-white"
                                 }`}
-                            >
-                                Active Curves
-                            </button>
+                            >{t("active_curves")}</button>
                             <button
                                 onClick={() => setFilterStatus("migrated")}
                                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
@@ -301,9 +295,7 @@ const TokensPage = () => {
                                         ? "bg-blue-600 text-white"
                                         : "text-gray-400 hover:text-white"
                                 }`}
-                            >
-                                Migrated
-                            </button>
+                            >{t("migrated")}</button>
                             <button
                                 onClick={() => setFilterStatus("new")}
                                 className={`px-4 py-2 rounded-md font-medium transition-colors ${
@@ -311,35 +303,30 @@ const TokensPage = () => {
                                         ? "bg-blue-600 text-white"
                                         : "text-gray-400 hover:text-white"
                                 }`}
-                            >
-                                New (24h)
-                            </button>
+                            >{t("new_24h")}</button>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <span className="text-gray-400 text-sm">
-                                Sort by:
-                            </span>
+                            <span className="text-gray-400 text-sm">{t("sort_by")}</span>
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
                                 className="bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             >
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="progress">Progress</option>
-                                <option value="name">Name (A-Z)</option>
+                                <option value="newest">{t("newest_first")}</option>
+                                <option value="oldest">{t("oldest_first")}</option>
+                                <option value="progress">{t("progress")}</option>
+                                <option value="name">{t("name_a_z")}</option>
                             </select>
                         </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-gray-700">
                         <p className="text-gray-400 text-sm">
-                            Showing{" "}
+                            {t("showing")} {" "}
                             <span className="text-white font-semibold">
                                 {sortedTokens.length}
-                            </span>{" "}
-                            tokens
+                            </span>{" "} {t("tokens_text")}
                         </p>
                     </div>
                 </div>
@@ -359,12 +346,8 @@ const TokensPage = () => {
                                 d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
                             />
                         </svg>
-                        <h3 className="text-xl font-semibold text-white mb-2">
-                            No tokens found
-                        </h3>
-                        <p className="text-gray-400">
-                            No tokens match your filter criteria.
-                        </p>
+                        <h3 className="text-xl font-semibold text-white mb-2">{t("no_tokens_found")}</h3>
+                        <p className="text-gray-400">{t("no_tokens_match_filter")}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -424,14 +407,10 @@ const TokensPage = () => {
                                             </div>
                                             <div className="flex flex-col items-end gap-1">
                                                 {isNew() && (
-                                                    <span className="bg-green-500/20 text-green-400 text-xs font-semibold px-2 py-1 rounded-full border border-green-500/30">
-                                                        NEW
-                                                    </span>
+                                                    <span className="bg-green-500/20 text-green-400 text-xs font-semibold px-2 py-1 rounded-full border border-green-500/30">{t("new_label")}</span>
                                                 )}
                                                 {curveData?.isMigrated && (
-                                                    <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-2 py-1 rounded-full border border-purple-500/30">
-                                                        MIGRATED
-                                                    </span>
+                                                    <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-2 py-1 rounded-full border border-purple-500/30">{t("migrated_label")}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -440,9 +419,7 @@ const TokensPage = () => {
                                         {curveData && !curveData.isMigrated && (
                                             <div className="mb-4">
                                                 <div className="flex justify-between text-xs text-gray-400 mb-2">
-                                                    <span>
-                                                        Bonding Curve Progress
-                                                    </span>
+                                                    <span>{t("bonding_curve_progress")}</span>
                                                     <span className="text-white font-semibold">
                                                         {curveData.progress.toFixed(
                                                             1,
@@ -478,9 +455,7 @@ const TokensPage = () => {
                                         {/* Price Info */}
                                         <div className="space-y-3 mb-4">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-gray-400 text-sm">
-                                                    Current Price
-                                                </span>
+                                                <span className="text-gray-400 text-sm">{t("current_price")}</span>
                                                 <span className="text-white font-semibold">
                                                     {curveData?.price
                                                         ? curveData.price < 0.01
@@ -490,9 +465,7 @@ const TokensPage = () => {
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center">
-                                                <span className="text-gray-400 text-sm">
-                                                    Market Cap
-                                                </span>
+                                                <span className="text-gray-400 text-sm">{t("market_cap")}</span>
                                                 <span className="text-white font-semibold">
                                                     {curveData?.marketCap
                                                         ? curveData.marketCap >=
@@ -534,7 +507,7 @@ const TokensPage = () => {
                                                             clipRule="evenodd"
                                                         />
                                                     </svg>
-                                                    On Raydium
+                                                    {t("on_raydium")}
                                                 </span>
                                             )}
                                         </div>
@@ -568,7 +541,7 @@ const TokensPage = () => {
                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                             />
                         </svg>
-                        Refresh Tokens
+                        {t("refresh_tokens")}
                     </button>
                 </div>
             </div>
